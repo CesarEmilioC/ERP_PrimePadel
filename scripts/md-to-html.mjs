@@ -169,7 +169,8 @@ function template(title, body) {
   <div class="doc-header">
     <div class="doc-logo">Prime <span>Padel</span></div>
     <div class="doc-meta">
-      César Emilio — cesarxemiliox@gmail.com<br>
+      Cesar Emilio Castaño Marin<br>
+      cesarxemiliox@gmail.com · +52 812 346 6691<br>
       Cali, Colombia<br>
       ${now}
     </div>

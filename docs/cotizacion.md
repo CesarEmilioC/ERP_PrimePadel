@@ -4,7 +4,7 @@
 **Ciudad:** Cali, Colombia
 **Fecha de emisión:** 23 de abril de 2026
 **Válida hasta:** 7 de mayo de 2026
-**Proveedor:** César Emilio — Desarrollo de software a la medida
+**Proveedor:** Cesar Emilio Castaño Marin — Desarrollo de software a la medida
 
 ---
 
@@ -225,6 +225,6 @@ La firma o confirmación por escrito (correo electrónico, WhatsApp) de esta pro
 ---
 
 **Contacto:**
-César Emilio — cesarxemiliox@gmail.com
+Cesar Emilio Castaño Marin — cesarxemiliox@gmail.com — +52 812 346 6691
 
 _Gracias por la confianza. Esta propuesta está diseñada para entregar a Prime Padel una herramienta confiable, moderna y alineada con la identidad del club, en el menor tiempo posible._
