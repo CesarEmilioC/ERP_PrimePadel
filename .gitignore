@@ -1,0 +1,22 @@
+node_modules
+.next
+out
+dist
+
+.env
+.env.local
+.env.*.local
+
+.vercel
+.DS_Store
+*.log
+.idea
+.vscode/settings.json
+
+# Material privado del cliente
+others/
+oldDatabase/
+
+# Archivos locales de herramientas
+.claude/
+tsconfig.tsbuildinfo
