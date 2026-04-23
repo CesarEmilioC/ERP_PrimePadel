@@ -178,19 +178,19 @@ La interfaz respeta la marca Prime Padel:
 
 | Concepto | Valor (COP) |
 |----------|-------------|
-| Desarrollo completo del ERP (alcance descrito en las secciones 3 y 4) | **$ 1.600.000,00** |
+| Desarrollo completo del ERP (alcance descrito en las secciones 3 y 4) | **$ 1.750.000,00** |
 
 ### Forma de pago
 
 | Componente | Valor |
 |-----------|-------|
-| En efectivo / transferencia | **$ 1.200.000,00 COP** |
-| En especie — 4 clases de pádel | **$ 400.000,00 COP** (valoradas a $ 100.000,00 COP cada una) |
-| **Total** | **$ 1.600.000,00 COP** |
+| En efectivo / transferencia | **$ 1.250.000,00 COP** |
+| En especie — 5 clases de pádel (en pareja o individuales) | **$ 500.000,00 COP** (valoradas a $ 100.000,00 COP cada una) |
+| **Total** | **$ 1.750.000,00 COP** |
 
 **Esquema de desembolso en efectivo:**
-- **50 % de anticipo** ($ 600.000,00 COP) al firmar esta propuesta — habilita inicio del desarrollo y la entrega del **MVP** funcional para demostración inmediata.
-- **50 % contra entrega** ($ 600.000,00 COP) al momento de la entrega final de la versión completa y validación por parte del cliente.
+- **50 % de anticipo** ($ 625.000,00 COP) al firmar esta propuesta — habilita inicio del desarrollo y la entrega del **MVP** funcional para demostración inmediata.
+- **50 % contra entrega** ($ 625.000,00 COP) al momento de la entrega final de la versión completa y validación por parte del cliente.
 - Las 4 clases de pádel se agendan a conveniencia del proveedor dentro de los 60 días siguientes a la entrega.
 
 ### Lo que incluye el valor cotizado
