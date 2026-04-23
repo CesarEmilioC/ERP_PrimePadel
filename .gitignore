@@ -20,3 +20,6 @@ oldDatabase/
 # Archivos locales de herramientas
 .claude/
 tsconfig.tsbuildinfo
+
+# HTMLs generados desde markdown (artefactos)
+docs/*.html
