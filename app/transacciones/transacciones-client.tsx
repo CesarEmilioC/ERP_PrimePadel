@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/input";
@@ -48,7 +49,12 @@ export function TransaccionesClient({
             El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.
           </p>
         </div>
-        <Button onClick={() => setShowNew(true)}>+ Nueva transacción</Button>
+        <div className="flex gap-2">
+          <Link href="/transacciones/carga-masiva">
+            <Button variant="outline">⬆ Carga masiva (CSV)</Button>
+          </Link>
+          <Button onClick={() => setShowNew(true)}>+ Nueva transacción</Button>
+        </div>
       </div>
 
       <Card>
