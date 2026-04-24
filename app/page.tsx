@@ -1,20 +1,25 @@
 import Link from "next/link";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { Card } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { formatCOP, formatInt } from "@/lib/utils";
+import { requireProfile } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const cards = [
-  { href: "/inventario", title: "Inventario", desc: "Ver, crear y editar productos. Control de stock por ubicación." },
-  { href: "/transacciones", title: "Transacciones", desc: "Registrar ventas y compras; revisar historial." },
-  { href: "/dashboard", title: "Dashboard", desc: "Consumo mensual, top productos y alertas." },
-  { href: "/ubicaciones", title: "Ubicaciones", desc: "Administrar bodegas, neveras y barras." },
-  { href: "/categorias", title: "Categorías", desc: "Organizar productos y servicios." },
+const ALL_CARDS = [
+  { href: "/inventario", title: "Inventario", desc: "Ver, crear y editar productos. Control de stock por ubicación.", adminOnly: false },
+  { href: "/transacciones", title: "Transacciones", desc: "Registrar ventas y compras; revisar historial.", adminOnly: false },
+  { href: "/dashboard", title: "Dashboard", desc: "Consumo mensual, top productos y alertas.", adminOnly: true },
+  { href: "/ubicaciones", title: "Ubicaciones", desc: "Administrar bodegas, neveras y barras.", adminOnly: true },
+  { href: "/categorias", title: "Categorías", desc: "Organizar productos y servicios.", adminOnly: true },
+  { href: "/usuarios", title: "Usuarios", desc: "Crear y gestionar las cuentas del personal.", adminOnly: true },
 ];
 
 export default async function Home() {
+  const perfil = await requireProfile();
+  const isAdmin = perfil.rol === "admin";
+  const cards = ALL_CARDS.filter((c) => !c.adminOnly || isAdmin);
+
   const sb = sbAdmin();
   const [{ count: nProd }, { count: nInv }, { count: nUbi }, { count: nCat }, { count: nTx }, { count: nAlertas }, { data: stockTot }] =
     await Promise.all([
@@ -33,16 +38,17 @@ export default async function Home() {
   return (
     <div className="space-y-10">
       <section className="space-y-3">
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-baseline gap-3">
           <h1 className="text-4xl font-bold tracking-tight">
-            ERP <span className="text-brand-orange">Prime Padel</span>
+            Hola, <span className="text-brand-orange">{perfil.nombre.split(" ")[0]}</span>
           </h1>
-          <Badge tone="yellow">MVP</Badge>
+          <span className="rounded bg-muted px-2 py-0.5 text-xs uppercase tracking-wide text-muted-foreground">
+            {perfil.rol}
+          </span>
         </div>
         <p className="max-w-2xl text-muted-foreground">
           Sistema central de inventario, compras, ventas y análisis de consumo del club.
-          Actualmente operando con {nProd ?? 0} productos y servicios, {nUbi ?? 0} ubicaciones y
-          histórico desde octubre 2025.
+          Actualmente operando con {nProd ?? 0} productos y servicios, {nUbi ?? 0} ubicaciones.
         </p>
       </section>
 
@@ -55,7 +61,11 @@ export default async function Home() {
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Stock total actual</p>
           <p className="mt-1 text-3xl font-bold text-white">{formatInt(totalStock)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Valor estimado en costo: {formatCOP(valorInv)}</p>
+          {isAdmin ? (
+            <p className="mt-1 text-xs text-muted-foreground">Valor estimado en costo: {formatCOP(valorInv)}</p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">unidades físicas</p>
+          )}
         </Card>
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Alertas de stock</p>

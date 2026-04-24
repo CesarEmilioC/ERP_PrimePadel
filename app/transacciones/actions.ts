@@ -3,13 +3,15 @@
 import { revalidatePath } from "next/cache";
 import { transaccionSchema } from "@/lib/validators/producto";
 import { sbAdmin } from "@/lib/supabase/admin-server";
+import { requireAdmin, requireProfile } from "@/lib/auth";
 
 export async function registrarTransaccion(input: unknown) {
+  const perfil = await requireProfile();
   const parsed = transaccionSchema.parse(input);
   const { data, error } = await sbAdmin().rpc("registrar_transaccion", {
     p_tipo: parsed.tipo,
     p_fecha: parsed.fecha ?? null,
-    p_usuario: null,
+    p_usuario: perfil.user_id,
     p_notas: parsed.notas ?? null,
     p_origen: parsed.origen,
     p_items: parsed.items,
@@ -22,6 +24,7 @@ export async function registrarTransaccion(input: unknown) {
 }
 
 export async function deleteTransaccion(id: string) {
+  await requireAdmin();
   const sb = sbAdmin();
   // Revertir stock: obtenemos items, los deshacemos manualmente, luego borramos.
   const { data: tx, error: e0 } = await sb

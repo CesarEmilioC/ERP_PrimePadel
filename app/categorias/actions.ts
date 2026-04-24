@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { categoriaSchema } from "@/lib/validators/producto";
 import { sbAdmin } from "@/lib/supabase/admin-server";
+import { requireAdmin } from "@/lib/auth";
 
 export async function createCategoria(input: unknown) {
+  await requireAdmin();
   const parsed = categoriaSchema.parse(input);
   const { error } = await sbAdmin().from("categorias").insert(parsed);
   if (error) return { error: error.message };
@@ -14,6 +16,7 @@ export async function createCategoria(input: unknown) {
 }
 
 export async function updateCategoria(id: string, input: unknown) {
+  await requireAdmin();
   const parsed = categoriaSchema.parse(input);
   const { error } = await sbAdmin().from("categorias").update(parsed).eq("id", id);
   if (error) return { error: error.message };
@@ -23,6 +26,7 @@ export async function updateCategoria(id: string, input: unknown) {
 }
 
 export async function deleteCategoria(id: string) {
+  await requireAdmin();
   const sb = sbAdmin();
   const { count } = await sb.from("productos").select("*", { head: true, count: "exact" }).eq("categoria_id", id);
   if ((count ?? 0) > 0) {

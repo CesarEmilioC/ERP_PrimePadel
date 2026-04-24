@@ -3,8 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { ubicacionSchema } from "@/lib/validators/producto";
 import { sbAdmin } from "@/lib/supabase/admin-server";
+import { requireAdmin } from "@/lib/auth";
 
 export async function createUbicacion(input: unknown) {
+  await requireAdmin();
   const parsed = ubicacionSchema.parse(input);
   const { error } = await sbAdmin().from("ubicaciones").insert(parsed);
   if (error) return { error: error.message };
@@ -14,6 +16,7 @@ export async function createUbicacion(input: unknown) {
 }
 
 export async function updateUbicacion(id: string, input: unknown) {
+  await requireAdmin();
   const parsed = ubicacionSchema.parse(input);
   const { error } = await sbAdmin().from("ubicaciones").update(parsed).eq("id", id);
   if (error) return { error: error.message };
@@ -23,6 +26,7 @@ export async function updateUbicacion(id: string, input: unknown) {
 }
 
 export async function deleteUbicacion(id: string) {
+  await requireAdmin();
   const sb = sbAdmin();
   // No permitir borrar si tiene stock o transacciones asociadas: desactivamos en ese caso.
   const [{ count: nStock }, { count: nItemsOrig }, { count: nItemsDest }] = await Promise.all([

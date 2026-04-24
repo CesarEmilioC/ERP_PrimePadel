@@ -3,16 +3,29 @@
 import { revalidatePath } from "next/cache";
 import { productoSchema, ajusteInventarioSchema } from "@/lib/validators/producto";
 import { sbAdmin } from "@/lib/supabase/admin-server";
+import { requireAdmin, requireProfile } from "@/lib/auth";
+
+// Campos sensibles que solo puede editar el admin.
+const CAMPOS_ADMIN = ["costo_unitario"] as const;
+
+function stripAdminFields<T extends Record<string, unknown>>(obj: T): Partial<T> {
+  const clone: Record<string, unknown> = { ...obj };
+  for (const k of CAMPOS_ADMIN) delete clone[k];
+  return clone as Partial<T>;
+}
 
 export async function createProducto(input: unknown, precios: { lista_precio_id: string; precio: number }[] = []) {
+  const perfil = await requireProfile();
   const parsed = productoSchema.parse(input);
+  const payload = perfil.rol === "admin" ? parsed : stripAdminFields(parsed);
   const sb = sbAdmin();
-  const { data, error } = await sb.from("productos").insert(parsed).select("id").single();
+  const { data, error } = await sb.from("productos").insert(payload).select("id").single();
   if (error) return { error: error.message };
-  if (precios.length > 0) {
-    const payload = precios.filter((p) => p.precio > 0).map((p) => ({ ...p, producto_id: data.id }));
-    if (payload.length > 0) {
-      const { error: e2 } = await sb.from("precios_producto").insert(payload);
+  // Solo admin puede fijar precios iniciales; cajero los deja para que el admin los cargue.
+  if (perfil.rol === "admin" && precios.length > 0) {
+    const payloadPrecios = precios.filter((p) => p.precio > 0).map((p) => ({ ...p, producto_id: data.id }));
+    if (payloadPrecios.length > 0) {
+      const { error: e2 } = await sb.from("precios_producto").insert(payloadPrecios);
       if (e2) return { error: e2.message };
     }
   }
@@ -22,17 +35,19 @@ export async function createProducto(input: unknown, precios: { lista_precio_id:
 }
 
 export async function updateProducto(id: string, input: unknown, precios: { lista_precio_id: string; precio: number }[] = []) {
+  const perfil = await requireProfile();
   const parsed = productoSchema.parse(input);
+  const payload = perfil.rol === "admin" ? parsed : stripAdminFields(parsed);
   const sb = sbAdmin();
-  const { error } = await sb.from("productos").update(parsed).eq("id", id);
+  const { error } = await sb.from("productos").update(payload).eq("id", id);
   if (error) return { error: error.message };
-  // Reemplazar precios: borramos y reinsertamos las listas entregadas.
-  if (precios.length > 0) {
+  // Solo admin puede modificar precios.
+  if (perfil.rol === "admin" && precios.length > 0) {
     const ids = precios.map((p) => p.lista_precio_id);
     await sb.from("precios_producto").delete().eq("producto_id", id).in("lista_precio_id", ids);
-    const payload = precios.filter((p) => p.precio > 0).map((p) => ({ ...p, producto_id: id }));
-    if (payload.length > 0) {
-      const { error: e2 } = await sb.from("precios_producto").insert(payload);
+    const payloadPrecios = precios.filter((p) => p.precio > 0).map((p) => ({ ...p, producto_id: id }));
+    if (payloadPrecios.length > 0) {
+      const { error: e2 } = await sb.from("precios_producto").insert(payloadPrecios);
       if (e2) return { error: e2.message };
     }
   }
@@ -43,8 +58,8 @@ export async function updateProducto(id: string, input: unknown, precios: { list
 }
 
 export async function deleteProducto(id: string) {
+  await requireAdmin();
   const sb = sbAdmin();
-  // Si tiene histórico o transacciones, soft-delete.
   const [{ count: histCount }, { count: txItems }] = await Promise.all([
     sb.from("ventas_historicas_mensuales").select("*", { head: true, count: "exact" }).eq("producto_id", id),
     sb.from("transaccion_items").select("*", { head: true, count: "exact" }).eq("producto_id", id),
@@ -62,6 +77,7 @@ export async function deleteProducto(id: string) {
 }
 
 export async function registrarAjusteInventario(input: unknown) {
+  const perfil = await requireProfile();
   const parsed = ajusteInventarioSchema.parse(input);
   const sb = sbAdmin();
   const { data, error } = await sb.rpc("registrar_ajuste_inventario", {
@@ -70,7 +86,7 @@ export async function registrarAjusteInventario(input: unknown) {
     p_cantidad_nueva: parsed.cantidad_nueva,
     p_motivo: parsed.motivo,
     p_notas: parsed.notas ?? null,
-    p_usuario: null,
+    p_usuario: perfil.user_id,
   });
   if (error) return { error: error.message };
   revalidatePath("/inventario");

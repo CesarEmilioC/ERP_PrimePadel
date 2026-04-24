@@ -3,11 +3,12 @@
 import * as React from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  LineChart, Line, PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
 } from "recharts";
 import { Card } from "@/components/ui/table";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Select } from "@/components/ui/input";
+import { Dialog } from "@/components/ui/dialog";
 import { formatCOP, formatInt } from "@/lib/utils";
 
 type HistoricoRow = {
@@ -34,6 +35,34 @@ function mesLabel(anio: number, mes: number) {
   return `${anio}-${String(mes).padStart(2, "0")}`;
 }
 
+// Tooltip oscuro con contraste controlado.
+function DarkTooltip({
+  active, payload, label, formatter,
+}: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-md border border-border bg-black/95 px-3 py-2 text-sm shadow-xl">
+      {label !== undefined && label !== null ? (
+        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+      ) : null}
+      {payload.map((p: any, i: number) => {
+        const color = p.color ?? p.payload?.fill ?? p.fill ?? "#F5C518";
+        const name = p.name ?? p.dataKey;
+        const formatted = formatter ? formatter(p.value, name) : p.value;
+        return (
+          <div key={i} className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: color }} />
+            <span className="text-white">
+              {name}:{" "}
+              <span className="font-semibold" style={{ color }}>{formatted}</span>
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function Pager({
   page, total, pageSize, onChange,
 }: {
@@ -50,9 +79,7 @@ function Pager({
       >
         ← Ant.
       </button>
-      <span className="text-xs text-muted-foreground">
-        {page + 1} / {totalPages}
-      </span>
+      <span className="text-xs text-muted-foreground">{page + 1} / {totalPages}</span>
       <button
         disabled={page >= totalPages - 1}
         onClick={() => onChange(page + 1)}
@@ -81,29 +108,31 @@ export function DashboardClient({
   categorias: { id: string; nombre: string }[];
 }) {
   const [fCats, setFCats] = React.useState<string[]>([]);
-  const [vista, setVista] = React.useState<"monto" | "cantidad">("monto");
+  const [vistaTop, setVistaTop] = React.useState<"monto" | "cantidad">("monto");
+  const [vistaCat, setVistaCat] = React.useState<"monto" | "cantidad">("monto");
   const [pageMeses, setPageMeses] = React.useState(0);
   const [pageTop, setPageTop] = React.useState(0);
-  const [showLeyendaCat, setShowLeyendaCat] = React.useState(false);
+  const [leyendaAbierta, setLeyendaAbierta] = React.useState<null | "categoria">(null);
 
-  const catNameSet = new Set(fCats.map((id) => categorias.find((c) => c.id === id)?.nombre).filter(Boolean) as string[]);
+  const catNameSet = new Set(
+    fCats.map((id) => categorias.find((c) => c.id === id)?.nombre).filter(Boolean) as string[],
+  );
   const filtered = historico.filter((h) =>
     catNameSet.size === 0 || (h.productos.categorias?.nombre && catNameSet.has(h.productos.categorias.nombre)),
   );
 
-  // Serie: ventas por mes
-  const porMesMap = new Map<string, { key: string; anio: number; mes: number; monto: number; cantidad: number }>();
+  // Consumo por mes — solo monto (la suma de cantidades mezcla productos heterogéneos).
+  const porMesMap = new Map<string, { key: string; anio: number; mes: number; monto: number }>();
   for (const h of filtered) {
     const key = mesLabel(h.anio, h.mes);
-    const row = porMesMap.get(key) ?? { key, anio: h.anio, mes: h.mes, monto: 0, cantidad: 0 };
+    const row = porMesMap.get(key) ?? { key, anio: h.anio, mes: h.mes, monto: 0 };
     row.monto += h.total;
-    row.cantidad += h.cantidad_vendida;
     porMesMap.set(key, row);
   }
   const serieMensualTotal = [...porMesMap.values()].sort((a, b) => a.anio * 12 + a.mes - (b.anio * 12 + b.mes));
   const serieMensual = serieMensualTotal.slice(pageMeses * PAGE_MESES, (pageMeses + 1) * PAGE_MESES);
 
-  // Top productos
+  // Top productos — per-item, cantidad y monto ambos tienen sentido.
   const topMap = new Map<string, { nombre: string; categoria: string; cantidad: number; monto: number }>();
   for (const h of filtered) {
     const key = h.productos.nombre;
@@ -117,31 +146,41 @@ export function DashboardClient({
     row.monto += h.total;
     topMap.set(key, row);
   }
-  const topTodos = [...topMap.values()].sort((a, b) => b.cantidad - a.cantidad);
+  const topTodos = [...topMap.values()].sort((a, b) =>
+    vistaTop === "monto" ? b.monto - a.monto : b.cantidad - a.cantidad,
+  );
   const topPage = topTodos.slice(pageTop * PAGE_TOP, (pageTop + 1) * PAGE_TOP);
 
-  // Por categoría
-  const categoriaMap = new Map<string, number>();
+  // Por categoría — agregada por categoría, por lo que tanto monto como cantidad son interpretables.
+  const categoriaMap = new Map<string, { nombre: string; monto: number; cantidad: number }>();
   for (const h of filtered) {
     const c = h.productos.categorias?.nombre ?? "Sin categoría";
-    categoriaMap.set(c, (categoriaMap.get(c) ?? 0) + h.cantidad_vendida);
+    const row = categoriaMap.get(c) ?? { nombre: c, monto: 0, cantidad: 0 };
+    row.monto += h.total;
+    row.cantidad += h.cantidad_vendida;
+    categoriaMap.set(c, row);
   }
-  const porCategoria = [...categoriaMap.entries()]
-    .map(([nombre, cantidad]) => ({ nombre, cantidad }))
-    .sort((a, b) => b.cantidad - a.cantidad)
-    .slice(0, 10);
+  const porCategoria = [...categoriaMap.values()].sort((a, b) =>
+    vistaCat === "monto" ? b.monto - a.monto : b.cantidad - a.cantidad,
+  );
 
-  // Último mes vs anterior
+  // Último mes vs anterior (solo monto).
   const ultimo = serieMensualTotal[serieMensualTotal.length - 1];
   const penultimo = serieMensualTotal[serieMensualTotal.length - 2];
   const deltaMonto = ultimo && penultimo ? ((ultimo.monto - penultimo.monto) / (penultimo.monto || 1)) * 100 : 0;
 
-  // Mostrar la última página de meses por defecto
+  // Empezar paginación de meses en la última página (meses más recientes).
   const totalPagesMeses = Math.ceil(serieMensualTotal.length / PAGE_MESES);
   React.useEffect(() => {
     setPageMeses(Math.max(0, totalPagesMeses - 1));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPagesMeses]);
+
+  // Reset paginación de top al cambiar vista.
+  React.useEffect(() => { setPageTop(0); }, [vistaTop]);
+
+  const topValueFormatter = (v: number) => vistaTop === "monto" ? formatCOP(v) : formatInt(v);
+  const catValueFormatter = (v: number) => vistaCat === "monto" ? formatCOP(v) : formatInt(v);
 
   return (
     <div className="space-y-6">
@@ -188,31 +227,22 @@ export function DashboardClient({
 
       {/* Filtros */}
       <Card>
-        <div className="grid gap-3 md:grid-cols-3">
-          <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">Filtrar por categoría</p>
-            <MultiSelect
-              options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
-              value={fCats}
-              onChange={setFCats}
-              placeholder="Todas las categorías"
-            />
-          </div>
-          <div>
-            <p className="mb-1 text-xs font-medium text-muted-foreground">Métrica de gráficas</p>
-            <Select value={vista} onChange={(e) => setVista(e.target.value as "monto" | "cantidad")}>
-              <option value="monto">Monto ($ COP)</option>
-              <option value="cantidad">Cantidad (unidades)</option>
-            </Select>
-          </div>
+        <div>
+          <p className="mb-1 text-xs font-medium text-muted-foreground">Filtrar por categoría</p>
+          <MultiSelect
+            options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
+            value={fCats}
+            onChange={setFCats}
+            placeholder="Todas las categorías"
+          />
         </div>
       </Card>
 
-      {/* Consumo por mes — paginado */}
+      {/* Consumo por mes — solo monto */}
       <Card>
-        <h2 className="mb-3 text-lg font-semibold text-white">
-          Consumo por mes {vista === "monto" ? "(monto)" : "(cantidades)"}
-        </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">Consumo por mes (monto)</h2>
+        </div>
         <div className="h-72">
           <ResponsiveContainer>
             <BarChart data={serieMensual}>
@@ -221,126 +251,94 @@ export function DashboardClient({
               <YAxis
                 stroke="#A3A3A3"
                 tick={{ fontSize: 12 }}
-                tickFormatter={(v) => vista === "monto" ? `${(v / 1_000_000).toFixed(1)}M` : formatInt(v)}
+                tickFormatter={(v) => `${(v / 1_000_000).toFixed(1)}M`}
               />
-              <Tooltip
-                contentStyle={{ background: "#111", border: "1px solid #1f1f1f", borderRadius: 8 }}
-                formatter={(v: number) => vista === "monto" ? formatCOP(v) : formatInt(v)}
-              />
-              <Bar dataKey={vista === "monto" ? "monto" : "cantidad"} fill="#FF8C42" radius={[6, 6, 0, 0]} />
+              <Tooltip content={<DarkTooltip formatter={(v: number) => formatCOP(v)} />} cursor={{ fill: "#ffffff10" }} />
+              <Bar dataKey="monto" name="Monto" fill="#FF8C42" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <Pager
-          page={pageMeses}
-          total={serieMensualTotal.length}
-          pageSize={PAGE_MESES}
-          onChange={setPageMeses}
-        />
+        <Pager page={pageMeses} total={serieMensualTotal.length} pageSize={PAGE_MESES} onChange={setPageMeses} />
       </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Top productos — paginado */}
+        {/* Top productos — per item, toggle válido */}
         <Card>
-          <h2 className="mb-3 text-lg font-semibold text-white">
-            Top productos más vendidos
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              ({pageTop * PAGE_TOP + 1}–{Math.min((pageTop + 1) * PAGE_TOP, topTodos.length)} de {topTodos.length})
-            </span>
-          </h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-semibold text-white">
+              Top productos
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({topTodos.length === 0 ? "0" : `${pageTop * PAGE_TOP + 1}–${Math.min((pageTop + 1) * PAGE_TOP, topTodos.length)}`} de {topTodos.length})
+              </span>
+            </h2>
+            <Select value={vistaTop} onChange={(e) => setVistaTop(e.target.value as "monto" | "cantidad")} className="max-w-[140px]">
+              <option value="monto">Por monto</option>
+              <option value="cantidad">Por cantidad</option>
+            </Select>
+          </div>
           <div className="h-72">
             <ResponsiveContainer>
-              <BarChart data={topPage} layout="vertical" margin={{ left: 120 }}>
+              <BarChart data={topPage} layout="vertical" margin={{ left: 130 }}>
                 <CartesianGrid stroke="#1f1f1f" horizontal={false} />
-                <XAxis type="number" stroke="#A3A3A3" tick={{ fontSize: 12 }} />
-                <YAxis type="category" dataKey="nombre" stroke="#A3A3A3" tick={{ fontSize: 11 }} width={110} />
-                <Tooltip
-                  contentStyle={{ background: "#111", border: "1px solid #1f1f1f", borderRadius: 8 }}
-                  formatter={(v: number, name) => name === "cantidad" ? formatInt(v) : formatCOP(v)}
+                <XAxis
+                  type="number"
+                  stroke="#A3A3A3"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(v) => vistaTop === "monto" ? `${(v / 1_000_000).toFixed(1)}M` : formatInt(v)}
                 />
-                <Bar dataKey={vista === "monto" ? "monto" : "cantidad"} fill="#F5C518" radius={[0, 6, 6, 0]} />
+                <YAxis type="category" dataKey="nombre" stroke="#A3A3A3" tick={{ fontSize: 11 }} width={120} />
+                <Tooltip content={<DarkTooltip formatter={topValueFormatter} />} cursor={{ fill: "#ffffff10" }} />
+                <Bar
+                  dataKey={vistaTop === "monto" ? "monto" : "cantidad"}
+                  name={vistaTop === "monto" ? "Monto" : "Cantidad"}
+                  fill="#F5C518"
+                  radius={[0, 6, 6, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <Pager
-            page={pageTop}
-            total={topTodos.length}
-            pageSize={PAGE_TOP}
-            onChange={setPageTop}
-          />
+          <Pager page={pageTop} total={topTodos.length} pageSize={PAGE_TOP} onChange={setPageTop} />
         </Card>
 
-        {/* Por categoría — leyenda colapsable */}
+        {/* Por categoría — per categoría, toggle válido */}
         <Card>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-lg font-semibold text-white">Consumo por categoría</h2>
-            {porCategoria.length > LEGEND_THRESHOLD && (
-              <button
-                onClick={() => setShowLeyendaCat((v) => !v)}
-                className="rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:border-brand-orange hover:text-brand-orange"
-              >
-                {showLeyendaCat ? "Ocultar leyenda" : `Ver leyenda (${porCategoria.length})`}
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              <Select value={vistaCat} onChange={(e) => setVistaCat(e.target.value as "monto" | "cantidad")} className="max-w-[140px]">
+                <option value="monto">Por monto</option>
+                <option value="cantidad">Por cantidad</option>
+              </Select>
+              {porCategoria.length > LEGEND_THRESHOLD && (
+                <button
+                  onClick={() => setLeyendaAbierta("categoria")}
+                  className="rounded border border-border px-2 py-1.5 text-xs text-muted-foreground hover:border-brand-orange hover:text-brand-orange"
+                >
+                  Ver leyenda ({porCategoria.length})
+                </button>
+              )}
+            </div>
           </div>
           <div className="h-72">
             <ResponsiveContainer>
               <PieChart>
                 <Pie
                   data={porCategoria}
-                  dataKey="cantidad"
+                  dataKey={vistaCat === "monto" ? "monto" : "cantidad"}
                   nameKey="nombre"
                   cx="50%"
                   cy="50%"
-                  outerRadius={100}
+                  outerRadius={110}
                   label={false}
                 >
                   {porCategoria.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip
-                  contentStyle={{ background: "#111", border: "1px solid #1f1f1f", borderRadius: 8 }}
-                  formatter={(v: number) => formatInt(v)}
-                />
-                {(porCategoria.length <= LEGEND_THRESHOLD || showLeyendaCat) && (
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                )}
+                <Tooltip content={<DarkTooltip formatter={catValueFormatter} />} />
               </PieChart>
             </ResponsiveContainer>
           </div>
-          {showLeyendaCat && (
-            <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1">
-              {porCategoria.map((c, i) => (
-                <div key={c.nombre} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span className="inline-block h-2.5 w-2.5 rounded-sm flex-shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
-                  {c.nombre}
-                </div>
-              ))}
-            </div>
-          )}
         </Card>
       </div>
-
-      {/* Tendencia en línea */}
-      <Card>
-        <h2 className="mb-3 text-lg font-semibold text-white">Tendencia mensual (cantidad vs monto)</h2>
-        <div className="h-64">
-          <ResponsiveContainer>
-            <LineChart data={serieMensualTotal}>
-              <CartesianGrid stroke="#1f1f1f" vertical={false} />
-              <XAxis dataKey="key" stroke="#A3A3A3" tick={{ fontSize: 12 }} />
-              <YAxis yAxisId="left" stroke="#FFB366" tick={{ fontSize: 11 }} tickFormatter={(v) => formatInt(v)} />
-              <YAxis yAxisId="right" orientation="right" stroke="#F5C518" tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1_000_000).toFixed(1)}M`} />
-              <Tooltip
-                contentStyle={{ background: "#111", border: "1px solid #1f1f1f", borderRadius: 8 }}
-                formatter={(v: number, name) => name === "Cantidad" ? formatInt(v) : formatCOP(v)}
-              />
-              <Legend />
-              <Line yAxisId="left" type="monotone" dataKey="cantidad" stroke="#FFB366" strokeWidth={2} dot={{ r: 3 }} name="Cantidad" />
-              <Line yAxisId="right" type="monotone" dataKey="monto" stroke="#F5C518" strokeWidth={2} dot={{ r: 3 }} name="Monto" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
 
       {/* Alertas */}
       {stats.nAlertas > 0 ? (
@@ -356,6 +354,24 @@ export function DashboardClient({
         Histórico proveniente del reporte mensual de Alegra.
         El detalle diario y semanal se habilita a partir de las transacciones registradas en este sistema.
       </p>
+
+      {/* Leyenda en lightbox */}
+      <Dialog
+        open={leyendaAbierta === "categoria"}
+        onClose={() => setLeyendaAbierta(null)}
+        title={`Categorías (${porCategoria.length})`}
+        size="md"
+      >
+        <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          {porCategoria.map((c, i) => (
+            <div key={c.nombre} className="flex items-center gap-2 rounded px-2 py-1.5 hover:bg-muted">
+              <span className="inline-block h-3 w-3 flex-shrink-0 rounded-sm" style={{ background: COLORS[i % COLORS.length] }} />
+              <span className="flex-1 text-sm text-white">{c.nombre}</span>
+              <span className="text-xs text-muted-foreground">{catValueFormatter(vistaCat === "monto" ? c.monto : c.cantidad)}</span>
+            </div>
+          ))}
+        </div>
+      </Dialog>
     </div>
   );
 }

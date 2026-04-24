@@ -61,14 +61,27 @@ Completado:
 
 Pendiente (Fase 2 — versión completa):
 
-- [ ] Login con Supabase Auth + roles (admin / cajero).
-- [ ] Middleware de protección de rutas.
+- [x] Login con Supabase Auth + roles (admin / cajero).
+- [x] Middleware de protección de rutas.
+- [x] Gestión de usuarios desde `/usuarios` (crear, reset password, desactivar, cambiar rol).
+- [x] Permisos por rol en server actions (borrado restringido a admin, costos solo admin).
+- [x] Leyendas del dashboard en lightbox modal.
+- [x] Despliegue en Vercel.
 - [ ] Carga masiva de transacciones por CSV (preview + validación + commit).
 - [ ] Edición de transacciones existentes.
 - [ ] Traslado de stock entre ubicaciones (RPC ya existe).
-- [ ] Dashboard: gráficas por día de la semana, leyendas colapsables, pestañas separadas.
+- [ ] Dashboard: gráficas por día de la semana, rotación de inventario, pestañas separadas.
 - [ ] Importación del inventario inicial físico (cantidades por ubicación) — pendiente de recibir del cliente.
-- [ ] Despliegue en Vercel.
+
+### Crear el primer administrador
+
+Después de aplicar `schema.sql` en Supabase y antes del primer login, ejecuta:
+
+```bash
+node scripts/create-admin.mjs --email "tu@correo.com" --nombre "Tu Nombre" --password "claveSegura"
+```
+
+Si omites `--password`, el script genera una y la imprime. Una vez dentro, puedes crear/gestionar más usuarios desde `/usuarios`.
 
 Pendiente:
 

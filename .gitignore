@@ -21,5 +21,6 @@ oldDatabase/
 .claude/
 tsconfig.tsbuildinfo
 
-# HTMLs generados desde markdown (artefactos)
+# HTMLs y PDFs generados desde markdown (artefactos)
 docs/*.html
+docs/*.pdf
