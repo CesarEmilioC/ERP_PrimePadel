@@ -89,3 +89,38 @@ export async function resetPassword(userId: string): Promise<{ ok: true; passwor
   revalidatePath("/usuarios");
   return { ok: true, password };
 }
+
+export async function updateUsuario(
+  userId: string,
+  input: { nombre?: string; email?: string; password?: string | null },
+): Promise<ActionResult> {
+  await requireAdmin();
+  const sb = sbAdmin();
+
+  const nombre = input.nombre?.trim();
+  const email = input.email?.trim().toLowerCase();
+  const password = input.password?.trim() || null;
+
+  // 1) Actualizar datos de auth (email / password / metadata nombre).
+  const authPayload: { email?: string; password?: string; user_metadata?: { nombre: string } } = {};
+  if (email) authPayload.email = email;
+  if (password) {
+    if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
+    authPayload.password = password;
+  }
+  if (nombre) authPayload.user_metadata = { nombre };
+
+  if (Object.keys(authPayload).length > 0) {
+    const { error } = await sb.auth.admin.updateUserById(userId, authPayload);
+    if (error) return { error: error.message };
+  }
+
+  // 2) Actualizar el perfil (solo nombre — rol y activo tienen sus propias acciones).
+  if (nombre) {
+    const { error } = await sb.from("perfiles").update({ nombre }).eq("user_id", userId);
+    if (error) return { error: error.message };
+  }
+
+  revalidatePath("/usuarios");
+  return { ok: true };
+}

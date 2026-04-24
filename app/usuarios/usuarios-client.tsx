@@ -8,7 +8,7 @@ import { Field, Input, Select } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, Card, EmptyState } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
-import { createUsuario, toggleActivo, cambiarRol, resetPassword } from "./actions";
+import { createUsuario, toggleActivo, cambiarRol, resetPassword, updateUsuario } from "./actions";
 import { formatDate } from "@/lib/utils";
 
 type UsuarioRow = {
@@ -31,6 +31,7 @@ export function UsuariosClient({
   const toast = useToast();
 
   const [showNew, setShowNew] = React.useState(false);
+  const [editar, setEditar] = React.useState<UsuarioRow | null>(null);
   const [credsNuevas, setCredsNuevas] = React.useState<{ email: string; password: string } | null>(null);
   const [passwordReset, setPasswordReset] = React.useState<{ email: string; password: string } | null>(null);
   const [confirmToggle, setConfirmToggle] = React.useState<UsuarioRow | null>(null);
@@ -39,18 +40,38 @@ export function UsuariosClient({
   const [email, setEmail] = React.useState("");
   const [nombre, setNombre] = React.useState("");
   const [rol, setRol] = React.useState<"admin" | "cajero">("cajero");
+  const [nuevaPassword, setNuevaPassword] = React.useState("");
   const [saving, setSaving] = React.useState(false);
+
+  // Campos del diálogo de edición.
+  const [editNombre, setEditNombre] = React.useState("");
+  const [editEmail, setEditEmail] = React.useState("");
+  const [editPassword, setEditPassword] = React.useState("");
+
+  React.useEffect(() => {
+    if (editar) {
+      setEditNombre(editar.nombre);
+      setEditEmail(editar.email ?? "");
+      setEditPassword("");
+    }
+  }, [editar]);
 
   async function submitNew() {
     if (saving) return;
     setSaving(true);
-    const res = await createUsuario({ email, nombre, rol });
+    const res = await createUsuario({
+      email,
+      nombre,
+      rol,
+      password: nuevaPassword.trim() || undefined,
+    });
     setSaving(false);
     if ("error" in res) return toast.push({ message: res.error, tone: "error" });
     setCredsNuevas({ email: res.email, password: res.password });
     setEmail("");
     setNombre("");
     setRol("cajero");
+    setNuevaPassword("");
     setShowNew(false);
     router.refresh();
   }
@@ -76,6 +97,36 @@ export function UsuariosClient({
     setConfirmReset(null);
     if ("error" in res) return toast.push({ message: res.error, tone: "error" });
     setPasswordReset({ email: u.email ?? "", password: res.password });
+  }
+
+  async function submitEdit() {
+    if (!editar || saving) return;
+    const nombreChanged = editNombre.trim() !== editar.nombre;
+    const emailChanged = editEmail.trim().toLowerCase() !== (editar.email ?? "").toLowerCase();
+    const pwChanged = editPassword.trim().length > 0;
+
+    if (!nombreChanged && !emailChanged && !pwChanged) {
+      setEditar(null);
+      return;
+    }
+
+    setSaving(true);
+    const res = await updateUsuario(editar.user_id, {
+      nombre: nombreChanged ? editNombre.trim() : undefined,
+      email: emailChanged ? editEmail.trim() : undefined,
+      password: pwChanged ? editPassword.trim() : null,
+    });
+    setSaving(false);
+    if ("error" in res) return toast.push({ message: res.error, tone: "error" });
+
+    toast.push({
+      message: pwChanged
+        ? "Usuario actualizado. Nueva contraseña activa."
+        : "Usuario actualizado.",
+      tone: "success",
+    });
+    setEditar(null);
+    router.refresh();
   }
 
   async function copy(text: string) {
@@ -140,6 +191,9 @@ export function UsuariosClient({
                     <TD className="text-xs text-muted-foreground">{u.last_sign_in_at ? formatDate(u.last_sign_in_at) : "Nunca"}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => setEditar(u)}>
+                          Editar
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={() => setConfirmReset(u)}>
                           Reset pw
                         </Button>
@@ -172,9 +226,6 @@ export function UsuariosClient({
         }
       >
         <div className="space-y-4">
-          <p className="text-xs text-muted-foreground">
-            El sistema generará una contraseña temporal. El usuario podrá usarla para ingresar y después puedes darle reset a nuevas.
-          </p>
           <Field label="Nombre completo">
             <Input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Juan Pérez" autoFocus />
           </Field>
@@ -187,7 +238,60 @@ export function UsuariosClient({
               <option value="admin">Administrador — acceso total</option>
             </Select>
           </Field>
+          <div>
+            <Field label="Contraseña (opcional)">
+              <Input
+                type="text"
+                value={nuevaPassword}
+                onChange={(e) => setNuevaPassword(e.target.value)}
+                placeholder="Déjala en blanco para que el sistema genere una aleatoria"
+                autoComplete="new-password"
+              />
+            </Field>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Si la escribes tú, esa será la contraseña inicial del usuario. Si la dejas en blanco, el sistema genera una y la muestra en pantalla al guardar.
+            </p>
+          </div>
         </div>
+      </Dialog>
+
+      {/* Editar usuario */}
+      <Dialog
+        open={!!editar}
+        onClose={() => setEditar(null)}
+        title={editar ? `Editar ${editar.nombre}` : "Editar usuario"}
+        size="md"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setEditar(null)}>Cancelar</Button>
+            <Button onClick={submitEdit} disabled={saving}>{saving ? "Guardando..." : "Guardar cambios"}</Button>
+          </>
+        }
+      >
+        {editar ? (
+          <div className="space-y-4">
+            <Field label="Nombre completo">
+              <Input value={editNombre} onChange={(e) => setEditNombre(e.target.value)} autoFocus />
+            </Field>
+            <Field label="Email">
+              <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            </Field>
+            <div>
+              <Field label="Nueva contraseña (dejar en blanco para no cambiarla)">
+                <Input
+                  type="text"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="Mínimo 8 caracteres"
+                  autoComplete="new-password"
+                />
+              </Field>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Al cambiar la contraseña, la anterior deja de funcionar inmediatamente. Si prefieres una aleatoria, usa el botón <strong>Reset pw</strong>.
+              </p>
+            </div>
+          </div>
+        ) : null}
       </Dialog>
 
       {/* Modal con credenciales recién creadas */}
