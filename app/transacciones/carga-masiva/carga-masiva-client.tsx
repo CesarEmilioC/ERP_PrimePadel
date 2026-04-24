@@ -104,6 +104,13 @@ export function CargaMasivaClient({ catalogo }: { catalogo: Catalogo }) {
               <p><strong className="text-white">ubicacion</strong> debe ser el nombre exacto de una ubicación activa (Barra Cajero, Nevera Barra, etc.).</p>
               <p><strong className="text-white">ticket</strong> (opcional) agrupa varias filas en una sola transacción. Ej: una venta de 2 cervezas + 1 gatorade al mismo cliente = 2 filas con el mismo valor en ticket.</p>
             </div>
+            <div className="mt-3 rounded border border-brand-orange/40 bg-brand-orange/5 p-3 text-xs">
+              <p className="font-semibold text-brand-orange">⚠ Importante — sobre <code>precio_unitario</code>:</p>
+              <ul className="mt-1 space-y-1 text-muted-foreground">
+                <li>• En filas con <code className="text-brand-orange">tipo = venta</code> → escribe el <strong className="text-white">precio de venta al cliente</strong>.</li>
+                <li>• En filas con <code className="text-brand-orange">tipo = compra</code> → escribe el <strong className="text-white">costo unitario que pagamos al proveedor</strong>.</li>
+              </ul>
+            </div>
           </Card>
 
           <Card>
@@ -249,7 +256,9 @@ export function CargaMasivaClient({ catalogo }: { catalogo: Catalogo }) {
                       <TH>Producto</TH>
                       <TH>Ubicación</TH>
                       <TH className="text-right">Cant.</TH>
-                      <TH className="text-right">Precio</TH>
+                      <TH className="text-right" title="Para ventas: precio al cliente. Para compras: costo unitario.">
+                        Precio / Costo
+                      </TH>
                       <TH>Ticket</TH>
                     </TR>
                   </THead>
