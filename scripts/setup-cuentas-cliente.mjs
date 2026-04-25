@@ -17,6 +17,24 @@ const INTERNAL_DOMAIN = "primepadel.local";
 
 const CUENTAS = [
   {
+    username: "CesarC",
+    nombre: "Cesar Emilio Castaño Marin",
+    rol: "maestro",
+    password: "CesarPP2026",
+  },
+  {
+    username: "maestro",
+    nombre: "Cuenta Maestra Prime Padel",
+    rol: "maestro",
+    password: "MaestroPP2026",
+  },
+  {
+    username: "admin",
+    nombre: "Administrador del club",
+    rol: "admin",
+    password: "AdminPP2026",
+  },
+  {
     username: "recepcion1",
     nombre: "Recepción 1 (turno mañana)",
     rol: "recepcion",
@@ -27,12 +45,6 @@ const CUENTAS = [
     nombre: "Recepción 2 (turno tarde)",
     rol: "recepcion",
     password: "RecepcionPP2",
-  },
-  {
-    username: "admin",
-    nombre: "Administrador del club",
-    rol: "admin",
-    password: "AdminPP2026",
   },
 ];
 
