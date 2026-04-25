@@ -231,6 +231,9 @@ export function TransaccionesClient({
                       ) : (
                         <span className="text-xs text-muted-foreground italic">desconocido</span>
                       )}
+                      {t.origen === "csv" ? (
+                        <span className="ml-2 rounded bg-blue-950/40 px-1.5 py-0.5 text-[10px] uppercase text-blue-300">CSV</span>
+                      ) : null}
                     </TD>
                     <TD className="max-w-md">{renderItems(t)}</TD>
                     <TD className="text-right font-mono font-semibold text-white">

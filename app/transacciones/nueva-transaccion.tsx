@@ -251,30 +251,50 @@ export function NuevaTransaccion({
         </div>
 
         <Field label="Buscar producto o servicio">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Escribe nombre o código..." />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Escribe nombre o código..."
+            autoFocus
+          />
         </Field>
         {q ? (
           <div className="max-h-56 overflow-auto rounded-md border border-border">
             {productosFiltrados.length === 0 ? (
               <p className="p-3 text-xs text-muted-foreground">Sin resultados</p>
             ) : (
-              productosFiltrados.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => agregar(p)}
-                  className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm hover:bg-muted"
-                >
-                  <span className="flex-1 truncate text-white">
-                    {p.codigo ? <span className="mr-2 font-mono text-xs text-muted-foreground">{p.codigo}</span> : null}
-                    {p.nombre}
-                  </span>
-                  <span className="flex items-center gap-2 text-xs">
-                    {p.es_inventariable ? <Badge tone="gray">stock</Badge> : <Badge tone="blue">{p.tipo === "servicio" ? "servicio" : "no inv."}</Badge>}
-                    {p.precio_detal ? <span className="text-muted-foreground">{formatCOP(p.precio_detal)}</span> : null}
-                  </span>
-                </button>
-              ))
+              productosFiltrados.map((p) => {
+                const stockTotal = p.es_inventariable
+                  ? Object.values(p.stock_por_ubicacion).reduce((a, n) => a + Number(n || 0), 0)
+                  : null;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => agregar(p)}
+                    className="flex w-full items-center justify-between gap-2 border-b border-border px-3 py-2 text-left text-sm hover:bg-muted"
+                  >
+                    <span className="flex-1 truncate text-white">
+                      {p.codigo ? <span className="mr-2 font-mono text-xs text-muted-foreground">{p.codigo}</span> : null}
+                      {p.nombre}
+                    </span>
+                    <span className="flex items-center gap-2 text-xs">
+                      {p.es_inventariable ? (
+                        <span className={`rounded px-1.5 py-0.5 text-[10px] font-mono ${
+                          stockTotal === 0 ? "bg-red-950/40 text-red-300"
+                            : stockTotal! <= 5 ? "bg-yellow-950/40 text-yellow-300"
+                            : "bg-muted text-muted-foreground"
+                        }`}>
+                          stock: {stockTotal}
+                        </span>
+                      ) : (
+                        <Badge tone="blue">{p.tipo === "servicio" ? "servicio" : "no inv."}</Badge>
+                      )}
+                      {p.precio_detal ? <span className="text-muted-foreground">{formatCOP(p.precio_detal)}</span> : null}
+                    </span>
+                  </button>
+                );
+              })
             )}
           </div>
         ) : null}

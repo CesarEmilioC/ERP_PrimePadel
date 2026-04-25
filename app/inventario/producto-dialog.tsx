@@ -44,6 +44,9 @@ export function ProductoDialog({
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = React.useState(false);
+  // "Sin impuesto" debe ser el default cuando es un ítem nuevo.
+  const sinImpuestoId = impuestos.find((i) => i.porcentaje === 0)?.id ?? impuestos[0]?.id ?? "";
+
   const [form, setForm] = React.useState({
     codigo: initial?.codigo ?? "",
     nombre: initial?.nombre ?? "",
@@ -52,7 +55,7 @@ export function ProductoDialog({
     es_inventariable: initial?.es_inventariable ?? true,
     stock_minimo_alerta: initial?.stock_minimo_alerta ?? 0,
     costo_unitario: initial?.costo_unitario ?? 0,
-    impuesto_id: initial?.impuesto_id ?? impuestos.find((i) => i.porcentaje === 0)?.id ?? impuestos[0]?.id ?? "",
+    impuesto_id: initial?.impuesto_id ?? sinImpuestoId,
     incluye_impuesto_en_precio: initial?.incluye_impuesto_en_precio ?? true,
     unidad_medida: initial?.unidad_medida ?? "unidad",
     descripcion_larga: initial?.descripcion_larga ?? "",
@@ -63,6 +66,8 @@ export function ProductoDialog({
     visible_en_factura: initial?.visible_en_factura ?? true,
     activo: initial?.activo ?? true,
   });
+
+  const esServicio = form.tipo === "servicio";
 
   const [preciosState, setPreciosState] = React.useState<Record<string, string>>(() => {
     const seed: Record<string, string> = {};
@@ -138,45 +143,53 @@ export function ProductoDialog({
             {categorias.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
           </Select>
         </Field>
-        <Field label="¿Se inventaría?" hint="Solo aplica a productos. Servicios nunca tienen stock.">
-          <Select
-            value={form.es_inventariable ? "si" : "no"}
-            onChange={(e) => setForm({ ...form, es_inventariable: e.target.value === "si" })}
-            disabled={form.tipo === "servicio"}
-          >
-            <option value="si">Sí</option>
-            <option value="no">No</option>
-          </Select>
-        </Field>
-        <Field label="Stock mínimo (alerta)">
-          <Input type="number" value={form.stock_minimo_alerta} onChange={(e) => setForm({ ...form, stock_minimo_alerta: Number(e.target.value) || 0 })} />
-        </Field>
+        {!esServicio ? (
+          <>
+            <Field label="¿Se inventaría?" hint="Productos físicos sin stock (ej. promo): elige No.">
+              <Select
+                value={form.es_inventariable ? "si" : "no"}
+                onChange={(e) => setForm({ ...form, es_inventariable: e.target.value === "si" })}
+              >
+                <option value="si">Sí</option>
+                <option value="no">No</option>
+              </Select>
+            </Field>
+            {form.es_inventariable ? (
+              <Field label="Stock mínimo (alerta)">
+                <Input type="number" value={form.stock_minimo_alerta} onChange={(e) => setForm({ ...form, stock_minimo_alerta: Number(e.target.value) || 0 })} />
+              </Field>
+            ) : null}
+          </>
+        ) : null}
         {isMaestro ? (
           <Field label="Costo unitario">
             <Input type="number" value={form.costo_unitario} onChange={(e) => setForm({ ...form, costo_unitario: Number(e.target.value) || 0 })} />
           </Field>
         ) : null}
-        <Field label="Impuesto">
+        <Field label="Impuesto" hint="Solo informativo. Si no aplica, deja 'Sin impuesto'.">
           <Select value={form.impuesto_id ?? ""} onChange={(e) => setForm({ ...form, impuesto_id: e.target.value })}>
-            <option value="">—</option>
             {impuestos.map((i) => <option key={i.id} value={i.id}>{i.nombre}</option>)}
           </Select>
         </Field>
-        <Field label="Unidad de medida">
+        <Field label="Unidad de medida" hint={esServicio ? "Ej. hora, sesión, paquete" : "Ej. unidad, gr, ml"}>
           <Input value={form.unidad_medida ?? ""} onChange={(e) => setForm({ ...form, unidad_medida: e.target.value })} />
         </Field>
-        <Field label="Marca">
-          <Input value={form.marca ?? ""} onChange={(e) => setForm({ ...form, marca: e.target.value })} />
-        </Field>
-        <Field label="Modelo">
-          <Input value={form.modelo ?? ""} onChange={(e) => setForm({ ...form, modelo: e.target.value })} />
-        </Field>
-        <Field label="Referencia fábrica">
-          <Input value={form.referencia_fabrica ?? ""} onChange={(e) => setForm({ ...form, referencia_fabrica: e.target.value })} />
-        </Field>
-        <Field label="Código de barras">
-          <Input value={form.codigo_barras ?? ""} onChange={(e) => setForm({ ...form, codigo_barras: e.target.value })} />
-        </Field>
+        {!esServicio ? (
+          <>
+            <Field label="Marca">
+              <Input value={form.marca ?? ""} onChange={(e) => setForm({ ...form, marca: e.target.value })} />
+            </Field>
+            <Field label="Modelo">
+              <Input value={form.modelo ?? ""} onChange={(e) => setForm({ ...form, modelo: e.target.value })} />
+            </Field>
+            <Field label="Referencia fábrica">
+              <Input value={form.referencia_fabrica ?? ""} onChange={(e) => setForm({ ...form, referencia_fabrica: e.target.value })} />
+            </Field>
+            <Field label="Código de barras">
+              <Input value={form.codigo_barras ?? ""} onChange={(e) => setForm({ ...form, codigo_barras: e.target.value })} />
+            </Field>
+          </>
+        ) : null}
         <Field label="Estado">
           <Select value={form.activo ? "si" : "no"} onChange={(e) => setForm({ ...form, activo: e.target.value === "si" })}>
             <option value="si">Activo</option>
