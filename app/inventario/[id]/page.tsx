@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { getCategorias, getImpuestos, getListasPrecios, getUbicaciones } from "@/lib/queries";
+import { requireAdmin } from "@/lib/auth";
 import { DetalleClient } from "./detalle-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductoDetallePage({ params }: { params: Promise<{ id: string }> }) {
+  const perfil = await requireAdmin();
   const { id } = await params;
   const sb = sbAdmin();
 
@@ -49,6 +51,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}
       impuestos={impuestos.map((i) => ({ id: i.id, nombre: i.nombre, porcentaje: Number(i.porcentaje) }))}
       listasPrecios={listasPrecios.map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, es_default: l.es_default }))}
+      isMaestro={perfil.rol === "maestro"}
     />
   );
 }

@@ -1,10 +1,12 @@
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { getCategorias, getUbicaciones, getImpuestos, getListasPrecios } from "@/lib/queries";
+import { requireAdmin } from "@/lib/auth";
 import { InventarioClient, type InventarioRow } from "./inventario-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function InventarioPage() {
+  const perfil = await requireAdmin();
   const sb = sbAdmin();
 
   const [{ data: productos }, { data: stockRows }, { data: precios }, categorias, ubicaciones, impuestos, listasPrecios] =
@@ -71,6 +73,7 @@ export default async function InventarioPage() {
       ubicaciones={ubicaciones.filter((u) => u.activa)}
       impuestos={impuestos}
       listasPrecios={listasPrecios}
+      isMaestro={perfil.rol === "maestro"}
     />
   );
 }

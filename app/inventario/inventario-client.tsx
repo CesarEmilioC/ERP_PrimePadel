@@ -29,13 +29,14 @@ export type InventarioRow = {
 };
 
 export function InventarioClient({
-  rows, categorias, ubicaciones, impuestos, listasPrecios,
+  rows, categorias, ubicaciones, impuestos, listasPrecios, isMaestro,
 }: {
   rows: InventarioRow[];
   categorias: { id: string; nombre: string }[];
   ubicaciones: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
+  isMaestro: boolean;
 }) {
   const [q, setQ] = React.useState("");
   const [fCats, setFCats] = React.useState<string[]>([]);
@@ -204,6 +205,7 @@ export function InventarioClient({
           categorias={categorias}
           impuestos={impuestos}
           listasPrecios={listasPrecios}
+          isMaestro={isMaestro}
         />
       ) : null}
     </div>

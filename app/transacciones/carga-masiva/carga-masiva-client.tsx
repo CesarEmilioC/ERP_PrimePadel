@@ -11,7 +11,7 @@ import { parseCSV, agruparPorTicket, CSV_TEMPLATE, type Catalogo, type ParseResu
 import { importarTransacciones } from "./actions";
 import { formatCOP, formatDate } from "@/lib/utils";
 
-export function CargaMasivaClient({ catalogo }: { catalogo: Catalogo }) {
+export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo; soloVentas?: boolean }) {
   const router = useRouter();
   const toast = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -36,7 +36,24 @@ export function CargaMasivaClient({ catalogo }: { catalogo: Catalogo }) {
     setResumen(null);
     const text = await file.text();
     const parsed = parseCSV(text, catalogo);
-    setResult(parsed);
+    // Si el usuario solo puede registrar ventas, marcamos las filas de compra/traslado como inválidas.
+    if (soloVentas) {
+      const movidos: typeof parsed.invalid = [];
+      const validasFinal = parsed.valid.filter((r) => {
+        if (r.tipo !== "venta") {
+          movidos.push({
+            rowNumber: r.rowNumber,
+            raw: { fecha: r.fecha, tipo: r.tipo, codigo_producto: r.producto_codigo, ubicacion: r.ubicacion_nombre, cantidad: String(r.cantidad) },
+            errors: [`Tu rol solo permite registrar ventas; este renglón es "${r.tipo}".`],
+          });
+          return false;
+        }
+        return true;
+      });
+      setResult({ valid: validasFinal, invalid: [...parsed.invalid, ...movidos], total: parsed.total });
+    } else {
+      setResult(parsed);
+    }
   }
 
   async function confirmar() {

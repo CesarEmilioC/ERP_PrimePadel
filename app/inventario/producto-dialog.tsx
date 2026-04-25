@@ -30,7 +30,7 @@ type Producto = {
 };
 
 export function ProductoDialog({
-  open, onClose, initial, precios, categorias, impuestos, listasPrecios,
+  open, onClose, initial, precios, categorias, impuestos, listasPrecios, isMaestro,
 }: {
   open: boolean;
   onClose: () => void;
@@ -39,6 +39,7 @@ export function ProductoDialog({
   categorias: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
+  isMaestro: boolean;
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -150,9 +151,11 @@ export function ProductoDialog({
         <Field label="Stock mínimo (alerta)">
           <Input type="number" value={form.stock_minimo_alerta} onChange={(e) => setForm({ ...form, stock_minimo_alerta: Number(e.target.value) || 0 })} />
         </Field>
-        <Field label="Costo unitario">
-          <Input type="number" value={form.costo_unitario} onChange={(e) => setForm({ ...form, costo_unitario: Number(e.target.value) || 0 })} />
-        </Field>
+        {isMaestro ? (
+          <Field label="Costo unitario">
+            <Input type="number" value={form.costo_unitario} onChange={(e) => setForm({ ...form, costo_unitario: Number(e.target.value) || 0 })} />
+          </Field>
+        ) : null}
         <Field label="Impuesto">
           <Select value={form.impuesto_id ?? ""} onChange={(e) => setForm({ ...form, impuesto_id: e.target.value })}>
             <option value="">—</option>
@@ -184,24 +187,30 @@ export function ProductoDialog({
           <Textarea rows={2} value={form.descripcion_larga ?? ""} onChange={(e) => setForm({ ...form, descripcion_larga: e.target.value })} />
         </Field>
 
-        <div className="md:col-span-2">
-          <h3 className="mb-2 mt-2 text-sm font-semibold text-white">Precios por lista</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Deja en blanco o 0 las listas que no apliquen. "Detal" es el precio por defecto al cliente final.
-          </p>
-          <div className="grid gap-3 md:grid-cols-3">
-            {listasPrecios.map((l) => (
-              <Field key={l.id} label={l.nombre + (l.es_default ? " (default)" : "")}>
-                <Input
-                  type="number"
-                  value={preciosState[l.id] ?? ""}
-                  onChange={(e) => setPreciosState({ ...preciosState, [l.id]: e.target.value })}
-                  placeholder="0"
-                />
-              </Field>
-            ))}
+        {isMaestro ? (
+          <div className="md:col-span-2">
+            <h3 className="mb-2 mt-2 text-sm font-semibold text-white">Precios por lista</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Deja en blanco o 0 las listas que no apliquen. "Detal" es el precio por defecto al cliente final.
+            </p>
+            <div className="grid gap-3 md:grid-cols-3">
+              {listasPrecios.map((l) => (
+                <Field key={l.id} label={l.nombre + (l.es_default ? " (default)" : "")}>
+                  <Input
+                    type="number"
+                    value={preciosState[l.id] ?? ""}
+                    onChange={(e) => setPreciosState({ ...preciosState, [l.id]: e.target.value })}
+                    placeholder="0"
+                  />
+                </Field>
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="md:col-span-2 rounded border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
+            Los costos y precios solo los gestiona el rol Maestro. Pídele al maestro que los actualice si fuera necesario.
+          </div>
+        )}
       </div>
     </Dialog>
   );

@@ -2,11 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { sbAdmin } from "@/lib/supabase/admin-server";
-import { requireAdmin } from "@/lib/auth";
+import { requireMaestro, usernameToEmail, type Rol } from "@/lib/auth";
 
 export type CreateUsuarioResult =
-  | { ok: true; email: string; password: string }
+  | { ok: true; usuario: string; password: string }
   | { error: string };
+
+type ActionResult = { ok: true } | { error: string };
+
+const ROLES_VALIDOS: Rol[] = ["maestro", "admin", "recepcion"];
 
 function generatePassword(): string {
   const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
@@ -17,23 +21,33 @@ function generatePassword(): string {
   return pw;
 }
 
+function validarUsername(s: string): string | null {
+  if (!/^[a-z0-9._-]{3,30}$/.test(s)) {
+    return "El usuario debe tener entre 3 y 30 caracteres y solo puede contener letras, números, punto, guion o guion bajo.";
+  }
+  return null;
+}
+
 export async function createUsuario(input: {
-  email: string;
+  usuario: string;
   nombre: string;
-  rol: "admin" | "cajero";
+  rol: Rol;
   password?: string;
 }): Promise<CreateUsuarioResult> {
-  await requireAdmin();
+  await requireMaestro();
 
-  const email = input.email.trim().toLowerCase();
+  const usuario = input.usuario.trim().toLowerCase();
   const nombre = input.nombre.trim();
-  if (!email || !nombre) return { error: "Email y nombre son obligatorios." };
-  if (!["admin", "cajero"].includes(input.rol)) return { error: "Rol inválido." };
+  if (!usuario || !nombre) return { error: "Usuario y nombre son obligatorios." };
+  const errUser = validarUsername(usuario);
+  if (errUser) return { error: errUser };
+  if (!ROLES_VALIDOS.includes(input.rol)) return { error: "Rol inválido." };
 
   const password = input.password?.trim() || generatePassword();
   if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
 
   const sb = sbAdmin();
+  const email = usernameToEmail(usuario);
 
   const { data: created, error: e1 } = await sb.auth.admin.createUser({
     email,
@@ -54,27 +68,25 @@ export async function createUsuario(input: {
   });
 
   if (e2) {
-    // Rollback: si falla el perfil, eliminamos el auth user para no dejar huérfanos.
     await sb.auth.admin.deleteUser(created.user.id);
     return { error: e2.message };
   }
 
   revalidatePath("/usuarios");
-  return { ok: true, email, password };
+  return { ok: true, usuario, password };
 }
 
-type ActionResult = { ok: true } | { error: string };
-
 export async function toggleActivo(userId: string, activo: boolean): Promise<ActionResult> {
-  await requireAdmin();
+  await requireMaestro();
   const { error } = await sbAdmin().from("perfiles").update({ activo }).eq("user_id", userId);
   if (error) return { error: error.message };
   revalidatePath("/usuarios");
   return { ok: true };
 }
 
-export async function cambiarRol(userId: string, rol: "admin" | "cajero"): Promise<ActionResult> {
-  await requireAdmin();
+export async function cambiarRol(userId: string, rol: Rol): Promise<ActionResult> {
+  await requireMaestro();
+  if (!ROLES_VALIDOS.includes(rol)) return { error: "Rol inválido." };
   const { error } = await sbAdmin().from("perfiles").update({ rol }).eq("user_id", userId);
   if (error) return { error: error.message };
   revalidatePath("/usuarios");
@@ -82,7 +94,7 @@ export async function cambiarRol(userId: string, rol: "admin" | "cajero"): Promi
 }
 
 export async function resetPassword(userId: string): Promise<{ ok: true; password: string } | { error: string }> {
-  await requireAdmin();
+  await requireMaestro();
   const password = generatePassword();
   const { error } = await sbAdmin().auth.admin.updateUserById(userId, { password });
   if (error) return { error: error.message };
@@ -92,18 +104,22 @@ export async function resetPassword(userId: string): Promise<{ ok: true; passwor
 
 export async function updateUsuario(
   userId: string,
-  input: { nombre?: string; email?: string; password?: string | null },
+  input: { nombre?: string; usuario?: string; password?: string | null },
 ): Promise<ActionResult> {
-  await requireAdmin();
+  await requireMaestro();
   const sb = sbAdmin();
 
   const nombre = input.nombre?.trim();
-  const email = input.email?.trim().toLowerCase();
+  const usuario = input.usuario?.trim().toLowerCase();
   const password = input.password?.trim() || null;
 
-  // 1) Actualizar datos de auth (email / password / metadata nombre).
   const authPayload: { email?: string; password?: string; user_metadata?: { nombre: string } } = {};
-  if (email) authPayload.email = email;
+
+  if (usuario) {
+    const errUser = validarUsername(usuario);
+    if (errUser) return { error: errUser };
+    authPayload.email = usernameToEmail(usuario);
+  }
   if (password) {
     if (password.length < 8) return { error: "La contraseña debe tener al menos 8 caracteres." };
     authPayload.password = password;
@@ -115,7 +131,6 @@ export async function updateUsuario(
     if (error) return { error: error.message };
   }
 
-  // 2) Actualizar el perfil (solo nombre — rol y activo tienen sus propias acciones).
   if (nombre) {
     const { error } = await sb.from("perfiles").update({ nombre }).eq("user_id", userId);
     if (error) return { error: error.message };

@@ -23,10 +23,11 @@ export type DetalleProps = {
   categorias: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
+  isMaestro: boolean;
 };
 
 export function DetalleClient(props: DetalleProps) {
-  const { producto, ubicacionesConStock, ubicacionesDisponibles, precios, historialMensual, ajustes, categorias, impuestos, listasPrecios } = props;
+  const { producto, ubicacionesConStock, ubicacionesDisponibles, precios, historialMensual, ajustes, categorias, impuestos, listasPrecios, isMaestro } = props;
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = React.useState(false);
@@ -69,7 +70,7 @@ export function DetalleClient(props: DetalleProps) {
             <Button onClick={() => setAjustando(true)}>Ajuste de inventario</Button>
           ) : null}
           <Button variant="outline" onClick={() => setEditing(true)}>Editar</Button>
-          <Button variant="ghost" onClick={() => setEliminando(true)}>Eliminar</Button>
+          {isMaestro ? <Button variant="ghost" onClick={() => setEliminando(true)}>Eliminar</Button> : null}
         </div>
       </div>
 
@@ -189,6 +190,7 @@ export function DetalleClient(props: DetalleProps) {
           categorias={categorias}
           impuestos={impuestos}
           listasPrecios={listasPrecios}
+          isMaestro={isMaestro}
         />
       ) : null}
 

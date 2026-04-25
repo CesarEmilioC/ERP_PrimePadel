@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <Image src="/logo.png" alt="Prime Padel" width={240} height={72} className="h-20 w-auto brightness-150" priority />
           <div>
             <h1 className="text-xl font-bold text-white">Ingreso al ERP</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Usa las credenciales que te entregó el administrador.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Ingresa el usuario y contraseña que te entregó el administrador.</p>
           </div>
         </div>
 

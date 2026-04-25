@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { registrarTransaccion, editarTransaccion } from "./actions";
 import { formatCOP, formatInt } from "@/lib/utils";
+import type { Rol } from "@/lib/auth";
 
 type ProductoOpt = {
   id: string;
@@ -39,7 +40,7 @@ export type EditarPayload = {
 };
 
 export function NuevaTransaccion({
-  open, onClose, productos, ubicaciones, listasPrecios, editar,
+  open, onClose, productos, ubicaciones, listasPrecios, editar, rol,
 }: {
   open: boolean;
   onClose: () => void;
@@ -47,7 +48,9 @@ export function NuevaTransaccion({
   ubicaciones: { id: string; nombre: string }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
   editar?: EditarPayload | null;
+  rol: Rol;
 }) {
+  const esRecepcion = rol === "recepcion";
   const router = useRouter();
   const toast = useToast();
   const [tipo, setTipo] = React.useState<"venta" | "compra" | "traslado">("venta");
@@ -225,22 +228,26 @@ export function NuevaTransaccion({
             <p className="text-sm font-semibold text-white">Venta</p>
             <p className="text-xs text-muted-foreground">Sale stock de una ubicación. Precio = lo que paga el cliente.</p>
           </button>
-          <button
-            type="button"
-            onClick={() => cambiarTipo("compra")}
-            className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "compra" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
-          >
-            <p className="text-sm font-semibold text-white">Compra / Ingreso</p>
-            <p className="text-xs text-muted-foreground">Entra stock a una ubicación. Precio = costo del proveedor.</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => cambiarTipo("traslado")}
-            className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "traslado" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
-          >
-            <p className="text-sm font-semibold text-white">Traslado</p>
-            <p className="text-xs text-muted-foreground">Mueve stock entre dos ubicaciones del club (no es venta ni compra).</p>
-          </button>
+          {!esRecepcion ? (
+            <>
+              <button
+                type="button"
+                onClick={() => cambiarTipo("compra")}
+                className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "compra" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
+              >
+                <p className="text-sm font-semibold text-white">Compra / Ingreso</p>
+                <p className="text-xs text-muted-foreground">Entra stock a una ubicación. Precio = costo del proveedor.</p>
+              </button>
+              <button
+                type="button"
+                onClick={() => cambiarTipo("traslado")}
+                className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "traslado" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
+              >
+                <p className="text-sm font-semibold text-white">Traslado</p>
+                <p className="text-xs text-muted-foreground">Mueve stock entre dos ubicaciones del club (no es venta ni compra).</p>
+              </button>
+            </>
+          ) : null}
         </div>
 
         <Field label="Buscar producto o servicio">

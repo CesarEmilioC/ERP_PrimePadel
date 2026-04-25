@@ -14,6 +14,10 @@ type ActionResult<T = unknown> =
 export async function registrarTransaccion(input: unknown): Promise<ActionResult<{ id: string }>> {
   const perfil = await requireProfile();
   const parsed = transaccionSchema.parse(input);
+  // Recepción solo puede registrar ventas.
+  if (perfil.rol === "recepcion" && parsed.tipo !== "venta") {
+    return { error: "Tu rol solo permite registrar ventas. Pídele a un admin que registre las compras y traslados." };
+  }
   const { data, error } = await sbAdmin().rpc("registrar_transaccion", {
     p_tipo: parsed.tipo,
     p_fecha: parsed.fecha ?? null,
@@ -58,6 +62,11 @@ export async function deleteTransaccion(id: string): Promise<ActionResult> {
 export async function editarTransaccion(id: string, input: unknown): Promise<ActionResult<{ newId: string }>> {
   const perfil = await requireProfile();
   const parsed = transaccionSchema.parse(input);
+
+  // Recepción solo puede tener ventas.
+  if (perfil.rol === "recepcion" && parsed.tipo !== "venta") {
+    return { error: "Tu rol solo permite editar ventas." };
+  }
 
   const original = await fetchTxParaReversa(id);
   if (!original) return { error: "Transacción no encontrada" };
@@ -187,17 +196,18 @@ async function fetchTxCompleta(id: string): Promise<TxCompleta | null> {
 }
 
 function checarPermisoEdicion(
-  perfil: { rol: "admin" | "cajero"; user_id: string },
+  perfil: { rol: "maestro" | "admin" | "recepcion"; user_id: string },
   tx: TxParaReversa,
 ): { ok: true } | { ok: false; error: string } {
-  if (perfil.rol === "admin") return { ok: true };
-  // Cajero: solo si la transacción es del día actual y suya.
+  // Maestro tiene control total.
+  if (perfil.rol === "maestro") return { ok: true };
+  // Admin y recepción: solo si la transacción es suya y del día actual.
   const esSuya = tx.usuario_id === perfil.user_id;
   const esHoy = mismaFechaLocal(tx.fecha, new Date());
   if (esSuya && esHoy) return { ok: true };
   return {
     ok: false,
-    error: "Solo el administrador puede modificar transacciones de otros días o de otros usuarios.",
+    error: "Solo el rol Maestro puede modificar transacciones de otros días o de otros usuarios.",
   };
 }
 

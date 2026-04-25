@@ -5,7 +5,7 @@ import { CargaMasivaClient } from "./carga-masiva-client";
 export const dynamic = "force-dynamic";
 
 export default async function CargaMasivaPage() {
-  await requireProfile();
+  const perfil = await requireProfile();
   const sb = sbAdmin();
 
   const [{ data: productos }, { data: ubicaciones }, { data: stock }] = await Promise.all([
@@ -35,6 +35,7 @@ export default async function CargaMasivaPage() {
         productos: productosOpt,
         ubicaciones: (ubicaciones ?? []).map((u: any) => ({ id: u.id, nombre: u.nombre, activa: u.activa })),
       }}
+      soloVentas={perfil.rol === "recepcion"}
     />
   );
 }

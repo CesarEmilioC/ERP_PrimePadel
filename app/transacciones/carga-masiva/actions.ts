@@ -19,6 +19,11 @@ export async function importarTransacciones(grupos: TransaccionAgrupada[]): Prom
   const fallidas: { ticket: string | null; razon: string }[] = [];
 
   for (const g of grupos) {
+    // Recepción solo puede importar ventas.
+    if (perfil.rol === "recepcion" && g.tipo !== "venta") {
+      fallidas.push({ ticket: g.ticket, razon: "Tu rol solo permite registrar ventas." });
+      continue;
+    }
     const items = g.items.map((it) => ({
       producto_id: it.producto_id,
       ubicacion_origen_id: g.tipo === "venta" ? it.ubicacion_id : null,

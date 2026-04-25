@@ -2,23 +2,31 @@ import Link from "next/link";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { Card } from "@/components/ui/table";
 import { formatCOP, formatInt } from "@/lib/utils";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, type Rol } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-const ALL_CARDS = [
-  { href: "/inventario", title: "Inventario", desc: "Ver, crear y editar productos. Control de stock por ubicación.", adminOnly: false },
-  { href: "/transacciones", title: "Transacciones", desc: "Registrar ventas y compras; revisar historial.", adminOnly: false },
-  { href: "/dashboard", title: "Dashboard", desc: "Consumo mensual, top productos y alertas.", adminOnly: true },
-  { href: "/ubicaciones", title: "Ubicaciones", desc: "Administrar bodegas, neveras y barras.", adminOnly: true },
-  { href: "/categorias", title: "Categorías", desc: "Organizar productos y servicios.", adminOnly: true },
-  { href: "/usuarios", title: "Usuarios", desc: "Crear y gestionar las cuentas del personal.", adminOnly: true },
+const RANK: Record<Rol, number> = { recepcion: 1, admin: 2, maestro: 3 };
+
+const ALL_CARDS: { href: string; title: string; desc: string; minRol: Rol }[] = [
+  { href: "/transacciones", title: "Transacciones", desc: "Registrar ventas, compras y traslados.", minRol: "recepcion" },
+  { href: "/inventario", title: "Inventario", desc: "Ver, crear y editar productos. Control de stock por ubicación.", minRol: "admin" },
+  { href: "/ubicaciones", title: "Ubicaciones", desc: "Administrar bodegas, neveras y barras.", minRol: "admin" },
+  { href: "/dashboard", title: "Dashboard", desc: "Consumo mensual, top productos y alertas.", minRol: "maestro" },
+  { href: "/categorias", title: "Categorías", desc: "Organizar productos y servicios.", minRol: "maestro" },
+  { href: "/usuarios", title: "Usuarios", desc: "Crear y gestionar las cuentas del personal.", minRol: "maestro" },
 ];
+
+const ROL_LABEL: Record<Rol, string> = {
+  maestro: "MAESTRO",
+  admin: "ADMIN",
+  recepcion: "RECEPCIÓN",
+};
 
 export default async function Home() {
   const perfil = await requireProfile();
-  const isAdmin = perfil.rol === "admin";
-  const cards = ALL_CARDS.filter((c) => !c.adminOnly || isAdmin);
+  const isMaestro = perfil.rol === "maestro";
+  const cards = ALL_CARDS.filter((c) => RANK[perfil.rol] >= RANK[c.minRol]);
 
   const sb = sbAdmin();
   const [{ count: nProd }, { count: nInv }, { count: nUbi }, { count: nCat }, { count: nTx }, { count: nAlertas }, { data: stockTot }] =
@@ -43,7 +51,7 @@ export default async function Home() {
             Hola, <span className="text-brand-orange">{perfil.nombre.split(" ")[0]}</span>
           </h1>
           <span className="rounded bg-muted px-2 py-0.5 text-xs uppercase tracking-wide text-muted-foreground">
-            {perfil.rol}
+            {ROL_LABEL[perfil.rol]}
           </span>
         </div>
         <p className="max-w-2xl text-muted-foreground">
@@ -61,7 +69,7 @@ export default async function Home() {
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Stock total actual</p>
           <p className="mt-1 text-3xl font-bold text-white">{formatInt(totalStock)}</p>
-          {isAdmin ? (
+          {isMaestro ? (
             <p className="mt-1 text-xs text-muted-foreground">Valor estimado en costo: {formatCOP(valorInv)}</p>
           ) : (
             <p className="mt-1 text-xs text-muted-foreground">unidades físicas</p>

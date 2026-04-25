@@ -1,12 +1,12 @@
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { getCategorias, getVentasHistoricasPorMes } from "@/lib/queries";
-import { requireAdmin } from "@/lib/auth";
+import { requireMaestro } from "@/lib/auth";
 import { DashboardClient } from "./dashboard-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  await requireAdmin();
+  await requireMaestro();
   const sb = sbAdmin();
 
   const [{ count: nProductos }, { count: nInv }, { count: nUbi }, { data: stockTotales }, { count: nAlertas }, historico, categorias] =

@@ -12,8 +12,15 @@ export function LoginForm({ defaultError, next }: { defaultError?: string | null
   return (
     <form action={action} className="space-y-4 rounded-lg border border-border bg-card p-6">
       <input type="hidden" name="next" value={next} />
-      <Field label="Email">
-        <Input type="email" name="email" autoComplete="email" required autoFocus placeholder="tu@correo.com" />
+      <Field label="Usuario">
+        <Input
+          type="text"
+          name="usuario"
+          autoComplete="username"
+          required
+          autoFocus
+          placeholder="recepcion1, admin, maestro..."
+        />
       </Field>
       <Field label="Contraseña">
         <Input type="password" name="password" autoComplete="current-password" required placeholder="••••••••" />

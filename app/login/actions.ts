@@ -3,24 +3,26 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sbAdmin } from "@/lib/supabase/admin-server";
+import { usernameToEmail } from "@/lib/auth";
 
 export async function signIn(_prev: unknown, formData: FormData): Promise<{ error: string | null }> {
-  const email = String(formData.get("email") ?? "").trim();
+  const usuario = String(formData.get("usuario") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/");
 
-  if (!email || !password) {
-    return { error: "Ingresa tu email y contraseña." };
+  if (!usuario || !password) {
+    return { error: "Ingresa tu usuario y contraseña." };
   }
+
+  const email = usernameToEmail(usuario);
 
   const sb = await createSupabaseServerClient();
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
 
   if (error || !data.user) {
-    return { error: "Email o contraseña incorrectos." };
+    return { error: "Usuario o contraseña incorrectos." };
   }
 
-  // Check that the user has an active perfil
   const { data: perfil } = await sbAdmin()
     .from("perfiles")
     .select("activo")
@@ -29,7 +31,7 @@ export async function signIn(_prev: unknown, formData: FormData): Promise<{ erro
 
   if (!perfil) {
     await sb.auth.signOut();
-    return { error: "Tu usuario no tiene perfil asignado. Contacta al administrador." };
+    return { error: "Tu cuenta no tiene perfil asignado. Contacta al administrador." };
   }
   if (!perfil.activo) {
     await sb.auth.signOut();

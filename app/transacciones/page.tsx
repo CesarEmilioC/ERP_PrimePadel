@@ -1,6 +1,6 @@
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { getUbicaciones, getListasPrecios } from "@/lib/queries";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, emailToDisplayUsername } from "@/lib/auth";
 import { TransaccionesClient } from "./transacciones-client";
 
 export const dynamic = "force-dynamic";
@@ -9,18 +9,32 @@ export default async function TransaccionesPage() {
   const perfil = await requireProfile();
   const sb = sbAdmin();
 
-  const [{ data: txs }, { data: productos }, { data: stock }, { data: precios }, ubicaciones, listasPrecios] =
-    await Promise.all([
-      sb.from("transacciones").select(`
-        id, tipo, fecha, total, notas, origen, usuario_id,
-        transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, lista_precio_id, productos(codigo, nombre))
-      `).order("fecha", { ascending: false }).limit(200),
-      sb.from("productos").select("id, codigo, nombre, tipo, es_inventariable, activo, costo_unitario").eq("activo", true).order("nombre", { ascending: true }),
-      sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
-      sb.from("precios_producto").select("producto_id, precio, listas_precios(es_default)"),
-      getUbicaciones(),
-      getListasPrecios(),
-    ]);
+  // Recepción solo ve ventas; admin/maestro ven todo.
+  const txsQuery = sb.from("transacciones").select(`
+    id, tipo, fecha, total, notas, origen, usuario_id,
+    transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, lista_precio_id, productos(codigo, nombre))
+  `).order("fecha", { ascending: false }).limit(200);
+  const txsQueryFinal = perfil.rol === "recepcion" ? txsQuery.eq("tipo", "venta") : txsQuery;
+
+  const [
+    { data: txs },
+    { data: productos },
+    { data: stock },
+    { data: precios },
+    { data: perfilesUsuarios },
+    { data: authList },
+    ubicaciones,
+    listasPrecios,
+  ] = await Promise.all([
+    txsQueryFinal,
+    sb.from("productos").select("id, codigo, nombre, tipo, es_inventariable, activo, costo_unitario").eq("activo", true).order("nombre", { ascending: true }),
+    sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
+    sb.from("precios_producto").select("producto_id, precio, listas_precios(es_default)"),
+    sb.from("perfiles").select("user_id, nombre"),
+    sb.auth.admin.listUsers({ perPage: 500 }),
+    getUbicaciones(),
+    getListasPrecios(),
+  ]);
 
   const stockPorProd = new Map<string, Record<string, number>>();
   for (const s of stock ?? []) {
@@ -48,6 +62,12 @@ export default async function TransaccionesPage() {
 
   const ubiNombrePorId = new Map(ubicaciones.map((u) => [u.id, u.nombre]));
 
+  // Mapa user_id → { nombre, username }
+  const perfilesPorId = new Map((perfilesUsuarios ?? []).map((p: any) => [p.user_id, p.nombre as string]));
+  const usernamesPorId = new Map(
+    (authList?.users ?? []).map((u) => [u.id, emailToDisplayUsername(u.email ?? null)]),
+  );
+
   const transacciones = (txs ?? []).map((t: any) => ({
     id: t.id,
     tipo: t.tipo,
@@ -56,6 +76,8 @@ export default async function TransaccionesPage() {
     notas: t.notas,
     origen: t.origen,
     usuario_id: t.usuario_id,
+    usuario_nombre: t.usuario_id ? (perfilesPorId.get(t.usuario_id) ?? null) : null,
+    usuario_username: t.usuario_id ? (usernamesPorId.get(t.usuario_id) ?? null) : null,
     items: (t.transaccion_items ?? []).map((it: any) => ({
       producto_id: it.producto_id,
       ubicacion_origen_id: it.ubicacion_origen_id,

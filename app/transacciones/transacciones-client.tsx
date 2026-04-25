@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/toast";
 import { NuevaTransaccion, type EditarPayload } from "./nueva-transaccion";
 import { deleteTransaccion } from "./actions";
 import { formatCOP, formatDate, formatInt } from "@/lib/utils";
+import type { Rol } from "@/lib/auth";
 
 type ItemListado = {
   producto_id: string;
@@ -33,8 +34,18 @@ type TransaccionLista = {
   notas: string | null;
   origen: string;
   usuario_id: string | null;
+  usuario_nombre: string | null;
+  usuario_username: string | null;
   items: ItemListado[];
 };
+
+function formatFechaHora(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString("es-CO", {
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
+}
 
 export function TransaccionesClient({
   transacciones, productos, ubicaciones, listasPrecios, perfilActual,
@@ -43,7 +54,7 @@ export function TransaccionesClient({
   productos: any[];
   ubicaciones: { id: string; nombre: string }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
-  perfilActual: { rol: "admin" | "cajero"; user_id: string };
+  perfilActual: { rol: Rol; user_id: string };
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -54,6 +65,9 @@ export function TransaccionesClient({
   const [fHasta, setFHasta] = React.useState<string>("");
   const [borrar, setBorrar] = React.useState<TransaccionLista | null>(null);
 
+  const esRecepcion = perfilActual.rol === "recepcion";
+  const esMaestro = perfilActual.rol === "maestro";
+
   const filtradas = transacciones.filter((t) => {
     if (fTipo !== "todas" && t.tipo !== fTipo) return false;
     if (fDesde && new Date(t.fecha) < new Date(fDesde + "T00:00:00")) return false;
@@ -62,8 +76,10 @@ export function TransaccionesClient({
   });
 
   function puedeEditar(t: TransaccionLista) {
-    if (perfilActual.rol === "admin") return true;
+    if (esMaestro) return true;
     if (t.usuario_id !== perfilActual.user_id) return false;
+    // Si es recepción solo sus ventas (ya filtradas server-side, pero por seguridad).
+    if (esRecepcion && t.tipo !== "venta") return false;
     const fecha = new Date(t.fecha);
     const hoy = new Date();
     return fecha.getFullYear() === hoy.getFullYear()
@@ -130,8 +146,10 @@ export function TransaccionesClient({
         <div>
           <h1 className="text-2xl font-bold">Transacciones</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Registro manual de ventas, compras y traslados. Cada transacción ajusta el inventario automáticamente.
-            El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.
+            {esRecepcion
+              ? "Registra las ventas del turno. Cada transacción queda guardada con tu usuario, fecha y hora."
+              : "Registro manual de ventas, compras y traslados. Cada transacción ajusta el inventario automáticamente."}
+            {esMaestro ? <> El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
           </p>
         </div>
         <div className="flex gap-2">
@@ -145,11 +163,11 @@ export function TransaccionesClient({
       <Card>
         <div className="grid gap-3 md:grid-cols-4">
           <Field label="Tipo">
-            <Select value={fTipo} onChange={(e) => setFTipo(e.target.value as typeof fTipo)}>
-              <option value="todas">Todas</option>
-              <option value="venta">Ventas</option>
-              <option value="compra">Compras</option>
-              <option value="traslado">Traslados</option>
+            <Select value={fTipo} onChange={(e) => setFTipo(e.target.value as typeof fTipo)} disabled={esRecepcion}>
+              <option value="todas">{esRecepcion ? "Ventas" : "Todas"}</option>
+              {!esRecepcion ? <option value="venta">Ventas</option> : null}
+              {!esRecepcion ? <option value="compra">Compras</option> : null}
+              {!esRecepcion ? <option value="traslado">Traslados</option> : null}
             </Select>
           </Field>
           <Field label="Desde">
@@ -178,22 +196,42 @@ export function TransaccionesClient({
           title={transacciones.length === 0 ? "Aún no hay transacciones registradas" : "Sin resultados con esos filtros"}
           description={
             transacciones.length === 0
-              ? "Registra la primera venta, compra o traslado con el botón de arriba. El histórico de Alegra (SEP 2025–ABR 2026) aparece en el Dashboard como gráficas de consumo mensual."
+              ? "Registra la primera transacción con el botón de arriba."
               : "Ajusta los filtros o límpialos para ver más resultados."
           }
         />
       ) : (
         <Card>
           <Table>
-            <THead><TR><TH>Fecha</TH><TH>Tipo</TH><TH>Ítems</TH><TH className="text-right">Total</TH><TH>Notas</TH><TH className="text-right">Acciones</TH></TR></THead>
+            <THead>
+              <TR>
+                <TH>Fecha y hora</TH>
+                <TH>Tipo</TH>
+                <TH>Registró</TH>
+                <TH>Ítems</TH>
+                <TH className="text-right">Total</TH>
+                <TH>Notas</TH>
+                <TH className="text-right">Acciones</TH>
+              </TR>
+            </THead>
             <TBody>
               {filtradas.map((t) => {
                 const editable = puedeEditar(t);
-                const borrable = perfilActual.rol === "admin" || editable;
+                const borrable = esMaestro || editable;
                 return (
                   <TR key={t.id}>
-                    <TD className="whitespace-nowrap text-muted-foreground">{formatDate(t.fecha)}</TD>
+                    <TD className="whitespace-nowrap text-xs text-muted-foreground">{formatFechaHora(t.fecha)}</TD>
                     <TD>{tipoBadge(t.tipo)}</TD>
+                    <TD className="whitespace-nowrap">
+                      {t.usuario_username ? (
+                        <span className="text-white">
+                          <span className="font-mono text-xs">{t.usuario_username}</span>
+                          {t.usuario_nombre ? <span className="ml-1 text-xs text-muted-foreground">({t.usuario_nombre})</span> : null}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">desconocido</span>
+                      )}
+                    </TD>
                     <TD className="max-w-md">{renderItems(t)}</TD>
                     <TD className="text-right font-mono font-semibold text-white">
                       {t.tipo === "traslado" ? <span className="text-muted-foreground">—</span> : formatCOP(t.total)}
@@ -201,16 +239,8 @@ export function TransaccionesClient({
                     <TD className="max-w-xs truncate text-muted-foreground">{t.notas ?? "—"}</TD>
                     <TD className="text-right">
                       <div className="flex justify-end gap-1">
-                        {editable ? (
-                          <Button variant="ghost" size="sm" onClick={() => abrirEdicion(t)}>
-                            Editar
-                          </Button>
-                        ) : null}
-                        {borrable ? (
-                          <Button variant="ghost" size="sm" onClick={() => setBorrar(t)}>
-                            Eliminar
-                          </Button>
-                        ) : null}
+                        {editable ? <Button variant="ghost" size="sm" onClick={() => abrirEdicion(t)}>Editar</Button> : null}
+                        {borrable ? <Button variant="ghost" size="sm" onClick={() => setBorrar(t)}>Eliminar</Button> : null}
                       </div>
                     </TD>
                   </TR>
@@ -228,6 +258,7 @@ export function TransaccionesClient({
         ubicaciones={ubicaciones}
         listasPrecios={listasPrecios}
         editar={editPayload}
+        rol={perfilActual.rol}
       />
 
       <ConfirmDialog
