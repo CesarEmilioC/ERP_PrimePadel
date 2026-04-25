@@ -31,6 +31,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const tieneError = request.nextUrl.searchParams.has("error");
 
   if (!user && !isPublic(path)) {
     const url = new URL("/login", request.url);
@@ -38,7 +39,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && path === "/login") {
+  // Si la sesión existe pero el usuario fue redirigido a /login con error
+  // (perfil borrado, desactivado, etc.), no lo bouncees de vuelta — dejalo
+  // ver el mensaje y volver a loguearse, lo cual reemplaza la sesión vieja.
+  if (user && path === "/login" && !tieneError) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
