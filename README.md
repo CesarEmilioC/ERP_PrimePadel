@@ -61,16 +61,19 @@ Completado:
 
 Pendiente (Fase 2 — versión completa):
 
-- [x] Login con Supabase Auth + roles (admin / cajero).
+- [x] Login por usuario (no email) con Supabase Auth.
+- [x] Tres roles: maestro / admin / recepción con jerarquía.
 - [x] Middleware de protección de rutas.
-- [x] Gestión de usuarios desde `/usuarios` (crear, reset password, desactivar, cambiar rol).
-- [x] Permisos por rol en server actions (borrado restringido a admin, costos solo admin).
+- [x] Gestión de usuarios desde `/usuarios` (crear, editar, reset password, desactivar, cambiar rol).
+- [x] Permisos por rol en server actions (borrado y costos solo maestro; recepción solo ventas).
+- [x] Auditoría visible: cada transacción guarda usuario + fecha y hora exactas.
 - [x] Leyendas del dashboard en lightbox modal.
+- [x] Carga masiva de transacciones por CSV (preview + validación + commit).
+- [x] Edición de transacciones existentes con rollback automático.
+- [x] Traslados de stock entre ubicaciones (form + reversa + edición).
+- [x] Filtros por rango de fechas en transacciones.
+- [x] Dashboard con pestañas (Ventas / Inventario / Alertas), análisis por día de la semana, alertas detalladas por ubicación.
 - [x] Despliegue en Vercel.
-- [ ] Carga masiva de transacciones por CSV (preview + validación + commit).
-- [ ] Edición de transacciones existentes.
-- [ ] Traslado de stock entre ubicaciones (RPC ya existe).
-- [ ] Dashboard: gráficas por día de la semana, rotación de inventario, pestañas separadas.
 - [ ] Importación del inventario inicial físico (cantidades por ubicación) — pendiente de recibir del cliente.
 
 ### Crear el primer administrador
