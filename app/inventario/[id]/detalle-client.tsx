@@ -18,7 +18,7 @@ export type DetalleProps = {
   ubicacionesConStock: { id: string; nombre: string; tipo: string; cantidad: number }[];
   ubicacionesDisponibles: { id: string; nombre: string; tipo: string }[];
   precios: { lista_precio_id: string; precio: number; codigo: string; nombre: string }[];
-  historialMensual: { anio: number; mes: number; cantidad_vendida: number; total: number }[];
+  historialMensual: { anio: number; mes: number; cantidad_vendida: number; total: number; total_estimado?: boolean }[];
   ajustes: { id: string; cantidad_antes: number; cantidad_despues: number; diferencia: number; motivo: string; notas: string | null; fecha: string; ubicaciones: { nombre: string } | null }[];
   categorias: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
@@ -50,7 +50,7 @@ export function DetalleClient(props: DetalleProps) {
         <Link href="/inventario" className="hover:text-brand-orange">← Inventario</Link>
       </div>
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white">{producto.nombre}</h1>
@@ -142,6 +142,11 @@ export function DetalleClient(props: DetalleProps) {
       {historialMensual.length > 0 ? (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-white">Histórico de ventas (mensual)</h2>
+          {historialMensual.some((h) => h.total_estimado) ? (
+            <p className="mb-2 text-xs text-muted-foreground">
+              Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte original solo traía cantidad.
+            </p>
+          ) : null}
           <Table>
             <THead><TR><TH>Período</TH><TH className="text-right">Cantidad</TH><TH className="text-right">Total</TH></TR></THead>
             <TBody>
@@ -149,7 +154,10 @@ export function DetalleClient(props: DetalleProps) {
                 <TR key={`${h.anio}-${h.mes}`}>
                   <TD>{h.anio}-{String(h.mes).padStart(2,"0")}</TD>
                   <TD className="text-right font-mono">{formatInt(h.cantidad_vendida)}</TD>
-                  <TD className="text-right font-mono">{formatCOP(h.total)}</TD>
+                  <TD className="text-right font-mono">
+                    {formatCOP(h.total)}
+                    {h.total_estimado ? <span className="text-brand-orange">*</span> : null}
+                  </TD>
                 </TR>
               ))}
             </TBody>

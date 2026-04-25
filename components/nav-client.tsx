@@ -46,7 +46,7 @@ export function NavClient({ perfil }: { perfil: Perfil }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex h-28 max-w-7xl items-center justify-between gap-4 px-4">
+      <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-4 md:min-h-28 md:flex-nowrap">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="/logo.png"
@@ -54,12 +54,12 @@ export function NavClient({ perfil }: { perfil: Perfil }) {
             width={400}
             height={120}
             priority
-            className="h-24 w-auto brightness-150"
+            className="h-10 w-auto brightness-150 sm:h-16 md:h-24"
           />
           <span className="sr-only">Prime Padel ERP</span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex flex-wrap items-center gap-1">
           {visibles.map((l) => {
             const active = pathname?.startsWith(l.href);
             return (

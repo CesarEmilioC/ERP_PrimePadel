@@ -24,3 +24,7 @@ tsconfig.tsbuildinfo
 # HTMLs y PDFs generados desde markdown (artefactos)
 docs/*.html
 docs/*.pdf
+
+# CSVs de prueba locales
+CSV prueba/
+csv prueba/

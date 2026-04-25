@@ -3,7 +3,7 @@
 import * as React from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { Card, Table, THead, TBody, TR, TH, TD, EmptyState } from "@/components/ui/table";
 import { MultiSelect } from "@/components/ui/multi-select";
@@ -27,6 +27,7 @@ type HistoricoRow = {
 };
 
 type StockPorUbicacion = { ubicacion_id: string; nombre: string; tipo: string; cantidad: number; valor: number };
+type StockTotalPorProducto = { producto_id: string; nombre: string; cantidad_total: number };
 type SkusPorCategoria = { nombre: string; count: number };
 type AlertaDetallada = {
   producto_id: string;
@@ -90,7 +91,7 @@ function Pager({ page, total, pageSize, onChange }: { page: number; total: numbe
 type Tab = "inventario" | "ventas" | "alertas";
 
 export function DashboardClient({
-  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana,
+  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, stockTotalPorProducto,
 }: {
   stats: {
     nProductosActivos: number;
@@ -107,20 +108,40 @@ export function DashboardClient({
   alertasDetalladas: AlertaDetallada[];
   topPorDiaSemana: TopPorDia[];
   ventasPorDiaSemana: VentasPorDia[];
+  stockTotalPorProducto: StockTotalPorProducto[];
 }) {
   const [tab, setTab] = React.useState<Tab>("ventas");
   const [fCats, setFCats] = React.useState<string[]>([]);
+  const [fMesDesde, setFMesDesde] = React.useState<string>("");
+  const [fMesHasta, setFMesHasta] = React.useState<string>("");
   const [vistaTop, setVistaTop] = React.useState<"monto" | "cantidad">("monto");
   const [vistaCat, setVistaCat] = React.useState<"monto" | "cantidad">("monto");
   const [pageMeses, setPageMeses] = React.useState(0);
   const [pageTop, setPageTop] = React.useState(0);
   const [pageSkus, setPageSkus] = React.useState(0);
+  const [pageTodos, setPageTodos] = React.useState(0);
   const [leyendaAbierta, setLeyendaAbierta] = React.useState<null | "categoria">(null);
 
+  // Meses disponibles en el histórico (para selectors).
+  const mesesDisponibles = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const h of historico) set.add(`${h.anio}-${String(h.mes).padStart(2, "0")}`);
+    return [...set].sort();
+  }, [historico]);
+
+  function inRangoFecha(anio: number, mes: number) {
+    const key = `${anio}-${String(mes).padStart(2, "0")}`;
+    if (fMesDesde && key < fMesDesde) return false;
+    if (fMesHasta && key > fMesHasta) return false;
+    return true;
+  }
+
   const catNameSet = new Set(fCats.map((id) => categorias.find((c) => c.id === id)?.nombre).filter(Boolean) as string[]);
-  const filtered = historico.filter((h) =>
-    catNameSet.size === 0 || (h.productos.categorias?.nombre && catNameSet.has(h.productos.categorias.nombre)),
-  );
+  const filtered = historico.filter((h) => {
+    if (catNameSet.size > 0 && !(h.productos.categorias?.nombre && catNameSet.has(h.productos.categorias.nombre))) return false;
+    if (!inRangoFecha(h.anio, h.mes)) return false;
+    return true;
+  });
 
   // ---- Datos derivados ----
   const porMesMap = new Map<string, { key: string; anio: number; mes: number; monto: number }>();
@@ -168,11 +189,44 @@ export function DashboardClient({
     .sort((a, b) => b.total - a.total)
     .slice(0, 5);
 
+  // Datos para BarChart apilado (cada día = 1 fila, cada producto = 1 dataKey)
+  const diaSemanaStackedChart = DIAS_CORTOS.map((d, i) => {
+    const row: Record<string, number | string> = { dia: d };
+    for (const p of top5DiaSemana) row[p.nombre] = p.porDia[i];
+    return row;
+  });
+
   const ventasDiaSemanaChart = DIAS_CORTOS.map((d, i) => ({
     dia: d,
     monto: ventasPorDiaSemana[i]?.monto ?? 0,
     transacciones: ventasPorDiaSemana[i]?.count ?? 0,
   }));
+
+  // Estimación de días de stock restantes por producto.
+  // Cruza ventas históricas (filtradas) con el stock actual.
+  const diasDeStockEstimado = React.useMemo(() => {
+    const ventasPorProd = new Map<string, { nombre: string; cantTotal: number }>();
+    const mesesSet = new Set<string>();
+    for (const h of filtered) {
+      mesesSet.add(`${h.anio}-${h.mes}`);
+      const cur = ventasPorProd.get(h.productos.nombre) ?? { nombre: h.productos.nombre, cantTotal: 0 };
+      cur.cantTotal += h.cantidad_vendida;
+      ventasPorProd.set(h.productos.nombre, cur);
+    }
+    const diasEnHistorico = Math.max(1, mesesSet.size * 30);
+    const stockPorNombre = new Map(stockTotalPorProducto.map((s) => [s.nombre, s.cantidad_total]));
+    const out: { nombre: string; stockActual: number; ventaPorDia: number; diasRestantes: number }[] = [];
+    for (const [nombre, v] of ventasPorProd) {
+      const ventaPorDia = v.cantTotal / diasEnHistorico;
+      if (ventaPorDia <= 0) continue;
+      const stockActual = stockPorNombre.get(nombre) ?? 0;
+      if (stockActual <= 0) continue; // sin stock, ya en alertas
+      const diasRestantes = stockActual / ventaPorDia;
+      out.push({ nombre, stockActual, ventaPorDia, diasRestantes });
+    }
+    return out.sort((a, b) => a.diasRestantes - b.diasRestantes);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, stockTotalPorProducto]);
 
   React.useEffect(() => {
     const totalPagesMeses = Math.ceil(serieMensualTotal.length / PAGE_MESES);
@@ -254,15 +308,37 @@ export function DashboardClient({
       {/* Filtro común para ventas */}
       {tab === "ventas" ? (
         <Card>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Filtrar por categoría</p>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Categoría</p>
               <MultiSelect
                 options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
                 value={fCats}
                 onChange={setFCats}
-                placeholder="Todas las categorías"
+                placeholder="Todas"
               />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Mes desde</p>
+              <Select value={fMesDesde} onChange={(e) => setFMesDesde(e.target.value)}>
+                <option value="">Sin límite inferior</option>
+                {mesesDisponibles.map((m) => <option key={m} value={m}>{m}</option>)}
+              </Select>
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Mes hasta</p>
+              <Select value={fMesHasta} onChange={(e) => setFMesHasta(e.target.value)}>
+                <option value="">Sin límite superior</option>
+                {mesesDisponibles.map((m) => <option key={m} value={m}>{m}</option>)}
+              </Select>
+            </div>
+            <div className="flex items-end">
+              <button
+                onClick={() => { setFCats([]); setFMesDesde(""); setFMesHasta(""); }}
+                className="h-10 w-full rounded-md border border-border px-3 text-sm text-muted-foreground hover:border-brand-orange hover:text-brand-orange"
+              >
+                Limpiar filtros
+              </button>
             </div>
           </div>
         </Card>
@@ -367,25 +443,97 @@ export function DashboardClient({
 
           {hayTransaccionesReales && top5DiaSemana.length > 0 ? (
             <Card>
-              <h2 className="mb-3 text-lg font-semibold text-white">Top 5 productos por día de la semana</h2>
+              <h2 className="mb-3 text-lg font-semibold text-white">Top 5 productos por día de la semana (apilado)</h2>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos.
+              </p>
+              <div className="h-80">
+                <ResponsiveContainer>
+                  <BarChart data={diaSemanaStackedChart}>
+                    <CartesianGrid stroke="#1f1f1f" vertical={false} />
+                    <XAxis dataKey="dia" stroke="#A3A3A3" tick={{ fontSize: 12 }} />
+                    <YAxis stroke="#A3A3A3" tick={{ fontSize: 12 }} tickFormatter={(v) => formatInt(v)} />
+                    <Tooltip content={<DarkTooltip formatter={(v: number) => formatInt(v) + " uds"} />} cursor={{ fill: "#ffffff10" }} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    {top5DiaSemana.map((p, i) => (
+                      <Bar key={p.nombre} dataKey={p.nombre} name={p.nombre} stackId="a" fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          ) : null}
+
+          {/* Tabla paginada de TODAS las cantidades vendidas */}
+          <Card>
+            <h2 className="mb-3 text-lg font-semibold text-white">
+              Cantidades vendidas por producto
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({topTodos.length === 0 ? "0" : `${pageTodos * PAGE_TOP + 1}–${Math.min((pageTodos + 1) * PAGE_TOP, topTodos.length)}`} de {topTodos.length})
+              </span>
+            </h2>
+            <Table>
+              <THead>
+                <TR>
+                  <TH>#</TH>
+                  <TH>Producto</TH>
+                  <TH>Categoría</TH>
+                  <TH className="text-right">Cantidad</TH>
+                  <TH className="text-right">Monto</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {topTodos.slice(pageTodos * PAGE_TOP, (pageTodos + 1) * PAGE_TOP).map((r, i) => (
+                  <TR key={r.nombre}>
+                    <TD className="text-muted-foreground">{pageTodos * PAGE_TOP + i + 1}</TD>
+                    <TD className="text-white">{r.nombre}</TD>
+                    <TD className="text-xs text-muted-foreground">{r.categoria}</TD>
+                    <TD className="text-right font-mono">{formatInt(r.cantidad)}</TD>
+                    <TD className="text-right font-mono">{formatCOP(r.monto)}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+            <Pager page={pageTodos} total={topTodos.length} pageSize={PAGE_TOP} onChange={setPageTodos} />
+          </Card>
+
+          {/* Análisis predictivo: días estimados de stock */}
+          {diasDeStockEstimado.length > 0 ? (
+            <Card>
+              <h2 className="mb-3 text-lg font-semibold text-white">Días estimados de stock</h2>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria de los últimos meses. Útil para anticipar compras.
+              </p>
               <Table>
                 <THead>
                   <TR>
                     <TH>Producto</TH>
-                    {DIAS_CORTOS.map((d) => <TH key={d} className="text-right">{d}</TH>)}
-                    <TH className="text-right">Total</TH>
+                    <TH className="text-right">Stock actual</TH>
+                    <TH className="text-right">Promedio venta/día</TH>
+                    <TH className="text-right">Días restantes</TH>
+                    <TH>Acción sugerida</TH>
                   </TR>
                 </THead>
                 <TBody>
-                  {top5DiaSemana.map((p) => (
+                  {diasDeStockEstimado.slice(0, 15).map((p) => (
                     <TR key={p.nombre}>
                       <TD className="text-white">{p.nombre}</TD>
-                      {p.porDia.map((c, i) => (
-                        <TD key={i} className="text-right font-mono text-muted-foreground">
-                          {c > 0 ? formatInt(c) : "—"}
-                        </TD>
-                      ))}
-                      <TD className="text-right font-mono font-semibold text-white">{formatInt(p.total)}</TD>
+                      <TD className="text-right font-mono">{formatInt(p.stockActual)}</TD>
+                      <TD className="text-right font-mono text-muted-foreground">{p.ventaPorDia.toFixed(1)}</TD>
+                      <TD className="text-right font-mono">
+                        {p.diasRestantes < 7
+                          ? <span className="text-red-300">{p.diasRestantes.toFixed(0)}d</span>
+                          : p.diasRestantes < 14
+                          ? <span className="text-yellow-300">{p.diasRestantes.toFixed(0)}d</span>
+                          : <span className="text-green-300">{p.diasRestantes.toFixed(0)}d</span>}
+                      </TD>
+                      <TD className="text-xs">
+                        {p.diasRestantes < 7
+                          ? <span className="text-red-300">⚠ Comprar ya</span>
+                          : p.diasRestantes < 14
+                          ? <span className="text-yellow-300">Programar compra</span>
+                          : <span className="text-muted-foreground">OK</span>}
+                      </TD>
                     </TR>
                   ))}
                 </TBody>
@@ -423,7 +571,13 @@ export function DashboardClient({
                   <div key={u.ubicacion_id} className="rounded border border-border bg-muted/20 px-3 py-2">
                     <p className="text-xs uppercase text-muted-foreground">{u.nombre}</p>
                     <p className="mt-1 font-mono text-lg text-white">{formatInt(u.cantidad)} <span className="text-xs text-muted-foreground">uds</span></p>
-                    <p className="text-xs text-muted-foreground">{formatCOP(u.valor)} en costo</p>
+                    <p className="text-xs text-muted-foreground">
+                      {u.valor > 0
+                        ? `${formatCOP(u.valor)} en costo`
+                        : u.cantidad > 0
+                        ? <span title="Falta cargar el costo unitario de los productos en esta ubicación">costo no configurado</span>
+                        : "—"}
+                    </p>
                   </div>
                 ))}
               </div>

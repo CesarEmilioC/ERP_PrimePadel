@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
+import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, Card, EmptyState } from "@/components/ui/table";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { NuevaTransaccion, type EditarPayload } from "./nueva-transaccion";
 import { deleteTransaccion } from "./actions";
-import { formatCOP, formatDate, formatInt } from "@/lib/utils";
+import { formatCOP, formatDate, formatInt, formatFechaHora } from "@/lib/utils";
 import type { Rol } from "@/lib/auth";
 
 type ItemListado = {
@@ -22,6 +23,8 @@ type ItemListado = {
   precio_unitario: number;
   lista_precio_id: string | null;
   productos: { codigo: string | null; nombre: string };
+  categoria_id: string | null;
+  categoria_nombre: string | null;
   ubicacion_origen_nombre: string | null;
   ubicacion_destino_nombre: string | null;
 };
@@ -36,25 +39,20 @@ type TransaccionLista = {
   usuario_id: string | null;
   usuario_nombre: string | null;
   usuario_username: string | null;
+  usuario_rol: "maestro" | "admin" | "recepcion" | null;
   items: ItemListado[];
 };
 
-function formatFechaHora(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleString("es-CO", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
-
 export function TransaccionesClient({
-  transacciones, productos, ubicaciones, listasPrecios, perfilActual,
+  transacciones, productos, ubicaciones, listasPrecios, perfilActual, categoriasFiltro, productosFiltro,
 }: {
   transacciones: TransaccionLista[];
   productos: any[];
   ubicaciones: { id: string; nombre: string }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
   perfilActual: { rol: Rol; user_id: string };
+  categoriasFiltro: { id: string; nombre: string }[];
+  productosFiltro: { id: string; nombre: string; codigo: string | null }[];
 }) {
   const router = useRouter();
   const toast = useToast();
@@ -63,6 +61,8 @@ export function TransaccionesClient({
   const [fTipo, setFTipo] = React.useState<"todas" | "venta" | "compra" | "traslado">("todas");
   const [fDesde, setFDesde] = React.useState<string>("");
   const [fHasta, setFHasta] = React.useState<string>("");
+  const [fCategorias, setFCategorias] = React.useState<string[]>([]);
+  const [fProductos, setFProductos] = React.useState<string[]>([]);
   const [borrar, setBorrar] = React.useState<TransaccionLista | null>(null);
 
   const esRecepcion = perfilActual.rol === "recepcion";
@@ -72,13 +72,25 @@ export function TransaccionesClient({
     if (fTipo !== "todas" && t.tipo !== fTipo) return false;
     if (fDesde && new Date(t.fecha) < new Date(fDesde + "T00:00:00")) return false;
     if (fHasta && new Date(t.fecha) > new Date(fHasta + "T23:59:59")) return false;
+    if (fCategorias.length > 0) {
+      const hit = t.items.some((it) => it.categoria_id && fCategorias.includes(it.categoria_id));
+      if (!hit) return false;
+    }
+    if (fProductos.length > 0) {
+      const hit = t.items.some((it) => fProductos.includes(it.producto_id));
+      if (!hit) return false;
+    }
     return true;
   });
 
   function puedeEditar(t: TransaccionLista) {
     if (esMaestro) return true;
+    // Admin puede editar/borrar todo lo que NO haya creado el maestro.
+    if (perfilActual.rol === "admin") {
+      return t.usuario_rol !== "maestro";
+    }
+    // Recepción: sus propias ventas del día.
     if (t.usuario_id !== perfilActual.user_id) return false;
-    // Si es recepción solo sus ventas (ya filtradas server-side, pero por seguridad).
     if (esRecepcion && t.tipo !== "venta") return false;
     const fecha = new Date(t.fecha);
     const hoy = new Date();
@@ -142,7 +154,7 @@ export function TransaccionesClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Transacciones</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -152,7 +164,7 @@ export function TransaccionesClient({
             {esMaestro ? <> El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link href="/transacciones/carga-masiva">
             <Button variant="outline">⬆ Carga masiva (CSV)</Button>
           </Link>
@@ -161,7 +173,7 @@ export function TransaccionesClient({
       </div>
 
       <Card>
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3">
           <Field label="Tipo">
             <Select value={fTipo} onChange={(e) => setFTipo(e.target.value as typeof fTipo)} disabled={esRecepcion}>
               <option value="todas">{esRecepcion ? "Ventas" : "Todas"}</option>
@@ -176,10 +188,26 @@ export function TransaccionesClient({
           <Field label="Hasta">
             <Input type="date" value={fHasta} onChange={(e) => setFHasta(e.target.value)} />
           </Field>
+          <Field label="Categoría">
+            <MultiSelect
+              options={categoriasFiltro.map((c) => ({ value: c.id, label: c.nombre }))}
+              value={fCategorias}
+              onChange={setFCategorias}
+              placeholder="Todas las categorías"
+            />
+          </Field>
+          <Field label="Producto">
+            <MultiSelect
+              options={productosFiltro.map((p) => ({ value: p.id, label: p.codigo ? `${p.codigo} — ${p.nombre}` : p.nombre }))}
+              value={fProductos}
+              onChange={setFProductos}
+              placeholder="Todos los productos"
+            />
+          </Field>
           <div className="flex items-end">
             <Button
               variant="outline"
-              onClick={() => { setFTipo("todas"); setFDesde(""); setFHasta(""); }}
+              onClick={() => { setFTipo("todas"); setFDesde(""); setFHasta(""); setFCategorias([]); setFProductos([]); }}
               className="w-full"
             >
               Limpiar filtros

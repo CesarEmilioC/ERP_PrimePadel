@@ -12,7 +12,7 @@ export default async function TransaccionesPage() {
   // Recepción solo ve ventas; admin/maestro ven todo.
   const txsQuery = sb.from("transacciones").select(`
     id, tipo, fecha, total, notas, origen, usuario_id,
-    transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, lista_precio_id, productos(codigo, nombre))
+    transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, lista_precio_id, productos(codigo, nombre, categoria_id, categorias(nombre)))
   `).order("fecha", { ascending: false }).limit(200);
   const txsQueryFinal = perfil.rol === "recepcion" ? txsQuery.eq("tipo", "venta") : txsQuery;
 
@@ -30,7 +30,7 @@ export default async function TransaccionesPage() {
     sb.from("productos").select("id, codigo, nombre, tipo, es_inventariable, activo, costo_unitario").eq("activo", true).order("nombre", { ascending: true }),
     sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
     sb.from("precios_producto").select("producto_id, precio, listas_precios(es_default)"),
-    sb.from("perfiles").select("user_id, nombre"),
+    sb.from("perfiles").select("user_id, nombre, rol"),
     sb.auth.admin.listUsers({ perPage: 500 }),
     getUbicaciones(),
     getListasPrecios(),
@@ -62,8 +62,9 @@ export default async function TransaccionesPage() {
 
   const ubiNombrePorId = new Map(ubicaciones.map((u) => [u.id, u.nombre]));
 
-  // Mapa user_id → { nombre, username }
+  // Mapa user_id → { nombre, username, rol }
   const perfilesPorId = new Map((perfilesUsuarios ?? []).map((p: any) => [p.user_id, p.nombre as string]));
+  const rolesPorId = new Map((perfilesUsuarios ?? []).map((p: any) => [p.user_id, p.rol as "maestro" | "admin" | "recepcion"]));
   const usernamesPorId = new Map(
     (authList?.users ?? []).map((u) => [u.id, emailToDisplayUsername(u.email ?? null)]),
   );
@@ -78,6 +79,7 @@ export default async function TransaccionesPage() {
     usuario_id: t.usuario_id,
     usuario_nombre: t.usuario_id ? (perfilesPorId.get(t.usuario_id) ?? null) : null,
     usuario_username: t.usuario_id ? (usernamesPorId.get(t.usuario_id) ?? null) : null,
+    usuario_rol: t.usuario_id ? (rolesPorId.get(t.usuario_id) ?? null) : null,
     items: (t.transaccion_items ?? []).map((it: any) => ({
       producto_id: it.producto_id,
       ubicacion_origen_id: it.ubicacion_origen_id,
@@ -86,10 +88,16 @@ export default async function TransaccionesPage() {
       precio_unitario: Number(it.precio_unitario),
       lista_precio_id: it.lista_precio_id,
       productos: it.productos,
+      categoria_id: it.productos?.categoria_id ?? null,
+      categoria_nombre: it.productos?.categorias?.nombre ?? null,
       ubicacion_origen_nombre: it.ubicacion_origen_id ? ubiNombrePorId.get(it.ubicacion_origen_id) ?? null : null,
       ubicacion_destino_nombre: it.ubicacion_destino_id ? ubiNombrePorId.get(it.ubicacion_destino_id) ?? null : null,
     })),
   }));
+
+  // Categorías y productos disponibles para los filtros (solo activos para no saturar)
+  const { data: categoriasData } = await sb.from("categorias").select("id, nombre").eq("activa", true).order("nombre");
+  const { data: productosData } = await sb.from("productos").select("id, nombre, codigo").eq("activo", true).order("nombre");
 
   return (
     <TransaccionesClient
@@ -98,6 +106,8 @@ export default async function TransaccionesPage() {
       ubicaciones={ubicaciones.filter((u) => u.activa).map((u) => ({ id: u.id, nombre: u.nombre }))}
       listasPrecios={listasPrecios}
       perfilActual={{ rol: perfil.rol, user_id: perfil.user_id }}
+      categoriasFiltro={(categoriasData ?? []).map((c: any) => ({ id: c.id, nombre: c.nombre }))}
+      productosFiltro={(productosData ?? []).map((p: any) => ({ id: p.id, nombre: p.nombre, codigo: p.codigo }))}
     />
   );
 }

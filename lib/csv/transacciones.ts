@@ -58,7 +58,11 @@ export const CSV_TEMPLATE = [
   "# Columnas obligatorias: fecha, tipo, codigo_producto, ubicacion, cantidad, precio_unitario",
   "# Columnas opcionales:   notas, ticket",
   "#",
-  "# fecha:           YYYY-MM-DD  o  YYYY-MM-DD HH:MM   (ej. 2026-05-01 o 2026-05-01 14:30)",
+  "# fecha:           formatos aceptados (con o sin hora):",
+  "#                     DD/MM/AAAA              ej. 01/05/2026",
+  "#                     DD-MM-AAAA              ej. 01-05-2026",
+  "#                     AAAA-MM-DD              ej. 2026-05-01",
+  "#                     DD/MM/AAAA HH:MM        ej. 01/05/2026 14:30",
   "# tipo:            venta  |  compra",
   "# codigo_producto: el código (SKU) tal como aparece en el módulo Inventario",
   "# ubicacion:       el nombre exacto de la ubicación (ej. Barra Cajero, Nevera Barra, Bodega Principal)",
@@ -73,23 +77,39 @@ export const CSV_TEMPLATE = [
   "#                    Ej: 2 cervezas + 1 agua a la misma mesa = 2 filas con ticket = 'T001'.",
   "# ---------------------------------------------------------------------------",
   "# Ejemplos (borra estas tres líneas antes de subir):",
-  '2026-05-01,venta,CERV-001,Barra Cajero,2,8000,mesa 3,T001',
-  '2026-05-01,venta,AGUA-001,Barra Cajero,1,3000,mesa 3,T001',
-  '2026-05-01,compra,CERV-001,Bodega Principal,24,5500,Proveedor Corona,',
+  '01/05/2026,venta,CERV-001,Barra Cajero,2,8000,mesa 3,T001',
+  '01/05/2026,venta,AGUA-001,Barra Cajero,1,3000,mesa 3,T001',
+  '01/05/2026,compra,CERV-001,Bodega Principal,24,5500,Proveedor Corona,',
 ].join("\n");
 
 function parseFechaISO(raw: string): string | null {
   if (!raw) return null;
   const s = raw.trim();
-  // YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    return new Date(s + "T12:00:00").toISOString();
+
+  // Separar fecha y hora (si hay).
+  const [fechaStr, horaStr] = s.split(/[ T]/, 2);
+  const hora = horaStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(horaStr) ? horaStr : "12:00";
+
+  let yyyy: string | null = null;
+  let mm: string | null = null;
+  let dd: string | null = null;
+
+  // YYYY-MM-DD o YYYY/MM/DD
+  let m = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/.exec(fechaStr);
+  if (m) {
+    yyyy = m[1]; mm = m[2]; dd = m[3];
+  } else {
+    // DD/MM/YYYY o DD-MM-YYYY
+    m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/.exec(fechaStr);
+    if (m) { dd = m[1]; mm = m[2]; yyyy = m[3]; }
   }
-  // YYYY-MM-DD HH:MM
-  if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(s)) {
-    return new Date(s.replace(" ", "T")).toISOString();
-  }
-  return null;
+
+  if (!yyyy || !mm || !dd) return null;
+
+  const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hora.length === 5 ? hora + ":00" : hora}`;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString();
 }
 
 function normalize(s: string | undefined) {

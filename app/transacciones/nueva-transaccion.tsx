@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Field, Input, Select, Textarea, NumericInput } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { registrarTransaccion, editarTransaccion } from "./actions";
@@ -304,22 +304,20 @@ export function NuevaTransaccion({
             {/* Header */}
             {tipo === "traslado" ? (
               <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <div className="col-span-3">Producto</div>
+                <div className="col-span-2">Producto</div>
                 <div className="col-span-2">Origen</div>
                 <div className="col-span-2">Destino</div>
-                <div className="col-span-1 text-right">Cant.</div>
-                <div className="col-span-2 text-right" title="Costo unitario de referencia — los traslados no afectan ingresos">Costo unit. (ref.)</div>
+                <div className="col-span-2 text-right">Cant.</div>
+                <div className="col-span-2 text-right">Costo unit. (ref.)</div>
                 <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
             ) : (
               <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <div className="col-span-4">Producto</div>
+                <div className="col-span-3">Producto</div>
                 <div className="col-span-3">Ubicación {tipo === "venta" ? "(origen)" : "(destino)"}</div>
-                <div className="col-span-1 text-right">Cant.</div>
-                <div className="col-span-2 text-right" title={tipo === "compra" ? "Costo unitario que pagamos al proveedor" : "Precio que paga el cliente"}>
-                  {tipo === "compra" ? "Costo unitario" : "Precio venta"}
-                </div>
+                <div className="col-span-2 text-right">Cant.</div>
+                <div className="col-span-2 text-right">{tipo === "compra" ? "Costo unitario" : "Precio venta"}</div>
                 <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
@@ -339,7 +337,7 @@ export function NuevaTransaccion({
 
               return (
                 <div key={i} className="grid grid-cols-12 items-center gap-2 border-b border-border px-3 py-2 text-sm">
-                  <div className={isTraslado ? "col-span-3 truncate" : "col-span-4 truncate"}>
+                  <div className={isTraslado ? "col-span-2 truncate" : "col-span-3 truncate"}>
                     <span className="block text-white">{p?.nombre}</span>
                     {p?.codigo ? <span className="block text-xs text-muted-foreground">{p.codigo}</span> : null}
                   </div>
@@ -377,11 +375,11 @@ export function NuevaTransaccion({
                     </div>
                   )}
 
-                  <div className="col-span-1">
-                    <Input type="number" min={1} value={it.cantidad} onChange={(e) => updateItem(i, { cantidad: Math.max(1, Number(e.target.value) || 1) })} className="h-9 text-right" />
+                  <div className="col-span-2">
+                    <NumericInput value={it.cantidad} onChange={(n) => updateItem(i, { cantidad: n })} min={1} />
                   </div>
                   <div className="col-span-2">
-                    <Input type="number" value={it.precio_unitario} onChange={(e) => updateItem(i, { precio_unitario: Number(e.target.value) || 0 })} className="h-9 text-right font-mono" />
+                    <NumericInput value={it.precio_unitario} onChange={(n) => updateItem(i, { precio_unitario: n })} min={0} />
                   </div>
                   <div className="col-span-1 text-right font-mono text-white">{formatCOP(it.cantidad * it.precio_unitario)}</div>
                   <div className="col-span-1 text-right">

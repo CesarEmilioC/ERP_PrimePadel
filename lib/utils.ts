@@ -32,3 +32,26 @@ export function formatDate(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
   return dateFmt.format(d);
 }
+
+const fechaHoraFmt = new Intl.DateTimeFormat("es-CO", {
+  timeZone: "America/Bogota",
+  year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit",
+});
+export function formatFechaHora(value: string | Date): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  return fechaHoraFmt.format(d);
+}
+
+const fechaCortaFmt = new Intl.DateTimeFormat("es-CO", {
+  timeZone: "America/Bogota",
+  year: "numeric", month: "2-digit", day: "2-digit",
+});
+// Fecha en formato YYYY-MM-DD (zona Bogotá) — útil para inputs type="date"
+export function fechaInputDate(value: string | Date): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  // Reformatear a YYYY-MM-DD
+  const partes = fechaCortaFmt.formatToParts(d);
+  const get = (t: string) => partes.find((p) => p.type === t)?.value ?? "";
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}

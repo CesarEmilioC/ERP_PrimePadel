@@ -126,6 +126,7 @@ type TxParaReversa = {
   id: string;
   tipo: "compra" | "venta" | "traslado";
   usuario_id: string | null;
+  usuario_rol: "maestro" | "admin" | "recepcion" | null;
   fecha: string;
   items: {
     producto_id: string;
@@ -137,7 +138,8 @@ type TxParaReversa = {
 };
 
 async function fetchTxParaReversa(id: string): Promise<TxParaReversa | null> {
-  const { data, error } = await sbAdmin()
+  const sb = sbAdmin();
+  const { data, error } = await sb
     .from("transacciones")
     .select(
       "id, tipo, usuario_id, fecha, transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, productos(es_inventariable))",
@@ -145,10 +147,22 @@ async function fetchTxParaReversa(id: string): Promise<TxParaReversa | null> {
     .eq("id", id)
     .single();
   if (error || !data) return null;
+
+  let usuario_rol: TxParaReversa["usuario_rol"] = null;
+  if (data.usuario_id) {
+    const { data: perfilCreador } = await sb
+      .from("perfiles")
+      .select("rol")
+      .eq("user_id", data.usuario_id)
+      .maybeSingle();
+    usuario_rol = (perfilCreador?.rol ?? null) as TxParaReversa["usuario_rol"];
+  }
+
   return {
     id: data.id,
     tipo: data.tipo,
     usuario_id: data.usuario_id,
+    usuario_rol,
     fecha: data.fecha,
     items: ((data as any).transaccion_items ?? []).map((it: any) => ({
       producto_id: it.producto_id,
@@ -201,13 +215,22 @@ function checarPermisoEdicion(
 ): { ok: true } | { ok: false; error: string } {
   // Maestro tiene control total.
   if (perfil.rol === "maestro") return { ok: true };
-  // Admin y recepción: solo si la transacción es suya y del día actual.
+
+  // Admin: puede editar/eliminar cualquier transacción que NO haya sido creada por un maestro.
+  if (perfil.rol === "admin") {
+    if (tx.usuario_rol === "maestro") {
+      return { ok: false, error: "Solo el rol Maestro puede modificar transacciones creadas por otro Maestro." };
+    }
+    return { ok: true };
+  }
+
+  // Recepción: solo sus propias transacciones del día actual.
   const esSuya = tx.usuario_id === perfil.user_id;
   const esHoy = mismaFechaLocal(tx.fecha, new Date());
   if (esSuya && esHoy) return { ok: true };
   return {
     ok: false,
-    error: "Solo el rol Maestro puede modificar transacciones de otros días o de otros usuarios.",
+    error: "Solo puedes modificar tus propias transacciones del día actual.",
   };
 }
 

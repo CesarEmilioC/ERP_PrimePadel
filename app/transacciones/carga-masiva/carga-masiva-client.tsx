@@ -83,7 +83,7 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Carga masiva de transacciones</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
@@ -115,7 +115,7 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
             <div className="mt-3 space-y-2 text-xs text-muted-foreground">
               <p><strong className="text-white">Columnas obligatorias:</strong> fecha, tipo, codigo_producto, ubicacion, cantidad, precio_unitario</p>
               <p><strong className="text-white">Columnas opcionales:</strong> notas, ticket</p>
-              <p><strong className="text-white">fecha</strong> en formato <code className="text-brand-orange">YYYY-MM-DD</code> o <code className="text-brand-orange">YYYY-MM-DD HH:MM</code>.</p>
+              <p><strong className="text-white">fecha</strong> acepta <code className="text-brand-orange">DD/MM/AAAA</code>, <code className="text-brand-orange">DD-MM-AAAA</code> o <code className="text-brand-orange">AAAA-MM-DD</code>. Opcionalmente con hora: <code className="text-brand-orange">DD/MM/AAAA HH:MM</code>.</p>
               <p><strong className="text-white">tipo</strong> = <code className="text-brand-orange">venta</code> o <code className="text-brand-orange">compra</code>.</p>
               <p><strong className="text-white">codigo_producto</strong> debe existir en el catálogo (revisa en <Link href="/inventario" className="text-brand-orange hover:underline">Inventario</Link>).</p>
               <p><strong className="text-white">ubicacion</strong> debe ser el nombre exacto de una ubicación activa (Barra Cajero, Nevera Barra, etc.).</p>

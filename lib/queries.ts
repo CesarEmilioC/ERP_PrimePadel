@@ -173,21 +173,22 @@ export async function getSkusPorCategoria() {
 }
 
 // Alertas de stock bajo / sin stock con desglose por ubicación.
+// Nota: PostgREST no resuelve FK desde una vista, así que las categorías se cargan aparte.
 export async function getAlertasDetalladas() {
   const sb = sbAdmin();
   const { data: alertas } = await sb
     .from("v_stock_total")
-    .select("producto_id, codigo, nombre, cantidad_total, stock_minimo_alerta, estado_stock, categorias(nombre)")
+    .select("producto_id, codigo, nombre, cantidad_total, stock_minimo_alerta, estado_stock")
     .in("estado_stock", ["stock_bajo", "sin_stock"])
     .order("cantidad_total", { ascending: true });
 
   const ids = (alertas ?? []).map((a: any) => a.producto_id);
   if (ids.length === 0) return [];
 
-  const { data: stockUbi } = await sb
-    .from("stock_por_ubicacion")
-    .select("producto_id, cantidad, ubicaciones(nombre)")
-    .in("producto_id", ids);
+  const [{ data: stockUbi }, { data: prods }] = await Promise.all([
+    sb.from("stock_por_ubicacion").select("producto_id, cantidad, ubicaciones(nombre)").in("producto_id", ids),
+    sb.from("productos").select("id, categorias(nombre)").in("id", ids),
+  ]);
 
   const porProd = new Map<string, { nombre: string; cantidad: number }[]>();
   for (const s of (stockUbi ?? []) as any[]) {
@@ -196,11 +197,16 @@ export async function getAlertasDetalladas() {
     porProd.set(s.producto_id, arr);
   }
 
+  const catPorProd = new Map<string, string | null>();
+  for (const p of (prods ?? []) as any[]) {
+    catPorProd.set(p.id, p.categorias?.nombre ?? null);
+  }
+
   return (alertas ?? []).map((a: any) => ({
     producto_id: a.producto_id,
     codigo: a.codigo,
     nombre: a.nombre,
-    categoria: a.categorias?.nombre ?? null,
+    categoria: catPorProd.get(a.producto_id) ?? null,
     cantidad_total: Number(a.cantidad_total),
     stock_minimo_alerta: Number(a.stock_minimo_alerta),
     estado_stock: a.estado_stock as "stock_bajo" | "sin_stock",
@@ -226,6 +232,19 @@ export async function getTopPorDiaSemana() {
     acc.set(nombre, row);
   }
   return [...acc.values()];
+}
+
+// Stock total por producto (suma de todas las ubicaciones). Útil para análisis predictivo.
+export async function getStockTotalPorProducto() {
+  const sb = sbAdmin();
+  const { data } = await sb
+    .from("v_stock_total")
+    .select("producto_id, nombre, cantidad_total");
+  return (data ?? []).map((r: any) => ({
+    producto_id: r.producto_id,
+    nombre: r.nombre as string,
+    cantidad_total: Number(r.cantidad_total ?? 0),
+  }));
 }
 
 // Ventas agregadas por día de la semana (cantidad total y monto), todos los productos juntos.

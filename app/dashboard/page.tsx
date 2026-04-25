@@ -3,6 +3,7 @@ import {
   getCategorias,
   getVentasHistoricasPorMes,
   getStockPorUbicacion,
+  getStockTotalPorProducto,
   getSkusPorCategoria,
   getAlertasDetalladas,
   getTopPorDiaSemana,
@@ -44,6 +45,7 @@ export default async function DashboardPage() {
     getTopPorDiaSemana(),
     getVentasPorDiaSemana(),
   ]);
+  const stockTotalPorProducto = await getStockTotalPorProducto();
 
   const totalStock = (stockTotales ?? []).reduce((a: number, r: any) => a + Number(r.cantidad_total ?? 0), 0);
   const valorInv = (stockTotales ?? []).reduce((a: number, r: any) => a + Number(r.valor_total_costo ?? 0), 0);
@@ -71,6 +73,7 @@ export default async function DashboardPage() {
       alertasDetalladas={alertasDet}
       topPorDiaSemana={topPorDia}
       ventasPorDiaSemana={ventasPorDia}
+      stockTotalPorProducto={stockTotalPorProducto}
     />
   );
 }

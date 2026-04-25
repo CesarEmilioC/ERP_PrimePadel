@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Field, Input, Select, Textarea, NumericInput } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { createProducto, updateProducto } from "./actions";
 
@@ -156,14 +156,14 @@ export function ProductoDialog({
             </Field>
             {form.es_inventariable ? (
               <Field label="Stock mínimo (alerta)">
-                <Input type="number" value={form.stock_minimo_alerta} onChange={(e) => setForm({ ...form, stock_minimo_alerta: Number(e.target.value) || 0 })} />
+                <NumericInput value={form.stock_minimo_alerta} onChange={(n) => setForm({ ...form, stock_minimo_alerta: n })} min={0} />
               </Field>
             ) : null}
           </>
         ) : null}
         {isMaestro ? (
           <Field label="Costo unitario">
-            <Input type="number" value={form.costo_unitario} onChange={(e) => setForm({ ...form, costo_unitario: Number(e.target.value) || 0 })} />
+            <NumericInput value={form.costo_unitario} onChange={(n) => setForm({ ...form, costo_unitario: n })} min={0} />
           </Field>
         ) : null}
         <Field label="Impuesto" hint="Solo informativo. Si no aplica, deja 'Sin impuesto'.">
@@ -209,10 +209,10 @@ export function ProductoDialog({
             <div className="grid gap-3 md:grid-cols-3">
               {listasPrecios.map((l) => (
                 <Field key={l.id} label={l.nombre + (l.es_default ? " (default)" : "")}>
-                  <Input
-                    type="number"
-                    value={preciosState[l.id] ?? ""}
-                    onChange={(e) => setPreciosState({ ...preciosState, [l.id]: e.target.value })}
+                  <NumericInput
+                    value={Number(preciosState[l.id] ?? 0) || 0}
+                    onChange={(n) => setPreciosState({ ...preciosState, [l.id]: n === 0 ? "" : String(n) })}
+                    min={0}
                     placeholder="0"
                   />
                 </Field>

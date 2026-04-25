@@ -84,7 +84,7 @@ export function InventarioClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Inventario</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ export function InventarioClient({
             <TH className="text-right">Stock</TH>
             <TH className="text-right">Precio detal</TH>
             <TH>IVA</TH>
-            <TH>Estado</TH>
+            <TH className="text-center">Estado</TH>
             <TH className="text-right">Acciones</TH>
           </TR>
         </THead>
@@ -180,12 +180,14 @@ export function InventarioClient({
               </TD>
               <TD className="text-right font-mono">{r.precio_detal != null ? formatCOP(r.precio_detal) : "—"}</TD>
               <TD>{r.impuesto_porcentaje != null ? `${r.impuesto_porcentaje}%` : "—"}</TD>
-              <TD>
-                {!r.activo ? <Badge tone="gray">Inactivo</Badge>
-                  : r.estado_stock === "sin_stock" ? <Badge tone="red">Sin stock</Badge>
-                  : r.estado_stock === "stock_bajo" ? <Badge tone="yellow">Bajo</Badge>
-                  : r.es_inventariable ? <Badge tone="green">OK</Badge>
-                  : <Badge tone="gray">—</Badge>}
+              <TD className="text-center">
+                <span className="inline-flex items-center justify-center">
+                  {!r.activo ? <Badge tone="gray">Inactivo</Badge>
+                    : r.estado_stock === "sin_stock" ? <Badge tone="red">Sin stock</Badge>
+                    : r.estado_stock === "stock_bajo" ? <Badge tone="yellow">Bajo</Badge>
+                    : r.es_inventariable ? <Badge tone="green">OK</Badge>
+                    : <Badge tone="gray">—</Badge>}
+                </span>
               </TD>
               <TD className="text-right">
                 <Link href={`/inventario/${r.id}`} className="text-sm text-brand-orange hover:opacity-80">

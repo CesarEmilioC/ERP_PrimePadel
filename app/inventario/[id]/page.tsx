@@ -40,13 +40,26 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
     }))
     .sort((a, b) => a.orden - b.orden);
 
+  // Si el histórico no tiene total monetario (xlsx sin columnas de plata), estimar con precio detal.
+  const precioDetal = preciosOrdenados.find((p) => p.codigo === "DETAL")?.precio ?? 0;
+  const historialEstimado = (historial ?? []).map((h: any) => {
+    const totalReal = Number(h.total);
+    const cantidad = Number(h.cantidad_vendida);
+    return {
+      ...h,
+      cantidad_vendida: cantidad,
+      total: totalReal > 0 ? totalReal : cantidad * precioDetal,
+      total_estimado: totalReal === 0 && cantidad > 0,
+    };
+  });
+
   return (
     <DetalleClient
       producto={producto}
       ubicacionesConStock={ubicacionesConStock}
       ubicacionesDisponibles={ubicaciones.filter((u) => u.activa).map((u) => ({ id: u.id, nombre: u.nombre, tipo: u.tipo }))}
       precios={preciosOrdenados}
-      historialMensual={(historial ?? []).map((h: any) => ({ ...h, total: Number(h.total) }))}
+      historialMensual={historialEstimado}
       ajustes={(ajustes ?? []) as any}
       categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}
       impuestos={impuestos.map((i) => ({ id: i.id, nombre: i.nombre, porcentaje: Number(i.porcentaje) }))}
