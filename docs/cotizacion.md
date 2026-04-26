@@ -3,7 +3,8 @@
 **Cliente:** Prime Padel Club
 **Ciudad:** Cali, Colombia
 **Fecha de emisión:** 23 de abril de 2026
-**Válida hasta:** 7 de mayo de 2026
+**Fecha de entrega:** 25 de abril de 2026
+**Estado:** ✅ Entregado — sistema operativo y disponible en https://erp-prime-padel.vercel.app/
 **Proveedor:** Cesar Emilio Castaño Marin — Desarrollo de software a la medida
 
 ---
@@ -115,7 +116,7 @@ Funcionalidades avanzadas, carga masiva, autenticación con roles, y gráficas a
 | Normalización de 16 categorías (dedupe y corrección de tipos) | ✅ | ✅ |
 | Migración del histórico de ventas mensuales (OCT 2025 – ABR 2026) | ✅ | ✅ |
 | Preservación de servicios inactivos históricos | ✅ | ✅ |
-| **Importación del inventario inicial físico (cantidades por ubicación)** | — | ✅ |
+| **Importación del inventario inicial físico (cantidades por ubicación)** | — | ⏳ pendiente del conteo del cliente |
 
 ### 3.8 Documentación
 
@@ -165,12 +166,13 @@ La interfaz respeta la marca Prime Padel:
 | Etapa | Estado | Descripción |
 |-------|:------:|-------------|
 | Arquitectura base y despliegue | ✅ | Proyecto, base de datos, identidad visual |
-| Migración del catálogo e histórico | ✅ | 145 productos, 394 ventas mensuales migradas |
+| Migración del catálogo e histórico | ✅ | 145 productos, ventas mensuales SEP 2025 – ABR 2026 migradas |
 | **MVP — Módulos críticos** | ✅ | Inventario, transacciones, ubicaciones, categorías, dashboard base |
-| **Versión completa** | 🔄 | Carga CSV, autenticación RBAC, gráficas avanzadas, edición de transacciones, traslados |
-| Pruebas integrales y pulido | 🔄 | QA funcional, responsive, UX |
-| Despliegue final y validación | 🔄 | Validación con el cliente en producción |
-| Capacitación | 🔄 | Sesión de 1 hora + manual completo |
+| **Versión completa** | ✅ | Carga CSV, autenticación con 3 roles, gráficas avanzadas, edición de transacciones, traslados, listas de precios, predicción de stock |
+| Pruebas integrales y pulido | ✅ | QA funcional realizado por el cliente, responsive, UX |
+| Despliegue final | ✅ | Disponible en https://erp-prime-padel.vercel.app/ |
+| Documentación y manuales | ✅ | Manual de usuario + manual del Maestro |
+| Capacitación | 📅 | Sesión de 1 hora a coordinar con el cliente |
 
 ---
 

@@ -38,62 +38,31 @@ El ERP permite:
 
 ## Estado actual
 
-**Fase:** 3 — **MVP funcional** listo para demo con el cliente.
-**Fecha:** 2026-04-23.
+**Fase:** Versión completa — entregada al cliente.
+**Fecha de entrega:** 2026-04-25.
+**URL producción:** https://erp-prime-padel.vercel.app/
 
-Completado:
+Funcionalidades operativas:
 
-- [x] Proyecto Next.js 15 + Tailwind + Supabase + Vercel-ready.
-- [x] Schema v2 aplicado, seed cargado (3 impuestos, 12 listas de precios, 7 ubicaciones).
-- [x] 145 productos/servicios migrados + 14 servicios históricos inactivos.
-- [x] 394 registros de ventas históricas (OCT 2025 – ABR 2026) en `ventas_historicas_mensuales`.
-- [x] Componentes UI propios (Button, Dialog, MultiSelect, Table, Badge, Toast).
-- [x] **Módulo Ubicaciones**: CRUD con protección de borrado.
-- [x] **Módulo Categorías**: CRUD con conteo de productos asociados.
-- [x] **Módulo Inventario**: lista con filtros multi-select, crear/editar/eliminar producto, vista de detalle con stock por ubicación, precios multi-lista, histórico mensual, ajustes auditados.
-- [x] **Ajuste de inventario** con detección de diferencias y registro en `ajustes_inventario`.
-- [x] **Módulo Transacciones**: registro manual de venta/compra multi-ítem, validación de stock, reversa automática al eliminar.
-- [x] **Dashboard**: KPIs, gráfica de consumo mensual, top 10 productos, distribución por categoría, tendencia dual, filtros multi-select.
-- [x] Home con KPIs en vivo.
-- [x] Cotización actualizada con tabla MVP vs Completo ([docs/cotizacion.md](docs/cotizacion.md)).
-- [x] Manual de usuario del MVP ([docs/manual-usuario.md](docs/manual-usuario.md)).
-- [x] `pnpm typecheck` y `pnpm build` limpios.
-
-Pendiente (Fase 2 — versión completa):
-
-- [x] Login por usuario (no email) con Supabase Auth.
-- [x] Tres roles: maestro / admin / recepción con jerarquía.
-- [x] Middleware de protección de rutas.
+- [x] Auth con login por usuario (no email) y middleware de rutas.
+- [x] Tres roles con jerarquía: **maestro / admin / recepción**.
 - [x] Gestión de usuarios desde `/usuarios` (crear, editar, reset password, desactivar, cambiar rol).
-- [x] Permisos por rol en server actions (borrado y costos solo maestro; recepción solo ventas).
-- [x] Auditoría visible: cada transacción guarda usuario + fecha y hora exactas.
-- [x] Leyendas del dashboard en lightbox modal.
-- [x] Carga masiva de transacciones por CSV (preview + validación + commit).
-- [x] Edición de transacciones existentes con rollback automático.
-- [x] Traslados de stock entre ubicaciones (form + reversa + edición).
-- [x] Filtros por rango de fechas en transacciones.
-- [x] Dashboard con pestañas (Ventas / Inventario / Alertas), análisis por día de la semana, alertas detalladas por ubicación.
-- [x] Despliegue en Vercel.
-- [ ] Importación del inventario inicial físico (cantidades por ubicación) — pendiente de recibir del cliente.
-
-### Crear el primer administrador
-
-Después de aplicar `schema.sql` en Supabase y antes del primer login, ejecuta:
-
-```bash
-node scripts/create-admin.mjs --email "tu@correo.com" --nombre "Tu Nombre" --password "claveSegura"
-```
-
-Si omites `--password`, el script genera una y la imprime. Una vez dentro, puedes crear/gestionar más usuarios desde `/usuarios`.
+- [x] Permisos por rol en server actions con auditoría visible (quién + cuándo en cada transacción).
+- [x] Inventario: CRUD productos/servicios, filtros multi-select + paginación, ficha de detalle con stock por ubicación, histórico mensual, ajustes auditados.
+- [x] Ajuste de inventario con detección de diferencias y registro en `ajustes_inventario`.
+- [x] Transacciones: ventas, compras y traslados con multi-item, validación de stock, reversa automática al eliminar/editar.
+- [x] Edición de transacciones con rollback automático si la nueva versión falla.
+- [x] Carga masiva de transacciones por CSV (DD/MM/AAAA, preview, validación, agrupación por ticket).
+- [x] Dashboard con pestañas Ventas / Inventario / Alertas, KPIs, filtros por mes y categoría, top productos, gráfica apilada por día de la semana, alertas detalladas con desglose por ubicación, días estimados de stock (predictivo).
+- [x] Listas de precios: CRUD para gestionar canales y profesores externos.
+- [x] Categorías y ubicaciones con CRUD y soft-delete cuando hay datos asociados.
+- [x] Responsive con hamburger menu en móvil.
+- [x] 145 productos migrados desde Alegra + 8 meses de histórico de ventas.
+- [x] 5 cuentas creadas: 2 maestros (CesarC, maestro), 1 admin, 2 recepción.
 
 Pendiente:
 
-- [ ] Módulo de inventario (CRUD + filtros).
-- [ ] Módulo de transacciones (manual + CSV).
-- [ ] Dashboard analítico.
-- [ ] Autenticación y RBAC.
-- [ ] Migración de datos reales (esperando CSV del cliente).
-- [ ] Manual de usuario.
+- [ ] Importación del inventario físico inicial (cantidades por ubicación) — esperando que el cliente envíe el conteo real.
 
 ## Stack tecnológico
 

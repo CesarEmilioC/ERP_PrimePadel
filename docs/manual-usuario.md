@@ -1,275 +1,424 @@
 # Manual de usuario — ERP Prime Padel
 
-**Versión MVP — abril 2026**
-_Este manual se actualiza a medida que se liberan nuevas funciones. Las secciones marcadas con 🔜 corresponden a la versión completa (disponible en la entrega final)._
-
----
-
-## ¿Qué es el ERP Prime Padel?
-
-Es el sistema web del club para **controlar el inventario, registrar las ventas y compras del día, y entender cómo se comporta el consumo de los productos y servicios**.
-
-Funciona en cualquier computador, tablet o celular con navegador. No se instala nada.
-
-**Dirección del sistema:** _(a completar con la URL de producción)_
-
-**Equipo que lo utiliza:**
-- Personal de caja: registra ventas y compras.
-- Administración: revisa el dashboard, configura productos y gestiona el inventario.
+**Versión completa — abril 2026**
+_Sistema web para gestión de inventario, ventas, compras, traslados y análisis del club Prime Padel._
 
 ---
 
 ## Índice
 
-1. [Primeros pasos](#1-primeros-pasos)
-2. [Pantalla principal](#2-pantalla-principal)
-3. [Inventario — ver, crear, editar y eliminar productos](#3-inventario)
-4. [Detalle de un producto y ajuste de inventario](#4-detalle-de-un-producto)
-5. [Transacciones — registrar una venta o compra](#5-transacciones)
-6. [Ubicaciones](#6-ubicaciones)
-7. [Categorías](#7-categorías)
-8. [Dashboard](#8-dashboard)
-9. [Preguntas frecuentes](#9-preguntas-frecuentes)
+1. [¿Qué es el ERP Prime Padel?](#1-qué-es-el-erp-prime-padel)
+2. [Roles del personal](#2-roles-del-personal)
+3. [Cómo entrar al sistema (login)](#3-cómo-entrar-al-sistema)
+4. [Pantalla principal](#4-pantalla-principal)
+5. [Inventario — productos y servicios](#5-inventario)
+6. [Detalle de un producto y ajuste de inventario](#6-detalle-de-un-producto)
+7. [Transacciones — ventas, compras y traslados](#7-transacciones)
+8. [Carga masiva de transacciones (CSV)](#8-carga-masiva-csv)
+9. [Ubicaciones](#9-ubicaciones)
+10. [Categorías](#10-categorías)
+11. [Listas de precios](#11-listas-de-precios)
+12. [Dashboard — análisis del negocio](#12-dashboard)
+13. [Usuarios](#13-usuarios)
+14. [Preguntas frecuentes](#14-preguntas-frecuentes)
 
 ---
 
-## 1. Primeros pasos
+## 1. ¿Qué es el ERP Prime Padel?
 
-1. Abre el navegador (Chrome, Edge, Safari).
-2. Ingresa la dirección del sistema.
-3. Aparece la pantalla principal con los accesos.
+Es la plataforma web del club para **controlar el inventario, registrar ventas/compras/traslados y entender cómo se comporta el negocio día a día**.
 
-> 🔜 En la versión completa vas a iniciar sesión con usuario y contraseña (admin o cajero).
+Funciona en cualquier computador, tablet o celular con navegador. No se instala nada.
 
----
+**URL del sistema:** https://erp-prime-padel.vercel.app/
 
-## 2. Pantalla principal
-
-Al abrir el sistema ves:
-- **Barra superior** con el logo Prime Padel y los accesos: Inventario, Transacciones, Dashboard, Ubicaciones, Categorías.
-- **Tarjetas de resumen**: cuántos productos activos hay, el stock total, alertas de stock bajo, transacciones registradas.
-- **Accesos directos** a cada módulo.
-
-Desde aquí entras a cualquier parte del sistema con un clic.
+**Equipo que la utiliza:**
+- **Recepción / Caja:** registra ventas y traslados.
+- **Administración:** gestiona inventario, ubicaciones, registra compras y traslados.
+- **Maestro (dueño):** acceso total — configura el sistema, ve análisis financieros, gestiona usuarios.
 
 ---
 
-## 3. Inventario
+## 2. Roles del personal
 
-Esta es la pantalla más usada por el administrador. Muestra **todos los productos y servicios** del club.
+El sistema tiene **tres niveles de acceso** según las responsabilidades del usuario:
 
-### ¿Qué ves en la tabla?
-Cada fila es un ítem con:
-- **Código** (SKU de Alegra o el que definas).
-- **Nombre** del producto o servicio.
+| Acción | Maestro | Admin | Recepción |
+|--------|:-------:|:-----:|:---------:|
+| Registrar venta | ✅ | ✅ | ✅ |
+| Registrar traslado entre ubicaciones | ✅ | ✅ | ✅ |
+| Registrar compra (entrada de stock) | ✅ | ✅ | ❌ |
+| Carga masiva por CSV | ✅ | ✅ | ✅ (solo ventas y traslados) |
+| Editar / eliminar sus propias transacciones del día | ✅ | ✅ | ✅ |
+| Editar / eliminar transacciones de otros usuarios | ✅ | ✅ (excepto del Maestro) | ❌ |
+| Editar / eliminar transacciones de días pasados | ✅ | ✅ (excepto del Maestro) | ❌ |
+| Ver inventario | ✅ | ✅ | ❌ |
+| Crear / editar productos | ✅ | ✅ | ❌ |
+| Editar costos y precios | ✅ | ❌ | ❌ |
+| Eliminar productos | ✅ | ❌ | ❌ |
+| Ajuste de inventario (conteo, merma, etc.) | ✅ | ✅ | ❌ |
+| Gestionar Ubicaciones | ✅ | ✅ | ❌ |
+| Gestionar Categorías | ✅ | ❌ | ❌ |
+| Gestionar Listas de precios | ✅ | ❌ | ❌ |
+| Ver Dashboard | ✅ | ❌ | ❌ |
+| Gestionar Usuarios | ✅ | ❌ | ❌ |
+
+> Cada acción que se hace en el sistema queda registrada con el usuario que la hizo y la fecha/hora exactas — auditoría completa para revisar después si algo no cuadra.
+
+---
+
+## 3. Cómo entrar al sistema
+
+1. Abre tu navegador (Chrome, Edge, Safari) e ingresa a `https://erp-prime-padel.vercel.app/`.
+2. Aparece la pantalla de **Ingreso**.
+3. Escribe tu **Usuario** (no es un correo, es un nombre como `recepcion1` o `admin`).
+4. Escribe tu **Contraseña**.
+5. Click en **Ingresar**.
+
+El usuario no distingue mayúsculas/minúsculas (`recepcion1` y `RECEPCION1` son lo mismo). La contraseña sí es estricta.
+
+**Si te equivocas o no recuerdas la contraseña**, contacta al Maestro: él puede restablecerla desde la pantalla de Usuarios.
+
+**Cerrar sesión:** click en el avatar arriba a la derecha → **Cerrar sesión**.
+
+---
+
+## 4. Pantalla principal
+
+Al ingresar ves:
+- **Saludo personal** con tu nombre y rol (MAESTRO, ADMIN o RECEPCIÓN).
+- **Tarjetas de resumen**: cuántos productos hay, stock total actual, valor del inventario (solo Maestro), alertas de stock bajo, transacciones registradas.
+- **Tarjetas de acceso** a cada módulo al que tienes permiso.
+- **Barra superior** con el logo Prime Padel y los links a cada módulo. En celular se compacta a un menú hamburguesa (☰).
+
+---
+
+## 5. Inventario
+
+> 👤 **Acceso:** Maestro y Admin.
+
+Lista todos los productos y servicios del club.
+
+### Tabla principal
+
+Cada fila muestra:
+- **Código** (SKU del producto).
+- **Nombre**.
 - **Categoría**.
-- **Tipo**: si es un producto físico (con stock) o un servicio (sin stock).
-- **Stock** total sumando todas las ubicaciones.
-- **Precio detal** (el de venta al cliente final).
-- **IVA** aplicable, como referencia.
-- **Estado**: OK (verde), Stock bajo (amarillo), Sin stock (rojo), Inactivo (gris).
+- **Tipo**: Producto (físico, con stock) o Servicio (clases, alquileres, sin stock).
+- **Stock** total (suma de todas las ubicaciones).
+- **Precio detal**.
+- **IVA** aplicable.
+- **Estado**: 🟢 OK, 🟡 Stock bajo, 🔴 Sin stock, ⚪ Inactivo, — (no aplica).
 
-### Filtros disponibles
+### Filtros
 
-En la parte superior de la lista hay una caja de filtros:
-- **Buscar**: escribe parte del nombre o del código.
-- **Categoría**: selecciona una o varias (selección múltiple).
-- **Ubicación**: filtra solo los productos que tengan stock en esa(s) ubicación(es).
-- **Tipo**: producto, servicio, todos.
-- **Estado de stock**: con stock, stock bajo, sin stock.
-- **Activo / Inactivo**: por defecto solo muestra los activos.
-- **Cantidad mínima / máxima**: rango de unidades en stock.
+Buscar, Categoría (multi), Ubicación, Tipo, Estado de stock, Activo/Inactivo, Cantidad mín/máx + botón **Limpiar filtros**.
 
-Los filtros se combinan entre sí. El número "Mostrando X de Y ítems" te avisa cuántos quedan visibles.
+La tabla muestra 10 productos por página con paginador.
 
 ### Crear un ítem nuevo
 
-1. Clic en **"+ Nuevo ítem"** (arriba a la derecha).
+1. Click en **"+ Nuevo ítem"**.
 2. Llena el formulario:
    - **Nombre** (obligatorio).
-   - **Código** (opcional, pero recomendado; único si lo pones).
-   - **Tipo**: producto o servicio. Los servicios nunca manejan stock.
-   - **Categoría**: elígela o deja "sin categoría".
-   - **Stock mínimo**: cantidad por debajo de la cual el sistema te alerta.
-   - **Costo unitario**: lo que le cuesta al club (para calcular el valor del inventario).
-   - **Impuesto**: IVA 19%, Impoconsumo 8%, Sin impuesto. Es solo informativo.
-   - **Precios por lista**: puedes llenar varios precios al mismo producto (Detal, Equipo Prime, precios especiales para profesores). Deja en 0 o en blanco los que no apliquen.
-   - **Marca, modelo, referencia de fábrica, código de barras**: opcionales.
-3. Clic en **"Guardar"**.
+   - **Código (SKU)** (opcional, recomendado, único si lo usas).
+   - **Tipo**: Producto o Servicio. Si es Servicio, varios campos se ocultan automáticamente.
+   - **Categoría**.
+   - **¿Se inventaría?** (solo productos físicos): si es No, se vende pero no descuenta stock.
+   - **Stock mínimo** (alerta).
+   - **Costo unitario** (solo Maestro): para calcular valor del inventario.
+   - **Impuesto** (informativo): default "Sin impuesto".
+   - **Unidad de medida**.
+   - **Marca, modelo, código de barras** (opcionales, solo productos).
+   - **Estado**: Activo o Inactivo.
+   - **Precios por lista** (solo Maestro).
+3. Click en **Guardar**.
 
-### Editar un ítem
-Desde el detalle (ver sección 4), botón **"Editar"**.
-
-### Eliminar un ítem
-Desde el detalle, botón **"Eliminar"** y confirmación.
-- Si el producto tiene histórico de ventas o transacciones, el sistema **no lo borra**: lo marca como **inactivo** para preservar los registros. Siempre puedes reactivarlo cambiando su estado.
+### Editar / eliminar
+- Desde la ficha del producto, botón **Editar** (Maestro y Admin).
+- **Eliminar** solo aparece para el Maestro. Si el producto tiene histórico, se marca como inactivo.
 
 ---
 
-## 4. Detalle de un producto
+## 6. Detalle de un producto
 
-Al hacer clic en el nombre de un producto en la lista, se abre su ficha:
+Click en el nombre del producto → ficha con:
 
-- **Encabezado**: nombre, código, categoría, impuesto aplicable.
-- **Tarjetas resumen**: stock total, costo unitario, valor total en costo, precio de venta Detal.
+- **Encabezado**: nombre, código, categoría, impuesto.
+- **Tarjetas resumen**: stock total, costo unitario, valor total en costo, precio Detal.
 - **Stock por ubicación**: tabla con cada lugar físico y su cantidad.
-- **Precios**: todos los precios cargados, por lista.
-- **Histórico de ventas mensuales**: cuánto se vendió cada mes (datos migrados desde Alegra).
-- **Historial de ajustes**: cada vez que se hizo un conteo físico o corrección, con fecha, motivo y cantidad antes/después.
+- **Precios por lista**: todos los precios cargados según el canal.
+- **Histórico de ventas mensuales**: cantidad y monto vendido cada mes (datos de Alegra). Los totales con asterisco (*) son estimados con el precio actual cuando el reporte original no traía monto.
+- **Historial de ajustes**: cada conteo físico, merma o corrección registrada.
 
-### Ajuste de inventario (importante)
+### Ajuste de inventario
 
-Esta es la herramienta que usa el administrador cuando:
-- Hace un **conteo físico** del producto.
-- Detecta una **merma** (producto vencido, dañado).
-- Registra una **rotura**.
-- Hace una **corrección manual** del stock.
-- Carga el **inventario inicial** por primera vez.
+Esta es la herramienta que se usa cuando:
+- Haces un **conteo físico**.
+- Detectas una **merma** (vencido, dañado).
+- Registras una **rotura**.
+- Haces una **corrección manual** del stock.
+- Cargas el **inventario inicial** por primera vez.
 
 **Cómo usarla:**
-1. En el detalle del producto, clic en **"Ajuste de inventario"**.
-2. Selecciona la **ubicación** donde vas a ajustar.
-3. Escribe la **cantidad nueva** (lo que realmente hay en ese sitio).
-4. El sistema muestra automáticamente la **diferencia** (positiva si aumentó, negativa si disminuyó).
-5. Escoge el **motivo**: conteo físico, merma, rotura, corrección, ingreso inicial, otro.
-6. Agrega **notas** si quieres (ej: "Conteo del lunes en la mañana").
-7. Clic en **"Registrar ajuste"**.
+1. En la ficha del producto, click **"Ajuste de inventario"**.
+2. Selecciona la **ubicación**.
+3. Escribe la **cantidad nueva** (lo que realmente hay).
+4. El sistema calcula la **diferencia** automáticamente.
+5. Escoge el **motivo**: conteo físico / merma / rotura / corrección / ingreso inicial / otro.
+6. Agrega **notas** si quieres.
+7. Click **Registrar ajuste**.
 
-El sistema guarda un registro permanente del ajuste para auditoría.
-
-> **Regla importante:** la cantidad total del producto siempre es la suma de las cantidades en cada ubicación. Si cambias una ubicación, el total se recalcula solo.
+> **Regla:** la cantidad total del producto siempre es la suma de las cantidades en cada ubicación. Si cambias una ubicación, el total se recalcula solo.
 
 ---
 
-## 5. Transacciones
+## 7. Transacciones
 
-Es el módulo del día a día del cajero. Registra ventas, compras y las visualiza en una lista.
+Es el módulo del día a día.
+
+### Tipos de transacción
+
+- **Venta**: sale stock de una ubicación. Precio = lo que paga el cliente.
+- **Compra** (Maestro y Admin): entra stock a una ubicación. Precio = costo unitario al proveedor.
+- **Traslado**: mueve stock entre dos ubicaciones del club. No es ingreso ni egreso.
+
+### Lista de transacciones
+
+Tabla con filtros por:
+- **Tipo** (todas / ventas / compras / traslados — recepción no ve compras).
+- **Fecha desde / hasta**.
+- **Categoría** (multi).
+- **Producto** (multi).
+- Botón **Limpiar filtros**.
+
+Cada fila: fecha y hora exactas, tipo, **quién registró**, ítems, total, notas, botones de acciones (visibles según permisos). 10 transacciones por página.
 
 ### Registrar una venta
 
-1. Clic en **"+ Nueva transacción"**.
-2. En la parte superior elige **"Venta"** (botón seleccionado en naranja).
-3. En el buscador, escribe el producto o servicio que se vendió.
-4. Selecciónalo de la lista desplegable: se agrega como línea de la venta.
-5. Ajusta si es necesario:
-   - **Ubicación de origen**: desde dónde sale el stock (Nevera Barra, Bodega, etc.). Al lado del nombre verás cuánto hay disponible.
-   - **Cantidad**.
-   - **Precio unitario**: se llena solo con el precio Detal, puedes modificarlo si aplica un descuento.
-6. Repite para más productos de la misma venta.
-7. Puedes agregar **notas** (cliente, mesa, número de factura, etc.).
-8. Clic en **"Registrar venta"**.
+1. Click **"+ Nueva transacción"**.
+2. Botón **Venta** seleccionado por defecto.
+3. Buscador de productos (con autoenfoque).
+4. Click en el producto → se agrega como línea.
+5. Por cada línea ajusta:
+    - **Ubicación de origen** (al lado del nombre se ve cuánto hay disponible).
+    - **Cantidad**.
+    - **Precio venta**: se autocompleta con el precio Detal, puedes modificarlo si aplica un descuento o un precio especial (ej. Equipo Prime).
+6. Repite para más productos. **Puedes agregar el mismo producto dos veces si vendes desde ubicaciones distintas** (ej. 3 cervezas de Nevera + 2 de Vitrina).
+7. Agrega **Notas** (mesa, cliente, factura, etc.).
+8. Click **Registrar venta**.
 
-**Validación automática:** si no hay suficiente stock en la ubicación elegida, el sistema te avisa en rojo y no deja registrar la venta hasta que corrijas.
+**Validación automática:** si no hay suficiente stock en la ubicación elegida, el sistema avisa en rojo y no deja registrar.
 
-### Registrar una compra / ingreso
+### Registrar una compra
 
-Mismo flujo que la venta, pero eliges **"Compra / Ingreso"**. En este caso seleccionas la **ubicación de destino** (dónde entra el stock).
+Igual flujo, eligiendo el botón **"Compra / Ingreso"**. El precio se autocompleta con el **costo unitario** del producto (lo que pagaste al proveedor) y la ubicación es de **destino**.
 
-### Ver la lista de transacciones
-La tabla muestra fecha, tipo (venta/compra), ítems, total y notas de las últimas 100 transacciones.
+### Registrar un traslado
 
-### Eliminar una transacción
-Clic en "Eliminar" en la fila correspondiente.
-- El sistema pregunta para confirmar.
-- Al confirmar, **revierte automáticamente el movimiento de stock** (si era venta, devuelve el stock; si era compra, lo saca). Queda registro del ajuste de reversa en el producto correspondiente.
+Eliges **"Traslado"**, agregas el producto, y para cada línea seleccionas **dos ubicaciones**: origen y destino. Validaciones: origen ≠ destino, stock suficiente en origen.
 
-> 🔜 En la versión completa: edición directa de transacciones, carga masiva de transacciones por archivo CSV (útil para registros del fin de semana), filtros por rango de fechas y por producto.
+### Editar y eliminar
 
----
-
-## 6. Ubicaciones
-
-Pantalla donde defines los lugares físicos donde se guarda el inventario.
-
-### Ubicaciones incluidas por defecto
-- Bodega Principal
-- Nevera Barra
-- Nevera Cajero
-- Barra Cajero
-- Vitrina
-- Oficina
-- Otro
-
-### Crear una nueva ubicación
-1. Clic en **"+ Nueva ubicación"**.
-2. Llena:
-   - **Nombre** (único).
-   - **Tipo**: bodega, nevera, barra, vitrina, oficina, otro.
-   - **Descripción** (opcional).
-   - **Orden**: número para ordenar en las listas desplegables.
-   - **Estado**: activa o inactiva.
-3. Guardar.
-
-### Editar o eliminar
-Botones en cada fila.
-- **Proteccción contra borrado**: si una ubicación tiene stock o transacciones, se marca como inactiva en vez de borrarse.
+- Click **Editar** → abre el diálogo con los datos cargados.
+- Cambia lo que necesites y guarda.
+- Si la nueva versión falla por algún motivo, el sistema **automáticamente restaura la transacción original** sin que pierdas datos.
+- Click **Eliminar** → confirmación → el stock se revierte automáticamente y queda registro del ajuste de reversa en cada producto.
 
 ---
 
-## 7. Categorías
+## 8. Carga masiva CSV
 
-Similar a Ubicaciones. Aquí defines los grupos de productos/servicios.
+Útil para cargar varias transacciones de un golpe (ej. el resumen de ventas del fin de semana).
 
-**Categorías cargadas:** 16 categorías normalizadas a partir del catálogo migrado desde Alegra (Bebidas con alcohol, Bebidas gaseosas, Cafetería, Implementos para pádel, Clases y paquetes Prime Padel, etc.).
+> 👤 **Acceso:** Maestro y Admin (todas). Recepción puede subir solo ventas y traslados.
 
-El CRUD funciona igual que Ubicaciones. Soft-delete si la categoría tiene productos asociados.
+### Flujo
+
+1. Entra a **Transacciones → "⬆ Carga masiva (CSV)"**.
+2. Descarga la plantilla CSV (ya trae las columnas correctas con ejemplos).
+3. Llena el archivo en Excel:
+    - Columnas obligatorias: `fecha, tipo, codigo_producto, ubicacion, cantidad, precio_unitario`.
+    - Opcionales: `notas, ticket`.
+    - Borra las líneas que empiezan con `#` (son comentarios).
+4. Arrastra el archivo o selecciónalo.
+
+### Reglas del archivo
+
+- **fecha**: `DD/MM/AAAA`, `DD-MM-AAAA` o `AAAA-MM-DD`. Opcional con hora: `DD/MM/AAAA HH:MM`.
+- **tipo**: `venta` o `compra` (recepción no puede subir compras).
+- **codigo_producto**: el SKU exacto del producto.
+- **ubicacion**: nombre exacto de la ubicación.
+- **cantidad**: entero positivo.
+- **precio_unitario**:
+    - En **ventas** = precio que pagó el cliente.
+    - En **compras** = costo unitario al proveedor.
+- **ticket** (opcional): rows con el mismo ticket se agrupan en una sola transacción con varios ítems.
+
+### Preview con validación
+
+- **Filas verdes**: válidas, listas para importar.
+- **Filas rojas**: con errores específicos (código no existe, stock insuficiente, ubicación errada, servicio no admite compra, etc.).
+
+**No se puede importar si hay filas rojas** — corriges el CSV y vuelves a subir.
+
+Cuando todo está verde, click **"Confirmar e importar"**. Las transacciones aparecen marcadas con un badge **CSV** en la lista.
 
 ---
 
-## 8. Dashboard
+## 9. Ubicaciones
 
-La pantalla de inteligencia de negocio. Muestra:
+> 👤 **Acceso:** Maestro y Admin.
 
-### KPIs principales
-- **Productos activos** totales y cuántos son inventariables.
-- **Ubicaciones** activas.
-- **Stock total** en unidades físicas.
-- **Valor del inventario** en pesos (a costo).
-- **Alertas de stock**: productos bajo mínimo.
-- **Variación vs mes anterior** (% en monto).
+Lugares físicos donde se guarda el inventario.
 
-### Filtros globales
-- **Categoría** (multi-selección).
-- **Métrica**: ver las gráficas en monto ($ COP) o en cantidad (unidades).
+**Ubicaciones precargadas:** Bodega Principal, Nevera Barra, Nevera Cajero, Barra Cajero, Vitrina, Oficina, Otro.
 
-### Gráficas disponibles en el MVP
-- **Consumo por mes** — barras de OCT 2025 a ABR 2026.
-- **Top 10 productos más vendidos** — barras horizontales.
-- **Consumo por categoría** — gráfica de torta.
-- **Tendencia mensual** — línea dual: cantidad y monto en el mismo gráfico.
+**Crear / editar / eliminar:**
+- **+ Nueva ubicación**: nombre (único), tipo (bodega/nevera/barra/etc.), descripción, **orden** (número que define en qué posición aparece en los dropdowns), estado.
+- **Eliminar**: si tiene stock o transacciones, se marca como inactiva.
 
-### Alertas de stock bajo
-Si hay productos en mínimo o cero, aparece una sección llamando la atención. Desde Inventario puedes filtrar por "Stock bajo" / "Sin stock" para ver cuáles son y reponerlos.
-
-> 🔜 En la versión completa: gráficas por día de la semana, leyendas colapsables, pestañas separadas (inventario / ventas / alertas), filtro por rango de fechas preciso.
+> **Tip:** el campo "Orden" se usa para acomodar el dropdown de ubicaciones cuando registras una venta. Las que más se usan deberían tener orden bajo (1, 2, 3...).
 
 ---
 
-## 9. Preguntas frecuentes
+## 10. Categorías
+
+> 👤 **Acceso:** Maestro.
+
+Grupos de productos/servicios.
+
+**16 categorías precargadas** desde el catálogo de Alegra (Bebidas con alcohol, Cafetería, Implementos para pádel, Clases y paquetes Prime Padel, etc.).
+
+CRUD igual a ubicaciones. Soft-delete si la categoría tiene productos asociados.
+
+---
+
+## 11. Listas de precios
+
+> 👤 **Acceso:** Maestro.
+
+Permite que un mismo producto tenga **precios distintos según el canal o destinatario**.
+
+### ¿Qué son?
+
+Imagina la siguiente tabla:
+
+| Producto | Detal (público) | Equipo Prime | Profesor Kevin | Profesor Bryan |
+|----------|:---:|:---:|:---:|:---:|
+| Botella agua | $4.000 | $3.000 | — | — |
+| Clase 1h | $80.000 | — | $70.000 | $75.000 |
+
+Cada columna es una "lista de precios". Permite que el mismo producto se cobre distinto según el cliente.
+
+**Listas precargadas:**
+- **Detal** (default — la que se usa por defecto en cada venta).
+- Equipo Prime, Pro Team.
+- Kevin García, Bryan Perafán (profesores).
+- Alterno 1 al 8 (reservados para nuevos canales).
+
+### Cómo gestionar
+- **Crear**: + Nueva lista → nombre + código interno (ej. `PEDRO_LOPEZ`) + orden + estado.
+- **Editar**: cambiar nombre, código, orden o desactivar.
+- **Eliminar**: si tiene precios asociados se desactiva en lugar de borrar. **Detal no se puede borrar**.
+
+### Cómo se usa
+1. **Maestro**: en la ficha del producto → sección "Precios por lista" → asigna el precio para cada canal que aplique. Las listas que no apliquen se dejan en blanco.
+2. **Cajero**: cuando registra una venta, el precio se autocompleta con Detal. Si está vendiendo a un Equipo Prime, modifica manualmente el precio.
+
+> Si no manejas precios diferenciados, ignora esta función — todo se vende a precio Detal por defecto.
+
+---
+
+## 12. Dashboard
+
+> 👤 **Acceso:** Maestro.
+
+La pantalla de inteligencia del negocio. **Tres pestañas:**
+
+### KPIs siempre visibles (arriba)
+Productos activos, ubicaciones, stock total, valor del inventario, alertas, variación vs mes anterior.
+
+### Pestaña "Ventas y consumo"
+- **Filtros**: categoría (multi), Mes desde, Mes hasta.
+- **Consumo por mes** (gráfica de barras, monto).
+- **Top productos** (paginado, ordenable por monto o cantidad).
+- **Consumo por categoría** (torta, con leyenda colapsable).
+- **Ventas por día de la semana** (cuando hay transacciones reales).
+- **Top 5 productos por día** (gráfica apilada).
+- **Tabla paginada con TODAS las cantidades vendidas**.
+- **Días estimados de stock** (predictivo): cuántos días faltan para que se acabe cada producto según la velocidad de venta histórica. Sugerencias 🔴 comprar ya, 🟡 programar compra, 🟢 OK.
+
+### Pestaña "Inventario"
+- **Stock por ubicación**: gráfica + tarjetas con cantidad y valor en costo de cada ubicación.
+- **Productos por categoría**: cuántos SKUs tiene cada categoría.
+
+### Pestaña "Alertas"
+- Tabla paginada de productos con stock bajo o agotado.
+- Cada fila: código, nombre, categoría, estado, stock total, mínimo, **chips por ubicación** (rojo si esa ubicación está en 0, amarillo si tiene ≤2). Si hay muchas ubicaciones, "+N más" expande/colapsa.
+- Click en el nombre del producto → ficha del producto.
+
+---
+
+## 13. Usuarios
+
+> 👤 **Acceso:** Maestro.
+
+Gestiona las cuentas del personal del club.
+
+**Tabla:** usuario, nombre, rol, estado, fecha de creación, último ingreso.
+
+### Crear usuario
+1. + Nuevo usuario.
+2. Llena: nombre completo (descripción), usuario (3-30 caracteres, sin mayúsculas ni espacios), rol, contraseña (opcional).
+3. Guardar → modal con las credenciales. **Cópialas y compártelas** — no se vuelven a mostrar.
+
+### Otras acciones
+- **Editar**: cambiar nombre, usuario o contraseña.
+- **Reset pw**: genera una nueva contraseña aleatoria.
+- **Cambiar rol**: con el dropdown directo en la fila.
+- **Desactivar / Reactivar**: el usuario desactivado no puede ingresar pero su historial se conserva.
+
+> No puedes desactivarte a ti mismo ni cambiarte el rol.
+
+---
+
+## 14. Preguntas frecuentes
 
 **¿Qué pasa con los servicios (clases, alquileres, torneos)?**
-No tienen stock. El sistema los guarda como ítems vendibles pero nunca descuenta cantidades. Aparecen en las transacciones con su precio y suman al total, pero no afectan el inventario.
+No tienen stock. Se venden con su precio y suman al total, pero no afectan el inventario.
 
-**¿Y los productos “no inventariables”?**
-Son productos físicos que decides no trackear (ej: "Producto genérico" para ventas manuales sin SKU). Se comportan como servicios: puedes venderlos pero no se les lleva stock.
+**¿Y los productos "no inventariables"?**
+Productos físicos que decides no trackear (ej. promos genéricas). Se comportan como servicios.
 
 **¿Por qué algunos productos aparecen como inactivos?**
-Porque corresponden a ítems del histórico (clases con profesores que ya no están, paquetes descontinuados). Se preservan para que las estadísticas históricas sigan siendo coherentes, pero no salen en los selectores del cajero.
+Corresponden a ítems del histórico (clases con profesores que ya no están, paquetes descontinuados). Se preservan para que las estadísticas sigan siendo coherentes.
 
 **Si me equivoco al registrar una venta, ¿se puede corregir?**
-Sí. Puedes eliminar la transacción desde la lista de Transacciones; el sistema revierte automáticamente el stock. Luego registras la correcta.
+Sí. Click en **Editar** o **Eliminar** desde la lista de Transacciones (con permisos). El sistema revierte automáticamente el stock al eliminar.
 
 **¿Cómo hago el conteo físico del fin de mes?**
-Producto por producto: abre su detalle → "Ajuste de inventario" → elige la ubicación → digita lo que realmente hay → motivo "Conteo físico" → guarda. El sistema muestra la diferencia con lo que tenía registrado, para que sepas si hubo merma, robo o error.
+Producto por producto: ficha → "Ajuste de inventario" → ubicación → cantidad real → motivo "Conteo físico" → guarda.
 
-**¿Cómo se actualiza la lista de precios?**
-Desde el detalle del producto, botón "Editar", sección "Precios por lista". Puedes modificar el Detal, el de Equipo Prime, o los precios especiales.
+**¿Cómo cambio el precio de un producto?**
+Maestro: ficha del producto → Editar → sección "Precios por lista".
+
+**¿Qué pasa si cambio el precio de un producto?**
+Las transacciones ya registradas guardan su precio original (no se afectan). El histórico mensual estimado sí se recalcula. Las nuevas ventas usan el precio actualizado por defecto.
 
 **¿Qué hago si un producto nuevo llega al club?**
-Inventario → "Nuevo ítem" → llena los datos → guarda. Luego entra a su detalle → "Ajuste de inventario" → motivo "Ingreso inicial" → registras cuántos llegaron y a qué ubicación.
+Inventario → "+ Nuevo ítem" → llena los datos. Luego en su ficha → "Ajuste de inventario" → motivo "Ingreso inicial" → registras cuántos llegaron y a qué ubicación.
+
+**¿Qué pasa si olvido mi contraseña?**
+Pídele al Maestro que entre a `/usuarios`, busque tu fila, y le dé click a **Reset pw**.
+
+**¿Cómo veo qué hizo cada empleado?**
+La lista de Transacciones muestra el usuario que registró cada operación con fecha y hora exacta. Filtra por fechas para ver lo de un día puntual.
+
+**¿Puedo ver el sistema en el celular?**
+Sí. El nav se compacta a un menú hamburguesa (☰) y las tablas tienen scroll horizontal.
 
 ---
 
-_Este manual se irá ampliando a medida que se liberen las funciones de la versión completa (login, carga CSV, gráficas avanzadas, etc.)._
-
-_Última actualización: 23 de abril de 2026._
+_Última actualización: 25 de abril de 2026._
