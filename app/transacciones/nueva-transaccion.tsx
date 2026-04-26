@@ -229,25 +229,23 @@ export function NuevaTransaccion({
             <p className="text-xs text-muted-foreground">Sale stock de una ubicación. Precio = lo que paga el cliente.</p>
           </button>
           {!esRecepcion ? (
-            <>
-              <button
-                type="button"
-                onClick={() => cambiarTipo("compra")}
-                className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "compra" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
-              >
-                <p className="text-sm font-semibold text-white">Compra / Ingreso</p>
-                <p className="text-xs text-muted-foreground">Entra stock a una ubicación. Precio = costo del proveedor.</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => cambiarTipo("traslado")}
-                className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "traslado" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
-              >
-                <p className="text-sm font-semibold text-white">Traslado</p>
-                <p className="text-xs text-muted-foreground">Mueve stock entre dos ubicaciones del club (no es venta ni compra).</p>
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={() => cambiarTipo("compra")}
+              className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "compra" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
+            >
+              <p className="text-sm font-semibold text-white">Compra / Ingreso</p>
+              <p className="text-xs text-muted-foreground">Entra stock a una ubicación. Precio = costo del proveedor.</p>
+            </button>
           ) : null}
+          <button
+            type="button"
+            onClick={() => cambiarTipo("traslado")}
+            className={`flex-1 rounded-md border px-4 py-3 text-left transition ${tipo === "traslado" ? "border-brand-orange bg-brand-orange/10" : "border-border hover:border-brand-orange/50"}`}
+          >
+            <p className="text-sm font-semibold text-white">Traslado</p>
+            <p className="text-xs text-muted-foreground">Mueve stock entre dos ubicaciones del club (no es venta ni compra).</p>
+          </button>
         </div>
 
         <Field label="Buscar producto o servicio">

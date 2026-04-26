@@ -19,9 +19,9 @@ export async function importarTransacciones(grupos: TransaccionAgrupada[]): Prom
   const fallidas: { ticket: string | null; razon: string }[] = [];
 
   for (const g of grupos) {
-    // Recepción solo puede importar ventas.
-    if (perfil.rol === "recepcion" && g.tipo !== "venta") {
-      fallidas.push({ ticket: g.ticket, razon: "Tu rol solo permite registrar ventas." });
+    // Recepción no puede importar compras.
+    if (perfil.rol === "recepcion" && g.tipo === "compra") {
+      fallidas.push({ ticket: g.ticket, razon: "Tu rol no permite registrar compras." });
       continue;
     }
     const items = g.items.map((it) => ({

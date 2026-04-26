@@ -9,12 +9,12 @@ export default async function TransaccionesPage() {
   const perfil = await requireProfile();
   const sb = sbAdmin();
 
-  // Recepción solo ve ventas; admin/maestro ven todo.
+  // Recepción ve ventas y traslados (no compras); admin/maestro ven todo.
   const txsQuery = sb.from("transacciones").select(`
     id, tipo, fecha, total, notas, origen, usuario_id,
     transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, lista_precio_id, productos(codigo, nombre, categoria_id, categorias(nombre)))
   `).order("fecha", { ascending: false }).limit(200);
-  const txsQueryFinal = perfil.rol === "recepcion" ? txsQuery.eq("tipo", "venta") : txsQuery;
+  const txsQueryFinal = perfil.rol === "recepcion" ? txsQuery.in("tipo", ["venta", "traslado"]) : txsQuery;
 
   const [
     { data: txs },

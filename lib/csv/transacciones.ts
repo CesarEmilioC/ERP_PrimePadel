@@ -178,21 +178,26 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
     }
 
     const prod = prodByCodigo.get(codigoStr.toLowerCase());
-    if (!prod) errors.push(`código "${codigoStr}" no existe en el catálogo`);
-    else if (!prod.activo) errors.push(`código "${codigoStr}" está inactivo`);
+    if (!prod) errors.push(`No se encontró producto con código "${codigoStr}"`);
+    else if (!prod.activo) errors.push(`El producto "${prod.nombre}" está inactivo`);
 
     const ubi = ubiByNombre.get(ubiStr.toLowerCase());
-    if (!ubi) errors.push(`ubicación "${ubiStr}" no encontrada`);
-    else if (!ubi.activa) errors.push(`ubicación "${ubiStr}" está desactivada`);
+    if (!ubi) errors.push(`Ubicación "${ubiStr}" no encontrada`);
+    else if (!ubi.activa) errors.push(`Ubicación "${ubiStr}" está desactivada`);
+
+    // Servicios no aplican para compras ni traslados (no tienen stock).
+    if (prod && !prod.es_inventariable && (tipoStr === "compra" || tipoStr === "traslado")) {
+      errors.push(`"${prod.nombre}" no se inventaría (es servicio o no inventariable); no admite ${tipoStr}s`);
+    }
 
     const cantidad = Number(cantStr.replace(",", "."));
     if (!Number.isFinite(cantidad) || cantidad <= 0 || !Number.isInteger(cantidad)) {
-      errors.push(`cantidad inválida ("${cantStr}") — debe ser entero positivo`);
+      errors.push(`Cantidad inválida ("${cantStr}") — debe ser entero positivo`);
     }
 
     const precio = Number(precioStr.replace(/[,$ ]/g, ""));
     if (!Number.isFinite(precio) || precio < 0) {
-      errors.push(`precio inválido ("${precioStr}")`);
+      errors.push(`Precio inválido ("${precioStr}")`);
     }
 
     // Validación de stock para ventas — acumula las filas previas del mismo archivo.
@@ -200,7 +205,7 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
       const disponible = stockActual(prod.id, ubi.id);
       if (disponible < cantidad) {
         errors.push(
-          `stock insuficiente: ${prod.codigo ?? prod.nombre} tiene ${disponible} en ${ubi.nombre}, se intenta vender ${cantidad}`,
+          `Stock insuficiente: "${prod.nombre}" tiene ${disponible} en ${ubi.nombre}, se intenta vender ${cantidad}`,
         );
       }
     }

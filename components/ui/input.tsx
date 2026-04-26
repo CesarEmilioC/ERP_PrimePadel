@@ -105,12 +105,41 @@ export const NumericInput = React.forwardRef<
     ? ""
     : formatter.format(value || 0);
 
+  // Caracteres permitidos al teclear:
+  //   Sin decimales: solo dígitos.
+  //   Con decimales: dígitos, una coma o punto.
+  const validChars = allowDecimals ? /^[0-9.,]$/ : /^[0-9]$/;
+
   return (
     <input
       ref={ref}
       type="text"
       inputMode={allowDecimals ? "decimal" : "numeric"}
       value={display}
+      onKeyDown={(e) => {
+        // Permitir teclas de control (Backspace, Delete, flechas, Tab, etc.)
+        if (e.key.length > 1 || e.ctrlKey || e.metaKey) return;
+        if (!validChars.test(e.key)) {
+          e.preventDefault();
+        }
+      }}
+      onPaste={(e) => {
+        // Bloquear pegar texto con letras (deja pegar números puros).
+        const text = e.clipboardData.getData("text");
+        const cleaned = allowDecimals ? text.replace(/[^\d.,-]/g, "") : text.replace(/\D/g, "");
+        if (cleaned !== text) {
+          e.preventDefault();
+          // Si hay algo limpio, lo insertamos.
+          if (cleaned) {
+            const target = e.target as HTMLInputElement;
+            const start = target.selectionStart ?? raw.length;
+            const end = target.selectionEnd ?? raw.length;
+            const newValue = raw.slice(0, start) + cleaned + raw.slice(end);
+            setRaw(newValue);
+            onChange(parse(newValue));
+          }
+        }
+      }}
       onFocus={(e) => {
         setFocused(true);
         setRaw(String(value ?? 0));
@@ -127,7 +156,6 @@ export const NumericInput = React.forwardRef<
       onChange={(e) => {
         const v = e.target.value;
         setRaw(v);
-        // Notificar cambio en tiempo real (parseado), pero sin forzar mínimo aún.
         const n = parse(v);
         if (n !== value) onChange(n);
       }}

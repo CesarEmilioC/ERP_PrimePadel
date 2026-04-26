@@ -38,6 +38,7 @@ export function InventarioClient({
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
   isMaestro: boolean;
 }) {
+  const PAGE_SIZE = 10;
   const [q, setQ] = React.useState("");
   const [fCats, setFCats] = React.useState<string[]>([]);
   const [fUbis, setFUbis] = React.useState<string[]>([]);
@@ -47,6 +48,10 @@ export function InventarioClient({
   const [min, setMin] = React.useState("");
   const [max, setMax] = React.useState("");
   const [creating, setCreating] = React.useState(false);
+  const [page, setPage] = React.useState(0);
+
+  // Reset a primera página cuando cambian los filtros.
+  React.useEffect(() => { setPage(0); }, [q, fCats, fUbis, fTipo, fEstado, fStock, min, max]);
 
   const filtered = React.useMemo(() => {
     return rows.filter((r) => {
@@ -146,8 +151,17 @@ export function InventarioClient({
         </div>
       </Card>
 
-      <div className="text-xs text-muted-foreground">
-        Mostrando {filtered.length} de {rows.length} ítems
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>
+          Mostrando {filtered.length === 0 ? "0" : `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, filtered.length)}`} de {filtered.length} ítems (de {rows.length} totales)
+        </span>
+        {filtered.length > PAGE_SIZE ? (
+          <div className="flex items-center gap-2">
+            <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">← Ant.</button>
+            <span>{page + 1} / {Math.ceil(filtered.length / PAGE_SIZE)}</span>
+            <button disabled={page >= Math.ceil(filtered.length / PAGE_SIZE) - 1} onClick={() => setPage((p) => p + 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">Sig. →</button>
+          </div>
+        ) : null}
       </div>
 
       <Table>
@@ -165,7 +179,7 @@ export function InventarioClient({
           </TR>
         </THead>
         <TBody>
-          {filtered.slice(0, 500).map((r) => (
+          {filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((r) => (
             <TR key={r.id}>
               <TD className="font-mono text-xs text-muted-foreground">{r.codigo ?? "—"}</TD>
               <TD className="max-w-sm">
@@ -198,7 +212,13 @@ export function InventarioClient({
           ))}
         </TBody>
       </Table>
-      {filtered.length > 500 ? <p className="text-xs text-muted-foreground">Mostrando primeros 500. Ajusta los filtros para ver más.</p> : null}
+      {filtered.length > PAGE_SIZE ? (
+        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">← Ant.</button>
+          <span>{page + 1} / {Math.ceil(filtered.length / PAGE_SIZE)}</span>
+          <button disabled={page >= Math.ceil(filtered.length / PAGE_SIZE) - 1} onClick={() => setPage((p) => p + 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">Sig. →</button>
+        </div>
+      ) : null}
 
       {creating ? (
         <ProductoDialog

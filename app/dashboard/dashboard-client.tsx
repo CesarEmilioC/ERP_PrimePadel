@@ -43,11 +43,14 @@ type TopPorDia = { nombre: string; porDia: number[] };
 type VentasPorDia = { monto: number; count: number };
 
 const COLORS = ["#FF8C42", "#F5C518", "#FFB366", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#eab308", "#06b6d4", "#f97316"];
+
+// Paleta específica para gráficas apiladas (5 productos): tonos contrastantes y diferenciados.
+const STACK_COLORS = ["#FF6B35", "#F7B801", "#06D6A0", "#118AB2", "#A663CC"];
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 const DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 const PAGE_MESES = 6;
-const PAGE_TOP = 5;
+const PAGE_TOP = 10;
 const LEGEND_THRESHOLD = 3;
 
 function mesLabel(anio: number, mes: number) {
@@ -456,7 +459,7 @@ export function DashboardClient({
                     <Tooltip content={<DarkTooltip formatter={(v: number) => formatInt(v) + " uds"} />} cursor={{ fill: "#ffffff10" }} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     {top5DiaSemana.map((p, i) => (
-                      <Bar key={p.nombre} dataKey={p.nombre} name={p.nombre} stackId="a" fill={COLORS[i % COLORS.length]} />
+                      <Bar key={p.nombre} dataKey={p.nombre} name={p.nombre} stackId="a" fill={STACK_COLORS[i % STACK_COLORS.length]} />
                     ))}
                   </BarChart>
                 </ResponsiveContainer>

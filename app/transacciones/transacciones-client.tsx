@@ -58,12 +58,22 @@ export function TransaccionesClient({
   const toast = useToast();
   const [showNew, setShowNew] = React.useState(false);
   const [editPayload, setEditPayload] = React.useState<EditarPayload | null>(null);
+  const PAGE_SIZE = 10;
   const [fTipo, setFTipo] = React.useState<"todas" | "venta" | "compra" | "traslado">("todas");
   const [fDesde, setFDesde] = React.useState<string>("");
   const [fHasta, setFHasta] = React.useState<string>("");
   const [fCategorias, setFCategorias] = React.useState<string[]>([]);
   const [fProductos, setFProductos] = React.useState<string[]>([]);
   const [borrar, setBorrar] = React.useState<TransaccionLista | null>(null);
+  const [page, setPage] = React.useState(0);
+
+  // Para evitar hydration mismatch: el cálculo de "es hoy" depende de la zona
+  // horaria del cliente, así que solo renderizamos los botones de acción tras
+  // el mount. Antes del mount no aparecen.
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => { setMounted(true); }, []);
+
+  React.useEffect(() => { setPage(0); }, [fTipo, fDesde, fHasta, fCategorias, fProductos]);
 
   const esRecepcion = perfilActual.rol === "recepcion";
   const esMaestro = perfilActual.rol === "maestro";
@@ -89,9 +99,9 @@ export function TransaccionesClient({
     if (perfilActual.rol === "admin") {
       return t.usuario_rol !== "maestro";
     }
-    // Recepción: sus propias ventas del día.
+    // Recepción: sus propias ventas o traslados del día (no compras).
     if (t.usuario_id !== perfilActual.user_id) return false;
-    if (esRecepcion && t.tipo !== "venta") return false;
+    if (esRecepcion && t.tipo === "compra") return false;
     const fecha = new Date(t.fecha);
     const hoy = new Date();
     return fecha.getFullYear() === hoy.getFullYear()
@@ -175,11 +185,11 @@ export function TransaccionesClient({
       <Card>
         <div className="grid gap-3 md:grid-cols-3">
           <Field label="Tipo">
-            <Select value={fTipo} onChange={(e) => setFTipo(e.target.value as typeof fTipo)} disabled={esRecepcion}>
-              <option value="todas">{esRecepcion ? "Ventas" : "Todas"}</option>
-              {!esRecepcion ? <option value="venta">Ventas</option> : null}
+            <Select value={fTipo} onChange={(e) => setFTipo(e.target.value as typeof fTipo)}>
+              <option value="todas">Todas</option>
+              <option value="venta">Ventas</option>
               {!esRecepcion ? <option value="compra">Compras</option> : null}
-              {!esRecepcion ? <option value="traslado">Traslados</option> : null}
+              <option value="traslado">Traslados</option>
             </Select>
           </Field>
           <Field label="Desde">
@@ -219,6 +229,17 @@ export function TransaccionesClient({
         </p>
       </Card>
 
+      {filtradas.length > PAGE_SIZE ? (
+        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
+          <span>
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtradas.length)} de {filtradas.length}
+          </span>
+          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">← Ant.</button>
+          <span>{page + 1} / {Math.ceil(filtradas.length / PAGE_SIZE)}</span>
+          <button disabled={page >= Math.ceil(filtradas.length / PAGE_SIZE) - 1} onClick={() => setPage((p) => p + 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">Sig. →</button>
+        </div>
+      ) : null}
+
       {filtradas.length === 0 ? (
         <EmptyState
           title={transacciones.length === 0 ? "Aún no hay transacciones registradas" : "Sin resultados con esos filtros"}
@@ -243,9 +264,9 @@ export function TransaccionesClient({
               </TR>
             </THead>
             <TBody>
-              {filtradas.map((t) => {
-                const editable = puedeEditar(t);
-                const borrable = esMaestro || editable;
+              {filtradas.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE).map((t) => {
+                const editable = mounted && puedeEditar(t);
+                const borrable = mounted && (esMaestro || editable);
                 return (
                   <TR key={t.id}>
                     <TD className="whitespace-nowrap text-xs text-muted-foreground">{formatFechaHora(t.fecha)}</TD>

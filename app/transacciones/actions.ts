@@ -14,9 +14,9 @@ type ActionResult<T = unknown> =
 export async function registrarTransaccion(input: unknown): Promise<ActionResult<{ id: string }>> {
   const perfil = await requireProfile();
   const parsed = transaccionSchema.parse(input);
-  // Recepción solo puede registrar ventas.
-  if (perfil.rol === "recepcion" && parsed.tipo !== "venta") {
-    return { error: "Tu rol solo permite registrar ventas. Pídele a un admin que registre las compras y traslados." };
+  // Recepción puede registrar ventas y traslados (no compras).
+  if (perfil.rol === "recepcion" && parsed.tipo === "compra") {
+    return { error: "Tu rol no permite registrar compras. Pídele a un admin que la registre." };
   }
   const { data, error } = await sbAdmin().rpc("registrar_transaccion", {
     p_tipo: parsed.tipo,
@@ -63,9 +63,9 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
   const perfil = await requireProfile();
   const parsed = transaccionSchema.parse(input);
 
-  // Recepción solo puede tener ventas.
-  if (perfil.rol === "recepcion" && parsed.tipo !== "venta") {
-    return { error: "Tu rol solo permite editar ventas." };
+  // Recepción no puede convertir nada a compra.
+  if (perfil.rol === "recepcion" && parsed.tipo === "compra") {
+    return { error: "Tu rol no permite registrar compras." };
   }
 
   const original = await fetchTxParaReversa(id);

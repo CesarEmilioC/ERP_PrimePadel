@@ -36,15 +36,15 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
     setResumen(null);
     const text = await file.text();
     const parsed = parseCSV(text, catalogo);
-    // Si el usuario solo puede registrar ventas, marcamos las filas de compra/traslado como inválidas.
+    // Si el usuario es recepción, marcamos las filas de compra como inválidas.
     if (soloVentas) {
       const movidos: typeof parsed.invalid = [];
       const validasFinal = parsed.valid.filter((r) => {
-        if (r.tipo !== "venta") {
+        if (r.tipo === "compra") {
           movidos.push({
             rowNumber: r.rowNumber,
             raw: { fecha: r.fecha, tipo: r.tipo, codigo_producto: r.producto_codigo, ubicacion: r.ubicacion_nombre, cantidad: String(r.cantidad) },
-            errors: [`Tu rol solo permite registrar ventas; este renglón es "${r.tipo}".`],
+            errors: [`Tu rol no permite registrar compras (solo ventas y traslados).`],
           });
           return false;
         }

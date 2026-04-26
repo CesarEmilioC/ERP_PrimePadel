@@ -46,20 +46,20 @@ export function NavClient({ perfil }: { perfil: Perfil }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-2 px-3 py-2 sm:gap-4 sm:px-4 md:min-h-28 md:flex-nowrap">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="mx-auto flex min-h-20 max-w-7xl flex-wrap items-center justify-between gap-3 px-3 py-2 sm:gap-4 sm:px-4 md:min-h-28 md:flex-nowrap">
+        <Link href="/" className="flex shrink-0 items-center gap-3">
           <Image
             src="/logo.png"
             alt="Prime Padel"
             width={400}
             height={120}
             priority
-            className="h-10 w-auto brightness-150 sm:h-16 md:h-24"
+            className="h-14 w-auto brightness-150 sm:h-16 md:h-24"
           />
           <span className="sr-only">Prime Padel ERP</span>
         </Link>
 
-        <nav className="flex flex-wrap items-center gap-1">
+        <nav className="flex w-full flex-wrap items-center justify-end gap-1 md:w-auto">
           {visibles.map((l) => {
             const active = pathname?.startsWith(l.href);
             return (
