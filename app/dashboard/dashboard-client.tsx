@@ -157,6 +157,7 @@ export function DashboardClient({
   const [pageTop, setPageTop] = React.useState(0);
   const [pageSkus, setPageSkus] = React.useState(0);
   const [pageTodos, setPageTodos] = React.useState(0);
+  const [pageAlertas, setPageAlertas] = React.useState(0);
   const [leyendaAbierta, setLeyendaAbierta] = React.useState<null | "categoria">(null);
 
   // Meses disponibles en el histórico (para selectors).
@@ -655,9 +656,14 @@ export function DashboardClient({
           ) : (
             <>
               <div className="mb-3">
-                <h2 className="text-lg font-semibold text-white">Productos con stock bajo o agotado</h2>
+                <h2 className="text-lg font-semibold text-white">
+                  Productos con stock bajo o agotado
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">
+                    ({pageAlertas * PAGE_TOP + 1}–{Math.min((pageAlertas + 1) * PAGE_TOP, alertasDetalladas.length)} de {alertasDetalladas.length})
+                  </span>
+                </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {alertasDetalladas.length} productos. Haz clic en cualquiera para ir a su ficha y registrar una compra o ajuste.
+                  Haz clic en cualquiera para ir a su ficha y registrar una compra o ajuste.
                 </p>
               </div>
               <Table>
@@ -672,7 +678,7 @@ export function DashboardClient({
                   </TR>
                 </THead>
                 <TBody>
-                  {alertasDetalladas.map((a) => (
+                  {alertasDetalladas.slice(pageAlertas * PAGE_TOP, (pageAlertas + 1) * PAGE_TOP).map((a) => (
                     <TR key={a.producto_id}>
                       <TD>
                         <a href={`/inventario/${a.producto_id}`} className="text-white hover:text-brand-orange">
@@ -699,6 +705,7 @@ export function DashboardClient({
                   ))}
                 </TBody>
               </Table>
+              <Pager page={pageAlertas} total={alertasDetalladas.length} pageSize={PAGE_TOP} onChange={setPageAlertas} />
             </>
           )}
         </Card>
