@@ -148,6 +148,18 @@ export function InventarioClient({
           <Field label="Cantidad máx.">
             <Input type="number" value={max} onChange={(e) => setMax(e.target.value)} placeholder="∞" />
           </Field>
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setQ(""); setFCats([]); setFUbis([]); setFTipo("todos");
+                setFEstado("solo_activos"); setFStock("todos"); setMin(""); setMax("");
+              }}
+            >
+              Limpiar filtros
+            </Button>
+          </div>
         </div>
       </Card>
 

@@ -79,6 +79,40 @@ function DarkTooltip({ active, payload, label, formatter }: any) {
   );
 }
 
+function UbicacionesChips({ ubicaciones }: { ubicaciones: { nombre: string; cantidad: number }[] }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const LIMIT = 3;
+  const muestra = expanded ? ubicaciones : ubicaciones.slice(0, LIMIT);
+  const restantes = ubicaciones.length - LIMIT;
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {muestra.map((u) => (
+        <span
+          key={u.nombre}
+          className={`rounded px-1.5 py-0.5 text-xs ${
+            u.cantidad === 0
+              ? "border border-red-900/40 bg-red-950/20 text-red-300"
+              : u.cantidad <= 2
+              ? "border border-yellow-900/40 bg-yellow-950/20 text-yellow-300"
+              : "border border-border bg-muted/30 text-muted-foreground"
+          }`}
+        >
+          {u.nombre}: {u.cantidad}
+        </span>
+      ))}
+      {restantes > 0 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="rounded border border-border bg-muted/20 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-brand-orange hover:text-brand-orange"
+        >
+          {expanded ? "Ver menos" : `+${restantes} más`}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 function Pager({ page, total, pageSize, onChange }: { page: number; total: number; pageSize: number; onChange: (p: number) => void }) {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
@@ -658,22 +692,7 @@ export function DashboardClient({
                         {a.ubicaciones.length === 0 ? (
                           <span className="text-xs text-muted-foreground">sin asignación</span>
                         ) : (
-                          <div className="flex flex-wrap gap-1">
-                            {a.ubicaciones.map((u) => (
-                              <span
-                                key={u.nombre}
-                                className={`rounded px-1.5 py-0.5 text-xs ${
-                                  u.cantidad === 0
-                                    ? "border border-red-900/40 bg-red-950/20 text-red-300"
-                                    : u.cantidad <= 2
-                                    ? "border border-yellow-900/40 bg-yellow-950/20 text-yellow-300"
-                                    : "border border-border bg-muted/30 text-muted-foreground"
-                                }`}
-                              >
-                                {u.nombre}: {u.cantidad}
-                              </span>
-                            ))}
-                          </div>
+                          <UbicacionesChips ubicaciones={a.ubicaciones} />
                         )}
                       </TD>
                     </TR>

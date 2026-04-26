@@ -112,62 +112,63 @@ Esto antes pasaba al server y fallaba allá; ahora se atrapa al validar el CSV y
 
 Login como `recepcion1`:
 
-- [ ] En `/transacciones` → "+ Nueva transacción" → aparecen los botones **Venta** y **Traslado** (NO aparece "Compra")
-- [ ] Selecciona **Traslado**, agrega un producto, elige origen y destino, cantidad → registra. Funciona.
-- [ ] La transacción aparece en la lista con badge "Traslado" (amarillo)
-- [ ] El filtro de "Tipo" para recepción ahora ofrece: Todas / Ventas / Traslados (NO compras)
-- [ ] Recepción puede editar/eliminar **sus propias** ventas o traslados del día (igual que antes con ventas)
-- [ ] Carga masiva CSV: si subes una venta + un traslado + una compra → solo la compra cae en rojo con mensaje "Tu rol no permite registrar compras"
+- [X] En `/transacciones` → "+ Nueva transacción" → aparecen los botones **Venta** y **Traslado** (NO aparece "Compra")
+- [X] Selecciona **Traslado**, agrega un producto, elige origen y destino, cantidad → registra. Funciona.
+- [X] La transacción aparece en la lista con badge "Traslado" (amarillo)
+- [X] El filtro de "Tipo" para recepción ahora ofrece: Todas / Ventas / Traslados (NO compras)
+- [X] Recepción puede editar/eliminar **sus propias** ventas o traslados del día (igual que antes con ventas)
+- [X] Carga masiva CSV: si subes una venta + un traslado + una compra → solo la compra cae en rojo con mensaje "Tu rol no permite registrar compras"
 
 ### B.2 Hydration error #418
 
-- [ ] Abre `/transacciones`, presiona `F12 → Console`
-- [ ] **NO debe salir** el error `Minified React error #418`
+- [X] Abre `/transacciones`, presiona `F12 → Console`
+- [X] **NO debe salir** el error `Minified React error #418`
 - [ ] Si sigue saliendo, copia el stacktrace completo aquí:
-> 
+-> favicon.ico:1  Failed to load resource: the server responded with a status of 404 ()
 
 ### B.3 NumericInput bloquea letras
 
 En "+ Nueva transacción" → campo cantidad o precio:
 
-- [ ] Intenta escribir letras (ej. `abc`) → **no aparecen** en el input (se bloquean al teclear)
-- [ ] Intenta pegar `1a2b3c` (Ctrl+V) → solo se pegan los dígitos: `123`
-- [ ] Las teclas Backspace, Delete, flechas, Tab siguen funcionando
-- [ ] Lo mismo en formulario de producto (stock mínimo, costo, precios) y en ajuste de inventario
+- [X] Intenta escribir letras (ej. `abc`) → **no aparecen** en el input (se bloquean al teclear)
+- [X] Intenta pegar `1a2b3c` (Ctrl+V) → solo se pegan los dígitos: `123`
+- [X] Las teclas Backspace, Delete, flechas, Tab siguen funcionando
+- [X] Lo mismo en formulario de producto (stock mínimo, costo, precios) y en ajuste de inventario
 
 ### B.4 Paginación 10 por página
 
-- [ ] **`/inventario`**: ahora muestra 10 ítems por página, con paginador arriba ("X–Y de Z ítems") y abajo
-- [ ] Cambiar un filtro reinicia a la página 1
-- [ ] **`/transacciones`**: 10 transacciones por página, paginador arriba y abajo
-- [ ] **Dashboard → Top productos / Cantidades / SKUs**: 10 por página (antes era 5)
+- [X] **`/inventario`**: ahora muestra 10 ítems por página, con paginador arriba ("X–Y de Z ítems") y abajo
+- [X] Cambiar un filtro reinicia a la página 1
+- [X] **`/transacciones`**: 10 transacciones por página, paginador arriba y abajo
+- [X] **Dashboard → Top productos / Cantidades / SKUs**: 10 por página (antes era 5)
+-> Por qué la página de inventarios no tiene botón de limpiar filtros Todas las páginas con filtro deben tenerlo.
 
 ### B.5 Colores de gráfica apilada
 
-- [ ] Dashboard → pestaña Ventas → "Top 5 productos por día de la semana"
-- [ ] Los 5 colores de la gráfica son distinguibles entre sí (naranja, amarillo, verde menta, azul, lila)
+- [X] Dashboard → pestaña Ventas → "Top 5 productos por día de la semana"
+- [X] Los 5 colores de la gráfica son distinguibles entre sí (naranja, amarillo, verde menta, azul, lila)
 
 ### B.6 CSV con mejores mensajes
 
-- [ ] Subir un CSV con código inválido → mensaje: *No se encontró producto con código "XYZ"* (correcto, usa código)
-- [ ] Subir un CSV con stock insuficiente → mensaje: *Stock insuficiente: "Cerveza Aguila 330ml" tiene 5 en Barra Cajero, se intenta vender 10* (usa nombre del producto)
-- [ ] Subir un CSV con compra de un servicio → mensaje: *"Clase 1 hora" no se inventaría (es servicio o no inventariable); no admite compras*
+- [X] Subir un CSV con código inválido → mensaje: *No se encontró producto con código "XYZ"* (correcto, usa código)
+- [X] Subir un CSV con stock insuficiente → mensaje: *Stock insuficiente: "Cerveza Aguila 330ml" tiene 5 en Barra Cajero, se intenta vender 10* (usa nombre del producto)
+- [X] Subir un CSV con compra de un servicio → mensaje: *"Clase 1 hora" no se inventaría (es servicio o no inventariable); no admite compras*
 
 ### B.7 Logo móvil más grande
 
-- [ ] Abrir en celular o redimensionar a 400px de ancho
-- [ ] Logo se ve más grande que antes (h-14 = 56px, antes era 40px)
-- [ ] El nav ocupa el ancho completo debajo del logo en móvil
-- [ ] Los links del nav siguen siendo accesibles, no se cortan
-
+- [X] Abrir en celular o redimensionar a 400px de ancho
+- [X] Logo se ve más grande que antes (h-14 = 56px, antes era 40px)
+- [X] El nav ocupa el ancho completo debajo del logo en móvil
+- [X] Los links del nav siguen siendo accesibles, no se cortan
+-> QUiero que el logo de PP sea más grande y el nav tenga un hamburger menu si tiene más de 2 pestañas para el menú.
 ---
 
 ## C. Pendientes / decisiones para próximas rondas
 
 Marca lo que quieras y procedemos:
 
-- [ ] Construir UI `/listas-precios` para gestionar profesores y canales (Maestro)
-- [ ] Si los chips de ubicaciones en alertas se ven apeñuzcados con muchas, agregar "+N más" colapsable
+- [X] Construir UI `/listas-precios` para gestionar profesores y canales (Maestro)
+- [X] Si los chips de ubicaciones en alertas se ven apeñuzcados con muchas, agregar "+N más" colapsable
 - [ ] Cambiar el cálculo de "Variación mes anterior" a comparar contra mes calendario actual (cuando haya transacciones reales del mes en curso)
 - [ ] Otros bugs o mejoras que vayas notando
 
@@ -189,3 +190,5 @@ Cuando termines la verificación y todo esté ✅:
 1. Actualizamos el manual de usuario completo
 2. Creamos la extensión del manual para el rol Maestro
 3. Marcamos cotización como entregada
+
+-> A veces sigue demorándose bastante en navegar entre páginas, doy click sobre los botones y parece que nada estuviese cargando y ya luego de unos 5 segundos me redirige.
