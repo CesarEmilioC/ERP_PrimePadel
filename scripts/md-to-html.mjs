@@ -7,6 +7,13 @@ import { marked } from "marked";
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { resolve, basename, extname, join } from "node:path";
 
+// Opciones de marked: respetar saltos de línea simples (estilo GitHub).
+// Sin esto, líneas consecutivas sin línea en blanco entre ellas se unen en un solo párrafo.
+const MARKED_OPTS = {
+  breaks: true, // un salto de línea = <br>
+  gfm: true,    // tablas, autolinks, etc.
+};
+
 const ROOT = resolve(process.cwd());
 const DOCS = join(ROOT, "docs");
 
@@ -188,7 +195,7 @@ function template(title, body) {
 
 for (const src of targets) {
   const md = readFileSync(src, "utf8");
-  const html = marked(md);
+  const html = marked(md, MARKED_OPTS);
   // Título = primer H1 del markdown o nombre del archivo
   const titleMatch = md.match(/^#\s+(.+)/m);
   const title = titleMatch ? titleMatch[1].replace(/\*\*/g, "") : basename(src, ".md");
