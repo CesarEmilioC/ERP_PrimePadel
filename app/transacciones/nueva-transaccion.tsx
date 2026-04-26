@@ -219,7 +219,7 @@ export function NuevaTransaccion({
       footer={<><Button variant="outline" onClick={onClose}>Cancelar</Button><Button onClick={submit} disabled={saving}>{saving ? "Guardando..." : isEdit ? `Guardar cambios (${formatCOP(total)})` : `Registrar ${tipo} (${formatCOP(total)})`}</Button></>}
     >
       <div className="space-y-5">
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             onClick={() => cambiarTipo("venta")}
@@ -299,6 +299,8 @@ export function NuevaTransaccion({
 
         {items.length > 0 ? (
           <div className="rounded-md border border-border">
+            <div className="overflow-x-auto">
+              <div className="min-w-[720px]">
             {/* Header */}
             {tipo === "traslado" ? (
               <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
@@ -396,9 +398,11 @@ export function NuevaTransaccion({
                 </div>
               );
             })}
-            <div className="flex items-center justify-between border-t border-border px-3 py-3">
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3 py-3">
               <p className="text-sm text-muted-foreground">{items.length} línea(s)</p>
-              <p className="text-lg font-bold text-white">
+              <p className="text-base font-bold text-white sm:text-lg">
                 {tipo === "traslado"
                   ? `Costo movido (ref.): ${formatCOP(total)}`
                   : `Total ${tipo === "compra" ? "compra (costo)" : "venta"}: ${formatCOP(total)}`}

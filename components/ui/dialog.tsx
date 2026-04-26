@@ -42,25 +42,27 @@ export function Dialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 p-2 sm:items-center sm:p-4"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
         className={cn(
-          "w-full rounded-lg border border-border bg-card shadow-xl",
+          "my-auto flex max-h-[95vh] w-full flex-col rounded-lg border border-border bg-card shadow-xl",
           width,
         )}
         onClick={(e) => e.stopPropagation()}
       >
         {title ? (
-          <div className="border-b border-border px-5 py-4">
+          <div className="flex-shrink-0 border-b border-border px-5 py-4">
             <h2 className="text-lg font-semibold text-white">{title}</h2>
           </div>
         ) : null}
-        <div className="p-5">{children}</div>
-        {footer ? <div className="flex justify-end gap-2 border-t border-border px-5 py-3">{footer}</div> : null}
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
+        {footer ? (
+          <div className="flex flex-shrink-0 flex-wrap justify-end gap-2 border-t border-border px-5 py-3">{footer}</div>
+        ) : null}
       </div>
     </div>
   );
