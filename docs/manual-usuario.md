@@ -49,6 +49,7 @@ El sistema tiene **tres niveles de acceso** según las responsabilidades del usu
 | Registrar traslado entre ubicaciones | ✅ | ✅ | ✅ |
 | Registrar compra (entrada de stock) | ✅ | ✅ | ❌ |
 | Carga masiva por CSV | ✅ | ✅ | ✅ (solo ventas y traslados) |
+| Descargar CSV de transacciones (rango de fechas) | ✅ | ✅ | ❌ |
 | Editar / eliminar sus propias transacciones del día | ✅ | ✅ | ✅ |
 | Editar / eliminar transacciones de otros usuarios | ✅ | ✅ (excepto del Maestro) | ❌ |
 | Editar / eliminar transacciones de días pasados | ✅ | ✅ (excepto del Maestro) | ❌ |

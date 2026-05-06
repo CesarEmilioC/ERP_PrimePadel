@@ -252,6 +252,22 @@ Pasos:
 
 ## 9. Mantenimiento y rutinas mensuales
 
+### Exportar transacciones a CSV
+
+Para auditoría externa, contabilidad o análisis en Excel hay un botón **"⬇ Descargar CSV"** en la pantalla de **Transacciones** (visible solo para Admin y Maestro).
+
+Pasos:
+1. Entra a **Transacciones** → click en **"⬇ Descargar CSV"**.
+2. Elige el **tipo de reporte**:
+   - **Historial por ítem** — una fila por cada producto vendido/comprado/trasladado. Útil para analizar qué tanto se mueve cada producto en el rango.
+   - **Historial por transacción** — una fila por transacción con resumen de productos y total. Útil para listado de operaciones.
+3. Elige **fecha inicial** y **fecha final** (zona horaria Bogotá). Por defecto trae el mes actual.
+4. Click en **Descargar**. Se baja un archivo `.csv` que se abre directamente en Excel/Numbers/Google Sheets.
+
+> **Límite:** rango máximo de 2 años por descarga. Si necesitas más, hazlo en varias descargas.
+>
+> **Tip:** el CSV trae acentos y ñ correctamente (UTF-8 con BOM). Si abres el archivo y ves caracteres raros, asegúrate de abrirlo con doble click — no copies/pegues el contenido.
+
 ### Diariamente
 - Revisa la pestaña Alertas del Dashboard.
 - Confirma que todas las ventas del día se registraron (preguntale a recepción si tienen anotaciones pendientes para subir por CSV).
