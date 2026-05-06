@@ -9,6 +9,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, Card, EmptyState } from "@/components/ui/table";
 import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { NuevaTransaccion, type EditarPayload } from "./nueva-transaccion";
 import { deleteTransaccion, exportarTransaccionesCSV } from "./actions";
@@ -274,16 +275,13 @@ export function TransaccionesClient({
         </p>
       </Card>
 
-      {filtradas.length > PAGE_SIZE ? (
-        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-          <span>
-            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, filtradas.length)} de {filtradas.length}
-          </span>
-          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">← Ant.</button>
-          <span>{page + 1} / {Math.ceil(filtradas.length / PAGE_SIZE)}</span>
-          <button disabled={page >= Math.ceil(filtradas.length / PAGE_SIZE) - 1} onClick={() => setPage((p) => p + 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">Sig. →</button>
-        </div>
-      ) : null}
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(filtradas.length / PAGE_SIZE)}
+        onChange={setPage}
+        totalItems={filtradas.length}
+        pageSize={PAGE_SIZE}
+      />
 
       {filtradas.length === 0 ? (
         <EmptyState

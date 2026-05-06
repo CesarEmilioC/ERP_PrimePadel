@@ -7,6 +7,7 @@ import { Input, Field, Select } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, Card } from "@/components/ui/table";
+import { Pagination } from "@/components/ui/pagination";
 import { ProductoDialog } from "./producto-dialog";
 import { formatCOP, formatInt } from "@/lib/utils";
 
@@ -167,13 +168,11 @@ export function InventarioClient({
         <span>
           Mostrando {filtered.length === 0 ? "0" : `${page * PAGE_SIZE + 1}–${Math.min((page + 1) * PAGE_SIZE, filtered.length)}`} de {filtered.length} ítems (de {rows.length} totales)
         </span>
-        {filtered.length > PAGE_SIZE ? (
-          <div className="flex items-center gap-2">
-            <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">← Ant.</button>
-            <span>{page + 1} / {Math.ceil(filtered.length / PAGE_SIZE)}</span>
-            <button disabled={page >= Math.ceil(filtered.length / PAGE_SIZE) - 1} onClick={() => setPage((p) => p + 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">Sig. →</button>
-          </div>
-        ) : null}
+        <Pagination
+          page={page}
+          totalPages={Math.ceil(filtered.length / PAGE_SIZE)}
+          onChange={setPage}
+        />
       </div>
 
       <Table>
@@ -224,13 +223,11 @@ export function InventarioClient({
           ))}
         </TBody>
       </Table>
-      {filtered.length > PAGE_SIZE ? (
-        <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">← Ant.</button>
-          <span>{page + 1} / {Math.ceil(filtered.length / PAGE_SIZE)}</span>
-          <button disabled={page >= Math.ceil(filtered.length / PAGE_SIZE) - 1} onClick={() => setPage((p) => p + 1)} className="rounded px-2 py-1 hover:text-white disabled:opacity-30">Sig. →</button>
-        </div>
-      ) : null}
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(filtered.length / PAGE_SIZE)}
+        onChange={setPage}
+      />
 
       {creating ? (
         <ProductoDialog

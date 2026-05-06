@@ -10,6 +10,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Select } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import { formatCOP, formatInt } from "@/lib/utils";
 
 type HistoricoRow = {
@@ -116,13 +117,7 @@ function UbicacionesChips({ ubicaciones }: { ubicaciones: { nombre: string; cant
 function Pager({ page, total, pageSize, onChange }: { page: number; total: number; pageSize: number; onChange: (p: number) => void }) {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
-  return (
-    <div className="mt-3 flex items-center justify-end gap-2">
-      <button disabled={page === 0} onClick={() => onChange(page - 1)} className="rounded px-2 py-1 text-xs text-muted-foreground hover:text-white disabled:opacity-30">← Ant.</button>
-      <span className="text-xs text-muted-foreground">{page + 1} / {totalPages}</span>
-      <button disabled={page >= totalPages - 1} onClick={() => onChange(page + 1)} className="rounded px-2 py-1 text-xs text-muted-foreground hover:text-white disabled:opacity-30">Sig. →</button>
-    </div>
-  );
+  return <Pagination page={page} totalPages={totalPages} onChange={onChange} className="mt-3" />;
 }
 
 type Tab = "inventario" | "ventas" | "alertas";
