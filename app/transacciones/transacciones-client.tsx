@@ -212,17 +212,18 @@ export function TransaccionesClient({
             {esMaestro ? <> El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex flex-wrap gap-2">
-            <Link href="/transacciones/carga-masiva">
-              <Button variant="outline">⬆ Carga masiva CSV</Button>
-            </Link>
-            {!esRecepcion ? (
-              <Button variant="outline" onClick={() => setShowExport(true)}>⬇ Descargar CSV</Button>
-            ) : null}
-          </div>
-          <div className="hidden h-8 w-px bg-border sm:block" aria-hidden />
-          <Button onClick={() => { setEditPayload(null); setShowNew(true); }}>+ Nueva transacción</Button>
+        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible">
+          <Link href="/transacciones/carga-masiva">
+            <Button variant="outline" className="whitespace-nowrap">⬆ Cargar CSV</Button>
+          </Link>
+          {!esRecepcion ? (
+            <Button variant="outline" className="whitespace-nowrap" onClick={() => setShowExport(true)}>
+              ⬇ Descargar CSV
+            </Button>
+          ) : null}
+          <Button className="whitespace-nowrap" onClick={() => { setEditPayload(null); setShowNew(true); }}>
+            + Nueva transacción
+          </Button>
         </div>
       </div>
 

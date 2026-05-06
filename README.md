@@ -1,8 +1,8 @@
 # Prime Padel — ERP de Inventario
 
-Mini-ERP web para el control de inventario, compras y ventas del club **Prime Padel** (Cali, Colombia).
+Mini-ERP web para el control de inventario, compras, ventas y traslados del club **Prime Padel** (Cali, Colombia).
 
-> Este documento es la **documentación técnica viva** del sistema. Se actualiza en cada iteración del desarrollo. El manual del usuario final (no técnico) vive en [`docs/manual-usuario.md`](docs/manual-usuario.md) (se genera al finalizar el MVP).
+> Documentación técnica viva del sistema. El manual de usuario final (no técnico) está en [`docs/manual-usuario.md`](docs/manual-usuario.md) y la guía extendida del rol Maestro en [`docs/manual-maestro.md`](docs/manual-maestro.md).
 
 ---
 
@@ -19,9 +19,10 @@ Mini-ERP web para el control de inventario, compras y ventas del club **Prime Pa
 9. [Variables de entorno](#variables-de-entorno)
 10. [Despliegue](#despliegue)
 11. [Roles y permisos](#roles-y-permisos)
-12. [Carga masiva por CSV](#carga-masiva-por-csv)
-13. [Plan de trabajo (1 semana)](#plan-de-trabajo-1-semana)
-14. [Decisiones abiertas](#decisiones-abiertas)
+12. [Seguridad](#seguridad)
+13. [Carga masiva por CSV](#carga-masiva-por-csv)
+14. [Descarga de transacciones a CSV](#descarga-de-transacciones-a-csv)
+15. [Migraciones SQL](#migraciones-sql)
 
 ---
 
@@ -32,9 +33,11 @@ Prime Padel es un club con 5 canchas de pádel, 2 de vóley playa, barbería, sa
 El ERP permite:
 
 - Visualizar y administrar el inventario total y por ubicación.
-- Registrar compras (ingresos de inventario) y ventas (egresos) de forma manual o masiva por CSV.
-- Analizar tendencias de consumo con un dashboard de KPIs, gráficas y alertas.
-- Separar accesos entre administradores y cajeros.
+- Registrar **ventas, compras y traslados** entre ubicaciones, con descuento/aumento atómico de stock.
+- Cargar transacciones masivamente por CSV y descargar reportes por rango de fechas.
+- Calcular margen real de ventas (costo y precio se almacenan por separado al momento de la transacción).
+- Analizar tendencias con un dashboard de KPIs, gráficas, top productos y alertas de stock bajo.
+- Separar accesos en tres niveles de rol con jerarquía.
 
 ## Estado actual
 
@@ -47,22 +50,21 @@ Funcionalidades operativas:
 - [x] Auth con login por usuario (no email) y middleware de rutas.
 - [x] Tres roles con jerarquía: **maestro / admin / recepción**.
 - [x] Gestión de usuarios desde `/usuarios` (crear, editar, reset password, desactivar, cambiar rol).
-- [x] Permisos por rol en server actions con auditoría visible (quién + cuándo en cada transacción).
+- [x] Permisos por rol validados en cada server action (no solo en UI).
 - [x] Inventario: CRUD productos/servicios, filtros multi-select + paginación, ficha de detalle con stock por ubicación, histórico mensual, ajustes auditados.
 - [x] Ajuste de inventario con detección de diferencias y registro en `ajustes_inventario`.
 - [x] Transacciones: ventas, compras y traslados con multi-item, validación de stock, reversa automática al eliminar/editar.
+- [x] **Costo y precio separados por ítem** — snapshot histórico, permite calcular margen real de ventas.
 - [x] Edición de transacciones con rollback automático si la nueva versión falla.
 - [x] Carga masiva de transacciones por CSV (DD/MM/AAAA, preview, validación, agrupación por ticket).
+- [x] **Descarga de transacciones a CSV** por rango de fechas, dos modos (resumen por ítem con margen / historial por transacción).
 - [x] Dashboard con pestañas Ventas / Inventario / Alertas, KPIs, filtros por mes y categoría, top productos, gráfica apilada por día de la semana, alertas detalladas con desglose por ubicación, días estimados de stock (predictivo).
 - [x] Listas de precios: CRUD para gestionar canales y profesores externos.
 - [x] Categorías y ubicaciones con CRUD y soft-delete cuando hay datos asociados.
 - [x] Responsive con hamburger menu en móvil.
+- [x] **RLS habilitado** en todas las tablas del dominio (acceso solo vía server con service_role).
 - [x] 145 productos migrados desde Alegra + 8 meses de histórico de ventas.
 - [x] 5 cuentas creadas: 2 maestros (CesarC, maestro), 1 admin, 2 recepción.
-
-Pendiente:
-
-- [ ] Importación del inventario físico inicial (cantidades por ubicación) — esperando que el cliente envíe el conteo real.
 
 ## Stack tecnológico
 
@@ -82,51 +84,58 @@ Pendiente:
 - **Server Components** por defecto; cliente solo donde haya interactividad.
 - Escrituras a BD a través de **Server Actions** o **Route Handlers**; nunca desde el navegador con claves.
 - Lógica transaccional (ej. registrar venta + descontar stock) en **funciones RPC de Postgres** para garantizar atomicidad.
-- **Row Level Security (RLS)** habilitado antes de producción.
+- **Row Level Security (RLS)** habilitado: el cliente no puede consultar BD directamente con la `publishable_key`. Todo pasa por server con `service_role_key`.
 
 ```
 Navegador  ─►  Next.js (Vercel)  ─►  Supabase Postgres
                    │
-                   └── Server Actions / Route Handlers (con service role key)
+                   └── Server Actions / Route Handlers (con service_role_key)
 ```
 
 ## Modelo de datos
 
-Propuesta inicial (se refina cuando llegue el CSV real del cliente):
+Schema completo en [`supabase/schema.sql`](supabase/schema.sql). Resumen:
 
-- `categorias (id, nombre, tipo)`
-- `ubicaciones (id, nombre, tipo)` — bodega / nevera / barra / vitrina
-- `productos (id, sku, nombre, categoria_id, costo_unitario, precio_venta, stock_minimo_alerta, activo)`
-- `stock_por_ubicacion (producto_id, ubicacion_id, cantidad)` — PK compuesta
-- `transacciones (id, tipo, fecha, usuario_id, total, notas)` — tipo: compra | venta
-- `transaccion_items (id, transaccion_id, producto_id, ubicacion_id, cantidad, precio_unitario, subtotal)`
-- `perfiles (user_id, nombre, rol)` — rol: admin | cajero
+- `categorias`, `impuestos`, `listas_precios`, `ubicaciones` — catálogos maestros.
+- `productos` — catálogo de productos y servicios. Distinción `tipo` (producto/servicio) y `es_inventariable`.
+- `precios_producto` — N–N entre productos y listas de precios (un producto puede tener distintos precios según el canal).
+- `stock_por_ubicacion` — cantidad por (producto, ubicación). PK compuesta. **Fuente de verdad** del inventario.
+- `transacciones` — compra | venta | traslado. Header con tipo, fecha, total, usuario, notas, origen.
+- `transaccion_items` — líneas de cada transacción. Incluye `precio_unitario` Y `costo_unitario` (snapshot histórico al momento de la transacción).
+- `ajustes_inventario` — auditoría de ajustes manuales (conteo físico, mermas, roturas, correcciones).
+- `ventas_historicas_mensuales` — agregados mensuales importados desde Alegra (sep 2025 – abr 2026).
+- `perfiles` — vinculado a `auth.users`. Rol: `maestro | admin | recepcion`.
 
-Cantidad total de un producto = `SUM(stock_por_ubicacion.cantidad)`.
+### Funciones RPC (atómicas)
+- `registrar_transaccion(p_tipo, p_fecha, p_usuario, p_notas, p_origen, p_items jsonb)` — crea transacción + items, ajusta stock según tipo, bloquea si stock insuficiente.
+- `registrar_ajuste_inventario(p_producto, p_ubicacion, p_cantidad_nueva, p_motivo, p_notas, p_usuario)` — setea stock absoluto y deja auditoría.
 
 ## Módulos funcionales
 
 ### Inventario
-- Tabla paginada con búsqueda y filtros **multi-select** por: categoría, ubicación, producto; filtro por rango de cantidad.
-- Crear, editar, eliminar (con confirmación modal).
-- Vista de detalle por producto mostrando cantidades por ubicación.
+- Tabla paginada con búsqueda y filtros **multi-select** por categoría, ubicación, producto; filtro por rango de cantidad.
+- CRUD productos/servicios con confirmación.
+- Ficha de detalle con stock por ubicación, histórico mensual y botón de ajuste.
 
 ### Transacciones
-- Registro individual de compras y ventas desde formulario.
+- Registro individual de ventas, compras y traslados desde formulario con multi-item.
+- En **ventas** se piden Costo y Precio por separado (margen calculable). En compra/traslado se pide solo costo.
 - Carga masiva por **CSV** con preview + validación antes de confirmar.
-- Editar y eliminar transacciones (eliminar = solo admin).
-- Filtros multi-select por categoría, ubicación, producto, rango de fechas, tipo.
+- Editar y eliminar transacciones según rol (recepción solo sus propias del día).
+- Descarga CSV por rango de fechas en dos modos.
+- Filtros multi-select por categoría, producto, rango de fechas, tipo.
 
-### Dashboard (por pestañas)
+### Dashboard (solo Maestro)
 Filtros globales: mes, rango de fechas, categoría, ubicación (multi-select).
 
 - **Inventario actual:** cantidades, valor en pesos, distribución por ubicación.
 - **Consumo:** $ por mes, cantidades por mes.
 - **Top productos:** último mes, histórico, por día de la semana.
 - **Alertas:** productos por acabarse en nevera, en bodegas, sin movimiento.
-- **KPIs:** ticket promedio, rotación, margen estimado.
+- **KPIs:** ticket promedio, rotación, días estimados de stock.
 
-Las gráficas con muchas series usan **paginación interna** y las leyendas se abren desde un botón para no saturar la vista.
+### Usuarios (solo Maestro)
+CRUD, reset de password, cambio de rol, desactivación. Nombres de usuario internos (no email) traducidos a emails sintéticos en `@primepadel.local`.
 
 ## Paleta visual y marca
 
@@ -139,7 +148,7 @@ Las gráficas con muchas series usan **paginación interna** y las leyendas se a
 | Acento secundario | Naranja pastel | `#FFB366` |
 | CTA / hover | Naranja vivo | `#FF8C42` |
 
-Logo en `public/logo.png` (copiar desde `others/logoPrime.png`). Aparece en el nav principal.
+Logo en `public/logo.png`. Fuente: Inter / Geist.
 
 ## Puesta en marcha local
 
@@ -163,51 +172,70 @@ SUPABASE_SERVICE_ROLE_KEY=...   # solo server-side; nunca commit
 
 1. Push a rama `main`.
 2. Vercel auto-despliega.
-3. Variables de entorno configuradas en Vercel Dashboard (incluida la service role key).
+3. Variables de entorno configuradas en Vercel Dashboard (incluida la `SUPABASE_SERVICE_ROLE_KEY`).
 
 ## Roles y permisos
 
-| Acción | Admin | Cajero |
-|--------|:-----:|:------:|
-| Ver inventario | ✅ | ✅ |
-| Crear / editar producto | ✅ | ✅ |
-| Eliminar producto | ✅ | ❌ |
-| Registrar venta / compra | ✅ | ✅ |
-| Editar transacción | ✅ | ✅ (mismo día) |
-| Eliminar transacción | ✅ | ❌ |
-| Carga masiva CSV | ✅ | ✅ |
-| Ver dashboard | ✅ | ❌ |
-| Gestionar usuarios | ✅ | ❌ |
+Jerarquía: `recepcion (1) < admin (2) < maestro (3)`. Definida en [`lib/auth.ts`](lib/auth.ts).
+
+| Acción | Maestro | Admin | Recepción |
+|--------|:-------:|:-----:|:---------:|
+| Registrar venta / traslado | ✅ | ✅ | ✅ |
+| Registrar compra | ✅ | ✅ | ❌ |
+| Editar / eliminar transacciones | ✅ todo | ✅ excepto del Maestro | ✅ solo las suyas del día |
+| Carga masiva CSV | ✅ | ✅ | ✅ (solo ventas/traslados) |
+| Descarga CSV de transacciones | ✅ | ✅ | ❌ |
+| Ver inventario | ✅ | ✅ | ❌ |
+| CRUD productos | ✅ | ✅ | ❌ |
+| Editar costos y precios | ✅ | ❌ | ❌ |
+| Eliminar productos | ✅ | ❌ | ❌ |
+| Ajuste de inventario | ✅ | ✅ | ❌ |
+| CRUD ubicaciones | ✅ | ✅ | ❌ |
+| CRUD categorías / listas de precios | ✅ | ❌ | ❌ |
+| Ver Dashboard | ✅ | ❌ | ❌ |
+| Gestionar usuarios | ✅ | ❌ | ❌ |
+
+La validación de rol se hace SIEMPRE en server actions (`requireProfile`, `requireAdmin`, `requireMaestro`), no solo escondiendo botones en la UI.
+
+## Seguridad
+
+- **RLS activo** en todas las tablas del dominio (ver [`supabase/rls.sql`](supabase/rls.sql)). Sin políticas → la API REST con la `publishable_key` devuelve 0 filas. El cliente no puede consultar BD directamente.
+- **`service_role_key`** solo en variables de entorno server-side. El único módulo que la usa (`lib/supabase/admin-server.ts`) tiene `import "server-only"` para que el bundler de Next.js falle si alguien intenta importarla desde un componente cliente.
+- **RBAC** validado en backend por cada operación sensible (delete, edit, export, gestión de usuarios).
+- **Backups**: Supabase hace snapshots automáticos diarios.
 
 ## Carga masiva por CSV
 
-Flujo: subir archivo → parsear con Papa Parse → validar con Zod → mostrar preview con errores resaltados → el usuario confirma → inserción transaccional en BD.
+Flujo: subir archivo → parsear con Papa Parse → validar con Zod → mostrar preview con errores resaltados → el usuario confirma → inserción transaccional en BD vía RPC `registrar_transaccion`.
 
-Formato esperado (se ajusta al CSV real del cliente cuando llegue):
+Formato esperado:
 
 ```csv
-fecha,tipo,producto_sku,ubicacion,cantidad,precio_unitario,notas
-2026-04-20,venta,CERV-001,Barra,2,8000,
+fecha,tipo,codigo_producto,ubicacion,cantidad,precio_unitario,notas,ticket
+20/04/2026,venta,CERV-001,Barra,2,8000,,T-001
+20/04/2026,compra,CERV-001,Bodega Principal,24,5500,Pedido proveedor,
 ```
 
-## Plan de trabajo (1 semana)
+- `fecha` en formato `DD/MM/AAAA`.
+- `tipo` solo acepta `venta` o `compra` (los traslados se hacen vía formulario).
+- `ticket` (opcional) agrupa varios ítems en una sola transacción.
+- `costo_unitario` se backfillea automáticamente: en compras coincide con `precio_unitario`; en ventas se usa el costo actual del producto en el catálogo.
 
-| Día | Foco |
-|-----|------|
-| 1 | Setup Next.js + Supabase + layout + esquema BD |
-| 2 | CRUD inventario + filtros |
-| 3 | Transacciones individuales + ajuste de stock |
-| 4 | Carga CSV + migración de datos del cliente |
-| 5 | Dashboard parte 1 (KPIs, consumo, tops) |
-| 6 | Dashboard parte 2 (alertas, paginación, leyendas) |
-| 7 | Auth + RBAC |
-| 8 | QA y pulido |
-| 9 | Despliegue final + smoke test con cliente |
-| 10 | Manual de usuario + capacitación |
+## Descarga de transacciones a CSV
 
-## Decisiones abiertas
+Botón en `/transacciones` (solo admin/maestro). Dos modos:
 
-- Schema final del CSV (pendiente del cliente).
-- ¿El cajero puede eliminar transacciones del día? — propuesto: solo editar, no eliminar.
-- SKU: ¿lo maneja el cliente o lo generamos nosotros? (`CAT-000X`).
-- ¿Soporte post-entrega incluido o facturado aparte? — definir antes de firmar cotización.
+- **Resumen por ítem** — agregado por (producto, tipo). Máx 2 filas por producto: una `venta` (consumo) y una `compra`. Trae cantidad total, valor total, costo total, **margen total y porcentual** (solo en ventas), precio promedio, número de transacciones y rango de fechas. Los traslados se excluyen.
+- **Historial por transacción** — una fila por transacción, incluyendo traslados. Útil para listado completo de operaciones.
+
+Validaciones: rango ≤ 2 años, fechas válidas, fecha inicial ≤ final. Salida en UTF-8 con BOM (Excel en Windows abre acentos correctamente).
+
+## Migraciones SQL
+
+Los cambios de schema viven en archivos numerados/descriptivos en [`supabase/`](supabase/) y se ejecutan **manualmente** en el SQL Editor de Supabase (en orden):
+
+1. `schema.sql` — instalación inicial completa. **Recrea** todas las tablas (DROP CASCADE), úsalo solo en setup desde cero.
+2. `rls.sql` — habilita RLS en todas las tablas del dominio. Idempotente.
+3. `migration-costo-unitario.sql` — añade columna `costo_unitario` a `transaccion_items` con backfill + recrea el RPC para aceptarla. Idempotente.
+
+Para futuras migraciones: crear un nuevo archivo `migration-<descripcion>.sql` en `supabase/`, idempotente (con `IF NOT EXISTS` o `IF EXISTS`), y mantener `schema.sql` actualizado para reflejar el modelo final.
