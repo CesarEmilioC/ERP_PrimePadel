@@ -21,6 +21,7 @@ type ItemListado = {
   ubicacion_destino_id: string | null;
   cantidad: number;
   precio_unitario: number;
+  costo_unitario: number;
   lista_precio_id: string | null;
   productos: { codigo: string | null; nombre: string };
   categoria_id: string | null;
@@ -131,6 +132,7 @@ export function TransaccionesClient({
         ubicacion_destino_id: it.ubicacion_destino_id,
         cantidad: it.cantidad,
         precio_unitario: it.precio_unitario,
+        costo_unitario: it.costo_unitario,
         lista_precio_id: it.lista_precio_id,
       })),
     });
@@ -210,13 +212,16 @@ export function TransaccionesClient({
             {esMaestro ? <> El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {!esRecepcion ? (
-            <Button variant="outline" onClick={() => setShowExport(true)}>⬇ Descargar CSV</Button>
-          ) : null}
-          <Link href="/transacciones/carga-masiva">
-            <Button variant="outline">⬆ Carga masiva (CSV)</Button>
-          </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Link href="/transacciones/carga-masiva">
+              <Button variant="outline">⬆ Carga masiva CSV</Button>
+            </Link>
+            {!esRecepcion ? (
+              <Button variant="outline" onClick={() => setShowExport(true)}>⬇ Descargar CSV</Button>
+            ) : null}
+          </div>
+          <div className="hidden h-8 w-px bg-border sm:block" aria-hidden />
           <Button onClick={() => { setEditPayload(null); setShowNew(true); }}>+ Nueva transacción</Button>
         </div>
       </div>
@@ -411,10 +416,11 @@ export function TransaccionesClient({
                   className="mt-0.5 accent-brand-orange"
                 />
                 <div>
-                  <div className="font-medium text-white">Historial por ítem</div>
+                  <div className="font-medium text-white">Resumen por ítem</div>
                   <div className="text-xs text-muted-foreground">
-                    Una fila por cada producto vendido/comprado/trasladado. Útil para
-                    analizar consumo de cada producto en el rango.
+                    Agregado por producto. Hasta 2 filas por producto (una de
+                    consumo, otra de compras) con cantidad total, valor y precio
+                    promedio en el rango. Los traslados se excluyen.
                   </div>
                 </div>
               </label>
@@ -431,7 +437,7 @@ export function TransaccionesClient({
                   <div className="font-medium text-white">Historial por transacción</div>
                   <div className="text-xs text-muted-foreground">
                     Una fila por transacción, con resumen de productos y total. Útil
-                    para listado de operaciones.
+                    para listado completo de operaciones.
                   </div>
                 </div>
               </label>

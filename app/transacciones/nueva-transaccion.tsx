@@ -28,6 +28,7 @@ type LineItem = {
   ubicacion_destino_id: string | null;
   cantidad: number;
   precio_unitario: number;
+  costo_unitario: number;
   lista_precio_id: string | null;
 };
 
@@ -59,7 +60,10 @@ export function NuevaTransaccion({
   const [saving, setSaving] = React.useState(false);
   const [q, setQ] = React.useState("");
 
-  // Cargar datos cuando se abre en modo edición.
+  // Cargar datos cuando se abre en modo edición. Importante: NO refrescamos
+  // precio_unitario ni costo_unitario desde el catálogo del producto — los
+  // valores guardados en la transacción son el snapshot histórico y se
+  // preservan a menos que el usuario los edite explícitamente.
   React.useEffect(() => {
     if (open && editar) {
       setTipo(editar.tipo);
@@ -104,6 +108,7 @@ export function NuevaTransaccion({
         ubicacion_destino_id: tipo === "venta" ? null : (tipo === "traslado" ? segundaUbi : ubicacionDefault),
         cantidad: 1,
         precio_unitario: precioDefaultParaTipo(p, tipo),
+        costo_unitario: p.costo_unitario,
         lista_precio_id: listaDefault,
       },
     ]);
@@ -129,6 +134,7 @@ export function NuevaTransaccion({
           return {
             ...it,
             precio_unitario: precioDefaultParaTipo(p, nuevoTipo),
+            costo_unitario: p.costo_unitario,
             ubicacion_origen_id: nuevoTipo === "compra" ? null : (it.ubicacion_origen_id ?? ubicacionDefault),
             ubicacion_destino_id:
               nuevoTipo === "venta"
@@ -189,6 +195,9 @@ export function NuevaTransaccion({
         ubicacion_destino_id: tipo === "venta" ? null : i.ubicacion_destino_id,
         cantidad: Number(i.cantidad),
         precio_unitario: Number(i.precio_unitario),
+        // En compra y traslado el costo coincide con el "precio" (no se pide
+        // por separado en la UI). En venta es un campo independiente.
+        costo_unitario: tipo === "venta" ? Number(i.costo_unitario) : Number(i.precio_unitario),
         lista_precio_id: i.lista_precio_id,
       })),
     };
@@ -308,16 +317,26 @@ export function NuevaTransaccion({
                 <div className="col-span-2">Origen</div>
                 <div className="col-span-2">Destino</div>
                 <div className="col-span-2 text-right">Cant.</div>
-                <div className="col-span-2 text-right">Costo unit. (ref.)</div>
+                <div className="col-span-2 text-right">Costo unitario</div>
+                <div className="col-span-1 text-right">Subtotal</div>
+                <div className="col-span-1"></div>
+              </div>
+            ) : tipo === "venta" ? (
+              <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
+                <div className="col-span-3">Producto</div>
+                <div className="col-span-2">Ubicación (origen)</div>
+                <div className="col-span-1 text-right">Cant.</div>
+                <div className="col-span-2 text-right">Costo unit.</div>
+                <div className="col-span-2 text-right">Precio venta</div>
                 <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
             ) : (
               <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
                 <div className="col-span-3">Producto</div>
-                <div className="col-span-3">Ubicación {tipo === "venta" ? "(origen)" : "(destino)"}</div>
+                <div className="col-span-3">Ubicación (destino)</div>
                 <div className="col-span-2 text-right">Cant.</div>
-                <div className="col-span-2 text-right">{tipo === "compra" ? "Costo unitario" : "Precio venta"}</div>
+                <div className="col-span-2 text-right">Costo unitario</div>
                 <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
@@ -326,12 +345,13 @@ export function NuevaTransaccion({
             {items.map((it, i) => {
               const p = productos.find((x) => x.id === it.producto_id)!;
               const isTraslado = tipo === "traslado";
+              const isVenta = tipo === "venta";
               const ubiSelOrig = it.ubicacion_origen_id;
               const ubiSelDest = it.ubicacion_destino_id;
-              const ubiSelSimple = tipo === "venta" ? ubiSelOrig : ubiSelDest;
-              const ubiField = tipo === "venta" ? "ubicacion_origen_id" : "ubicacion_destino_id";
+              const ubiSelSimple = isVenta ? ubiSelOrig : ubiSelDest;
+              const ubiField = isVenta ? "ubicacion_origen_id" : "ubicacion_destino_id";
               const disponibleOrigen = p?.es_inventariable && ubiSelOrig ? (p.stock_por_ubicacion[ubiSelOrig] ?? 0) : null;
-              const necesitaStock = tipo === "venta" || tipo === "traslado";
+              const necesitaStock = isVenta || isTraslado;
               const insuf = necesitaStock && p?.es_inventariable && disponibleOrigen !== null && disponibleOrigen < it.cantidad;
               const trasladoMismo = isTraslado && ubiSelOrig && ubiSelDest && ubiSelOrig === ubiSelDest;
 
@@ -360,12 +380,12 @@ export function NuevaTransaccion({
                       </div>
                     </>
                   ) : (
-                    <div className="col-span-3">
+                    <div className={isVenta ? "col-span-2" : "col-span-3"}>
                       {p?.es_inventariable ? (
                         <Select value={ubiSelSimple ?? ""} onChange={(e) => updateItem(i, { [ubiField]: e.target.value } as any)}>
                           {ubicaciones.map((u) => (
                             <option key={u.id} value={u.id}>
-                              {u.nombre}{tipo === "venta" ? ` (${p.stock_por_ubicacion[u.id] ?? 0})` : ""}
+                              {u.nombre}{isVenta ? ` (${p.stock_por_ubicacion[u.id] ?? 0})` : ""}
                             </option>
                           ))}
                         </Select>
@@ -375,12 +395,25 @@ export function NuevaTransaccion({
                     </div>
                   )}
 
-                  <div className="col-span-2">
+                  <div className={isVenta ? "col-span-1" : "col-span-2"}>
                     <NumericInput value={it.cantidad} onChange={(n) => updateItem(i, { cantidad: n })} min={1} />
                   </div>
-                  <div className="col-span-2">
-                    <NumericInput value={it.precio_unitario} onChange={(n) => updateItem(i, { precio_unitario: n })} min={0} />
-                  </div>
+
+                  {isVenta ? (
+                    <>
+                      <div className="col-span-2">
+                        <NumericInput value={it.costo_unitario} onChange={(n) => updateItem(i, { costo_unitario: n })} min={0} />
+                      </div>
+                      <div className="col-span-2">
+                        <NumericInput value={it.precio_unitario} onChange={(n) => updateItem(i, { precio_unitario: n })} min={0} />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="col-span-2">
+                      <NumericInput value={it.precio_unitario} onChange={(n) => updateItem(i, { precio_unitario: n, costo_unitario: n })} min={0} />
+                    </div>
+                  )}
+
                   <div className="col-span-1 text-right font-mono text-white">{formatCOP(it.cantidad * it.precio_unitario)}</div>
                   <div className="col-span-1 text-right">
                     <button onClick={() => removeItem(i)} className="text-xs text-muted-foreground hover:text-red-400">✕</button>
@@ -393,6 +426,11 @@ export function NuevaTransaccion({
                   {trasladoMismo ? (
                     <div className="col-span-12 -mt-1 text-xs text-red-400">
                       Origen y destino no pueden ser la misma ubicación.
+                    </div>
+                  ) : null}
+                  {isVenta && it.precio_unitario > 0 && it.costo_unitario > 0 && it.precio_unitario < it.costo_unitario ? (
+                    <div className="col-span-12 -mt-1 text-xs text-yellow-400">
+                      Atención: el precio de venta es menor que el costo (margen negativo).
                     </div>
                   ) : null}
                 </div>

@@ -12,7 +12,7 @@ export default async function TransaccionesPage() {
   // Recepción ve ventas y traslados (no compras); admin/maestro ven todo.
   const txsQuery = sb.from("transacciones").select(`
     id, tipo, fecha, total, notas, origen, usuario_id,
-    transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, lista_precio_id, productos(codigo, nombre, categoria_id, categorias(nombre)))
+    transaccion_items(producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad, precio_unitario, costo_unitario, lista_precio_id, productos(codigo, nombre, categoria_id, categorias(nombre)))
   `).order("fecha", { ascending: false }).limit(200);
   const txsQueryFinal = perfil.rol === "recepcion" ? txsQuery.in("tipo", ["venta", "traslado"]) : txsQuery;
 
@@ -86,6 +86,7 @@ export default async function TransaccionesPage() {
       ubicacion_destino_id: it.ubicacion_destino_id,
       cantidad: Number(it.cantidad),
       precio_unitario: Number(it.precio_unitario),
+      costo_unitario: Number(it.costo_unitario ?? 0),
       lista_precio_id: it.lista_precio_id,
       productos: it.productos,
       categoria_id: it.productos?.categoria_id ?? null,

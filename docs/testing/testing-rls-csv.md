@@ -1,9 +1,14 @@
-# Testing — RLS + Descarga CSV de transacciones
+# Testing — RLS + Descarga CSV + Costo/Precio en transacciones
 
-Checklist para verificar dos cosas:
+Checklist para verificar tres cosas:
 
 1. **Que activar RLS no rompió nada** del flujo normal del sistema.
-2. **Que la nueva descarga CSV de transacciones** funciona en sus dos modos y respeta los permisos por rol.
+2. **Que la descarga CSV de transacciones** funciona en sus dos modos y respeta los permisos por rol.
+3. **Que la separación costo / precio en transacciones** funciona: se guarda snapshot histórico, se respeta al editar y aparece el margen en el CSV.
+
+> ⚠️ **Antes de empezar:** ejecuta en Supabase SQL Editor los archivos en este orden:
+> 1. `supabase/rls.sql` (si no se ejecutó antes)
+> 2. `supabase/migration-costo-unitario.sql`
 
 **URL:** https://erp-prime-padel.vercel.app/
 
@@ -71,14 +76,18 @@ Esta prueba confirma que RLS está activo y protegiendo la API REST contra acces
 - [ ] Login con `admin` → el botón también aparece.
 - [ ] Login con `recepcion1` → el botón **NO** aparece.
 
-### B.2 Descarga modo "Por ítem"
+### B.2 Descarga modo "Resumen por ítem"
 Login como `maestro` o `admin`:
 - [ ] Click en **"⬇ Descargar CSV"** → abre un dialog.
-- [ ] Por defecto está seleccionado **"Historial por ítem"** y las fechas son del mes actual.
+- [ ] Por defecto está seleccionado **"Resumen por ítem"** y las fechas son del mes actual.
 - [ ] Click en **Descargar** → se baja un archivo `transacciones_por_item_YYYY-MM-DD_YYYY-MM-DD.csv`.
-- [ ] Abre el archivo en Excel → se ven las columnas: `fecha, tipo, codigo_producto, producto, categoria, cantidad, precio_unitario, subtotal, ubicacion_origen, ubicacion_destino, lista_precio, usuario, notas, origen, transaccion_id`.
+- [ ] Abre el archivo en Excel → se ven las columnas: `tipo, codigo_producto, producto, categoria, cantidad_total, valor_total, costo_total, margen_total, margen_pct, precio_promedio, num_transacciones, primera_fecha, ultima_fecha`.
+- [ ] En filas de `venta`: `margen_total` y `margen_pct` están llenos. En filas de `compra`: están vacíos (no aplica).
+- [ ] `margen_total = valor_total - costo_total`; `margen_pct = margen_total / valor_total × 100` (redondeado a 2 decimales).
 - [ ] Acentos y ñ se ven correctamente (no aparecen como `Â`, `Ã±`, etc.).
-- [ ] Hay una fila por cada ítem (si una transacción tenía 3 productos, se ven 3 filas con el mismo `transaccion_id`).
+- [ ] Hay máximo **2 filas por producto** (una `venta` y una `compra`). Si un producto solo tuvo ventas en el rango, solo aparece su fila `venta`.
+- [ ] **Los traslados NO aparecen** en este reporte (son movimientos internos).
+- [ ] `cantidad_total` y `valor_total` corresponden a la suma del producto en el rango; `precio_promedio = valor_total / cantidad_total`.
 
 ### B.3 Descarga modo "Por transacción"
 - [ ] Vuelve a abrir el dialog y selecciona **"Historial por transacción"**.
@@ -102,6 +111,50 @@ Login como `maestro` o `admin`:
 
 ---
 
+---
+
+## C. Costo / precio en transacciones (snapshot histórico + edición)
+
+### C.1 Crear venta nueva
+- [ ] Como `maestro` o `admin`, abrir Nueva transacción → tipo "Venta".
+- [ ] Buscar y agregar un producto que tenga costo y precio definidos en catálogo.
+- [ ] Verificar que aparecen **dos columnas separadas**: "Costo unit." y "Precio venta", ambas pre-llenadas con los valores del catálogo.
+- [ ] Cambiar manualmente el costo a un valor distinto (ej. costo del producto era 1000, ponerlo en 1200).
+- [ ] Guardar la venta.
+- [ ] Editar la venta recién creada → el costo aparece en **1200** (el snapshot guardado), NO en 1000 (el actual del producto).
+
+### C.2 Margen negativo
+- [ ] En Nueva transacción → Venta, agregar un producto y poner un precio MENOR al costo (ej. costo 1000, precio 800).
+- [ ] Verificar que sale advertencia amarilla "Atención: el precio de venta es menor que el costo (margen negativo)".
+- [ ] Aún así, se puede guardar la venta (es solo un aviso visual).
+
+### C.3 Crear compra nueva
+- [ ] Tipo "Compra" → solo aparece **una columna** "Costo unitario" (no dos).
+- [ ] Editar el costo del proveedor.
+- [ ] Guardar.
+
+### C.4 Crear traslado nuevo
+- [ ] Tipo "Traslado" → solo aparece **una columna** "Costo unitario" (renombrada de "Costo unit. (ref.)").
+- [ ] El campo es **editable** (ya no read-only). Pre-llenado con el costo actual del producto.
+- [ ] Guardar.
+
+### C.5 Editar traslado y NO modificar costo
+- [ ] Editar un traslado existente.
+- [ ] Verificar que el costo aparece tal cual estaba (snapshot guardado), NO refrescado del producto actual.
+- [ ] Guardar sin tocar el costo → el valor sigue igual al original.
+
+### C.6 Editar y SÍ modificar costo
+- [ ] Editar un traslado o venta → cambiar el costo manualmente.
+- [ ] Guardar.
+- [ ] Volver a abrir → el nuevo costo aparece como snapshot guardado.
+
+### C.7 CSV import (carga masiva)
+- [ ] Importar un CSV de ventas (sin columna costo en el CSV).
+- [ ] En Supabase, verificar que las filas creadas tienen `costo_unitario = costo actual del producto` (snapshot best-effort).
+- [ ] Importar un CSV de compras → `costo_unitario = precio_unitario` (mismo valor que el del CSV).
+
+---
+
 **Notas / observaciones:**
 > 
 
@@ -110,3 +163,4 @@ Login como `maestro` o `admin`:
 **Estado al final:**
 - [ ] Sección A completa — sin regresiones por RLS.
 - [ ] Sección B completa — descarga CSV funciona en ambos modos y respeta permisos.
+- [ ] Sección C completa — costo / precio se guardan, se respetan al editar y aparecen en CSV.

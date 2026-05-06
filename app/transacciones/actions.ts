@@ -141,10 +141,8 @@ export async function exportarTransaccionesCSV(
     .select(
       `id, tipo, fecha, total, notas, origen, usuario_id,
        transaccion_items(
-         cantidad, precio_unitario, subtotal,
-         ubicacion_origen_id, ubicacion_destino_id,
-         productos(codigo, nombre, categorias(nombre)),
-         listas_precios(nombre)
+         producto_id, cantidad, subtotal, costo_unitario,
+         productos(codigo, nombre, categorias(nombre))
        )`,
     )
     .gte("fecha", inicioISO)
@@ -153,31 +151,14 @@ export async function exportarTransaccionesCSV(
 
   if (error) return { error: error.message };
 
-  // Resolver nombres de usuario y ubicaciones en lote.
   const userIds = Array.from(
     new Set((txs ?? []).map((t: any) => t.usuario_id).filter(Boolean) as string[]),
   );
-  const ubicIds = new Set<string>();
-  for (const t of (txs ?? []) as any[]) {
-    for (const it of t.transaccion_items ?? []) {
-      if (it.ubicacion_origen_id) ubicIds.add(it.ubicacion_origen_id);
-      if (it.ubicacion_destino_id) ubicIds.add(it.ubicacion_destino_id);
-    }
-  }
-
-  const [perfilesRes, ubicRes] = await Promise.all([
-    userIds.length
-      ? sb.from("perfiles").select("user_id, nombre").in("user_id", userIds)
-      : Promise.resolve({ data: [] as { user_id: string; nombre: string }[] }),
-    ubicIds.size
-      ? sb.from("ubicaciones").select("id, nombre").in("id", Array.from(ubicIds))
-      : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
-  ]);
+  const { data: perfilesData } = userIds.length
+    ? await sb.from("perfiles").select("user_id, nombre").in("user_id", userIds)
+    : { data: [] as { user_id: string; nombre: string }[] };
   const nombrePorUser = new Map(
-    (perfilesRes.data ?? []).map((p: any) => [p.user_id as string, p.nombre as string]),
-  );
-  const nombrePorUbic = new Map(
-    (ubicRes.data ?? []).map((u: any) => [u.id as string, u.nombre as string]),
+    (perfilesData ?? []).map((p: any) => [p.user_id as string, p.nombre as string]),
   );
 
   const fmtFecha = (iso: string) =>
@@ -185,32 +166,79 @@ export async function exportarTransaccionesCSV(
 
   let rows: Record<string, unknown>[];
   if (parsed.modo === "por_item") {
-    rows = [];
+    // Agregado por (producto, tipo). Solo ventas y compras (los traslados no
+    // representan consumo ni compra real, son movimientos internos).
+    type Bucket = {
+      tipo: "venta" | "compra";
+      codigo: string;
+      nombre: string;
+      categoria: string;
+      cantidad_total: number;
+      valor_total: number;
+      costo_total: number;
+      transacciones: Set<string>;
+      primera_fecha: string;
+      ultima_fecha: string;
+    };
+    const buckets = new Map<string, Bucket>();
+
     for (const t of (txs ?? []) as any[]) {
+      if (t.tipo !== "venta" && t.tipo !== "compra") continue;
       for (const it of t.transaccion_items ?? []) {
-        rows.push({
-          fecha: fmtFecha(t.fecha),
-          tipo: t.tipo,
-          codigo_producto: it.productos?.codigo ?? "",
-          producto: it.productos?.nombre ?? "",
-          categoria: it.productos?.categorias?.nombre ?? "",
-          cantidad: Number(it.cantidad),
-          precio_unitario: Number(it.precio_unitario),
-          subtotal: Number(it.subtotal),
-          ubicacion_origen: it.ubicacion_origen_id
-            ? nombrePorUbic.get(it.ubicacion_origen_id) ?? ""
-            : "",
-          ubicacion_destino: it.ubicacion_destino_id
-            ? nombrePorUbic.get(it.ubicacion_destino_id) ?? ""
-            : "",
-          lista_precio: it.listas_precios?.nombre ?? "",
-          usuario: t.usuario_id ? nombrePorUser.get(t.usuario_id) ?? "" : "",
-          notas: t.notas ?? "",
-          origen: t.origen,
-          transaccion_id: t.id,
-        });
+        const key = `${it.productos?.codigo ?? it.producto_id ?? ""}|${t.tipo}`;
+        let b = buckets.get(key);
+        if (!b) {
+          b = {
+            tipo: t.tipo,
+            codigo: it.productos?.codigo ?? "",
+            nombre: it.productos?.nombre ?? "",
+            categoria: it.productos?.categorias?.nombre ?? "",
+            cantidad_total: 0,
+            valor_total: 0,
+            costo_total: 0,
+            transacciones: new Set<string>(),
+            primera_fecha: t.fecha,
+            ultima_fecha: t.fecha,
+          };
+          buckets.set(key, b);
+        }
+        b.cantidad_total += Number(it.cantidad);
+        b.valor_total += Number(it.subtotal);
+        b.costo_total += Number(it.cantidad) * Number(it.costo_unitario ?? 0);
+        b.transacciones.add(t.id);
+        if (t.fecha < b.primera_fecha) b.primera_fecha = t.fecha;
+        if (t.fecha > b.ultima_fecha) b.ultima_fecha = t.fecha;
       }
     }
+
+    rows = Array.from(buckets.values())
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es") || a.tipo.localeCompare(b.tipo))
+      .map((b) => {
+        const precio_promedio =
+          b.cantidad_total > 0
+            ? Math.round((b.valor_total / b.cantidad_total) * 100) / 100
+            : 0;
+        const margen_total = b.tipo === "venta" ? b.valor_total - b.costo_total : 0;
+        const margen_pct =
+          b.tipo === "venta" && b.valor_total > 0
+            ? Math.round((margen_total / b.valor_total) * 10000) / 100
+            : 0;
+        return {
+          tipo: b.tipo,
+          codigo_producto: b.codigo,
+          producto: b.nombre,
+          categoria: b.categoria,
+          cantidad_total: b.cantidad_total,
+          valor_total: b.valor_total,
+          costo_total: Math.round(b.costo_total * 100) / 100,
+          margen_total: b.tipo === "venta" ? Math.round(margen_total * 100) / 100 : "",
+          margen_pct: b.tipo === "venta" ? margen_pct : "",
+          precio_promedio,
+          num_transacciones: b.transacciones.size,
+          primera_fecha: fmtFecha(b.primera_fecha),
+          ultima_fecha: fmtFecha(b.ultima_fecha),
+        };
+      });
   } else {
     rows = ((txs ?? []) as any[]).map((t) => {
       const items = (t.transaccion_items ?? []) as any[];

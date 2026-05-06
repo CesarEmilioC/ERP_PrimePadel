@@ -51,6 +51,8 @@ export const transaccionItemSchema = z
     ubicacion_destino_id: z.string().uuid().nullable().optional(),
     cantidad: z.number().int().positive(),
     precio_unitario: z.number().nonnegative(),
+    // Costo al momento de la transacción. Si no se pasa, el RPC asume = precio_unitario.
+    costo_unitario: z.number().nonnegative().optional(),
     lista_precio_id: z.string().uuid().nullable().optional(),
   });
 

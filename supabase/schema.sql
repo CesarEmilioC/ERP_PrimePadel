@@ -229,6 +229,10 @@ create table transaccion_items (
   ubicacion_destino_id  uuid references ubicaciones(id) on delete restrict,
   cantidad              integer not null check (cantidad > 0),
   precio_unitario       numeric(14,2) not null check (precio_unitario >= 0),
+  -- Costo unitario al momento de la transacción (snapshot, no se refresca al
+  -- cambiar el costo del producto en el catálogo). En venta puede diferir de
+  -- precio_unitario (margen); en compra y traslado coincide con precio_unitario.
+  costo_unitario        numeric(14,2) not null default 0 check (costo_unitario >= 0),
   subtotal              numeric(14,2) not null check (subtotal >= 0),
   lista_precio_id       uuid references listas_precios(id) on delete set null
 );
@@ -314,6 +318,7 @@ declare
   v_dest     uuid;
   v_cant     integer;
   v_precio   numeric(14,2);
+  v_costo    numeric(14,2);
   v_subtotal numeric(14,2);
   v_lista    uuid;
   v_stock    integer;
@@ -337,6 +342,8 @@ begin
     v_dest   := nullif(v_item->>'ubicacion_destino_id','')::uuid;
     v_cant   := (v_item->>'cantidad')::integer;
     v_precio := coalesce((v_item->>'precio_unitario')::numeric, 0);
+    -- Si no se pasa costo_unitario, default = precio_unitario (compra/traslado lo cumplen).
+    v_costo  := coalesce((v_item->>'costo_unitario')::numeric, v_precio);
     v_lista  := nullif(v_item->>'lista_precio_id','')::uuid;
 
     if v_cant is null or v_cant <= 0 then
@@ -354,9 +361,9 @@ begin
     insert into transaccion_items(
       transaccion_id, producto_id,
       ubicacion_origen_id, ubicacion_destino_id,
-      cantidad, precio_unitario, subtotal, lista_precio_id
+      cantidad, precio_unitario, costo_unitario, subtotal, lista_precio_id
     ) values (
-      v_id, v_prod, v_orig, v_dest, v_cant, v_precio, v_subtotal, v_lista
+      v_id, v_prod, v_orig, v_dest, v_cant, v_precio, v_costo, v_subtotal, v_lista
     );
 
     -- Servicios no mueven stock.
