@@ -265,11 +265,13 @@ export function DashboardClient({
   }));
 
   // Estimación de días de stock restantes por producto.
-  // Cruza ventas históricas (filtradas) con el stock actual.
+  // Usa TODO el histórico disponible (no respeta los filtros del tab Ventas)
+  // porque vive en el tab Inventario y conviene tener el promedio más
+  // estable posible para anticipar compras.
   const diasDeStockEstimado = React.useMemo(() => {
     const ventasPorProd = new Map<string, { nombre: string; cantTotal: number }>();
     const mesesSet = new Set<string>();
-    for (const h of filtered) {
+    for (const h of historico) {
       mesesSet.add(`${h.anio}-${h.mes}`);
       const cur = ventasPorProd.get(h.productos.nombre) ?? { nombre: h.productos.nombre, cantTotal: 0 };
       cur.cantTotal += h.cantidad_vendida;
@@ -287,8 +289,7 @@ export function DashboardClient({
       out.push({ nombre, stockActual, ventaPorDia, diasRestantes });
     }
     return out.sort((a, b) => a.diasRestantes - b.diasRestantes);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered, stockTotalPorProducto]);
+  }, [historico, stockTotalPorProducto]);
 
   React.useEffect(() => {
     const totalPagesMeses = Math.ceil(serieMensualTotal.length / PAGE_MESES);
@@ -594,49 +595,6 @@ export function DashboardClient({
             <Pager page={pageTodos} total={topTodos.length} pageSize={PAGE_TOP} onChange={setPageTodos} />
           </Card>
 
-          {/* Análisis predictivo: días estimados de stock */}
-          {diasDeStockEstimado.length > 0 ? (
-            <Card>
-              <h2 className="mb-3 text-lg font-semibold text-white">Días estimados de stock</h2>
-              <p className="mb-2 text-xs text-muted-foreground">
-                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria de los últimos meses. Útil para anticipar compras.
-              </p>
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Producto</TH>
-                    <TH className="text-right">Stock actual</TH>
-                    <TH className="text-right">Promedio venta/día</TH>
-                    <TH className="text-right">Días restantes</TH>
-                    <TH>Acción sugerida</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {diasDeStockEstimado.slice(0, 15).map((p) => (
-                    <TR key={p.nombre}>
-                      <TD className="text-white">{p.nombre}</TD>
-                      <TD className="text-right font-mono">{formatInt(p.stockActual)}</TD>
-                      <TD className="text-right font-mono text-muted-foreground">{p.ventaPorDia.toFixed(1)}</TD>
-                      <TD className="text-right font-mono">
-                        {p.diasRestantes < 7
-                          ? <span className="text-red-300">{p.diasRestantes.toFixed(0)}d</span>
-                          : p.diasRestantes < 14
-                          ? <span className="text-yellow-300">{p.diasRestantes.toFixed(0)}d</span>
-                          : <span className="text-green-300">{p.diasRestantes.toFixed(0)}d</span>}
-                      </TD>
-                      <TD className="text-xs">
-                        {p.diasRestantes < 7
-                          ? <span className="text-red-300">⚠ Comprar ya</span>
-                          : p.diasRestantes < 14
-                          ? <span className="text-yellow-300">Programar compra</span>
-                          : <span className="text-muted-foreground">OK</span>}
-                      </TD>
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
-            </Card>
-          ) : null}
         </>
       ) : null}
 
@@ -701,6 +659,50 @@ export function DashboardClient({
             </div>
             <Pager page={pageSkus} total={skusOrdenados.length} pageSize={PAGE_TOP} onChange={setPageSkus} />
           </Card>
+
+          {/* Análisis predictivo: días estimados de stock */}
+          {diasDeStockEstimado.length > 0 ? (
+            <Card>
+              <h2 className="mb-3 text-lg font-semibold text-white">Días estimados de stock</h2>
+              <p className="mb-2 text-xs text-muted-foreground">
+                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria del histórico filtrado. Útil para anticipar compras.
+              </p>
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Producto</TH>
+                    <TH className="text-right">Stock actual</TH>
+                    <TH className="text-right">Promedio venta/día</TH>
+                    <TH className="text-right">Días restantes</TH>
+                    <TH>Acción sugerida</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {diasDeStockEstimado.slice(0, 15).map((p) => (
+                    <TR key={p.nombre}>
+                      <TD className="text-white">{p.nombre}</TD>
+                      <TD className="text-right font-mono">{formatInt(p.stockActual)}</TD>
+                      <TD className="text-right font-mono text-muted-foreground">{p.ventaPorDia.toFixed(1)}</TD>
+                      <TD className="text-right font-mono">
+                        {p.diasRestantes < 7
+                          ? <span className="text-red-300">{p.diasRestantes.toFixed(0)}d</span>
+                          : p.diasRestantes < 14
+                          ? <span className="text-yellow-300">{p.diasRestantes.toFixed(0)}d</span>
+                          : <span className="text-green-300">{p.diasRestantes.toFixed(0)}d</span>}
+                      </TD>
+                      <TD className="text-xs">
+                        {p.diasRestantes < 7
+                          ? <span className="text-red-300">⚠ Comprar ya</span>
+                          : p.diasRestantes < 14
+                          ? <span className="text-yellow-300">Programar compra</span>
+                          : <span className="text-muted-foreground">OK</span>}
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
+          ) : null}
         </>
       ) : null}
 

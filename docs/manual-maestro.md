@@ -205,16 +205,17 @@ Si tienes 100+ productos, hacer un ajuste por cada uno es lento. **Alternativa**
 
 **Filtra siempre por el rango de meses que te interese.** Por defecto muestra todo el histórico.
 
+- **Ventas última semana**: monto y número de transacciones por día (últimos 7 días). Cifras reales del sistema, no histórico de Alegra.
 - **Consumo por mes**: visión general de tendencia.
 - **Top productos**: cuáles son los productos estrella. Útil para saber qué stockear más y qué productos podrías negociar mejor con el proveedor.
 - **Por categoría**: qué tipo de productos genera más ingresos.
 - **Días de la semana**: identifica los días de mayor venta. Sirve para programar personal y compras.
-- **Días estimados de stock**: 🔴 productos a punto de agotarse. **Revisa esta sección semanalmente** para evitar quiebres de stock.
 
 ### Pestaña "Inventario"
 
 - **Stock por ubicación**: detecta si hay desbalance (ej. mucho stock en Bodega y poco en Vitrina → mover).
 - **SKUs por categoría**: salud del catálogo.
+- **Días estimados de stock**: 🔴 productos a punto de agotarse. Calculado dividiendo el stock actual entre la velocidad promedio de venta de **todo el histórico** (independiente de los filtros del tab Ventas, para tener un promedio estable). **Revisa esta sección semanalmente** para evitar quiebres de stock.
 
 ### Pestaña "Alertas"
 

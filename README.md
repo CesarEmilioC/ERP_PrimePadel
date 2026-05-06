@@ -58,7 +58,7 @@ Funcionalidades operativas:
 - [x] Edición de transacciones con rollback automático si la nueva versión falla.
 - [x] Carga masiva de transacciones por CSV (DD/MM/AAAA, preview, validación, agrupación por ticket).
 - [x] **Descarga de transacciones a CSV** por rango de fechas, dos modos (resumen por ítem con margen / historial por transacción).
-- [x] Dashboard con pestañas Ventas / Inventario / Alertas, KPIs, filtros por mes y categoría, top productos, gráfica apilada por día de la semana, alertas detalladas con desglose por ubicación, días estimados de stock (predictivo).
+- [x] Dashboard con pestañas Ventas / Inventario / Alertas, KPIs, filtros por categoría/mes/rango de fechas, ventas última semana, top productos, gráfica apilada por día de la semana, alertas detalladas con desglose por ubicación, días estimados de stock (predictivo, en tab Inventario).
 - [x] Listas de precios: CRUD para gestionar canales y profesores externos.
 - [x] Categorías y ubicaciones con CRUD y soft-delete cuando hay datos asociados.
 - [x] Responsive con hamburger menu en móvil.
@@ -126,13 +126,12 @@ Schema completo en [`supabase/schema.sql`](supabase/schema.sql). Resumen:
 - Filtros multi-select por categoría, producto, rango de fechas, tipo.
 
 ### Dashboard (solo Maestro)
-Filtros globales: mes, rango de fechas, categoría, ubicación (multi-select).
+Tres pestañas: Ventas / Inventario / Alertas. Filtros del tab Ventas: categoría (multi), Mes (atajo) o Fecha desde / hasta (excluyentes).
 
-- **Inventario actual:** cantidades, valor en pesos, distribución por ubicación.
-- **Consumo:** $ por mes, cantidades por mes.
-- **Top productos:** último mes, histórico, por día de la semana.
+- **Ventas:** ventas última semana (transacciones reales), consumo por mes, top productos, por categoría, por día de la semana.
+- **Inventario:** stock por ubicación, SKUs por categoría, **días estimados de stock** (predictivo, sobre todo el histórico).
 - **Alertas:** productos por acabarse en nevera, en bodegas, sin movimiento.
-- **KPIs:** ticket promedio, rotación, días estimados de stock.
+- **KPIs (siempre visibles):** productos activos, ubicaciones, stock total, valor del inventario, alertas activas.
 
 ### Usuarios (solo Maestro)
 CRUD, reset de password, cambio de rol, desactivación. Nombres de usuario internos (no email) traducidos a emails sintéticos en `@primepadel.local`.

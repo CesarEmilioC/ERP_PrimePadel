@@ -350,18 +350,19 @@ La pantalla de inteligencia del negocio. **Tres pestañas:**
 Productos activos, ubicaciones, stock total, valor del inventario, alertas, variación vs mes anterior.
 
 ### Pestaña "Ventas y consumo"
-- **Filtros**: categoría (multi), Mes desde, Mes hasta.
+- **Filtros**: categoría (multi), Mes (atajo a un mes específico), Fecha desde, Fecha hasta. El filtro Mes y el rango de fechas son excluyentes — al usar uno se limpia el otro.
+- **Ventas última semana** (monto + número de transacciones por día, últimos 7 días — solo transacciones reales del sistema).
 - **Consumo por mes** (gráfica de barras, monto).
 - **Top productos** (paginado, ordenable por monto o cantidad).
 - **Consumo por categoría** (torta, con leyenda colapsable).
 - **Ventas por día de la semana** (cuando hay transacciones reales).
 - **Top 5 productos por día** (gráfica apilada).
 - **Tabla paginada con TODAS las cantidades vendidas**.
-- **Días estimados de stock** (predictivo): cuántos días faltan para que se acabe cada producto según la velocidad de venta histórica. Sugerencias 🔴 comprar ya, 🟡 programar compra, 🟢 OK.
 
 ### Pestaña "Inventario"
 - **Stock por ubicación**: gráfica + tarjetas con cantidad y valor en costo de cada ubicación.
 - **Productos por categoría**: cuántos SKUs tiene cada categoría.
+- **Días estimados de stock** (predictivo): cuántos días faltan para que se acabe cada producto según la velocidad de venta histórica. Sugerencias 🔴 comprar ya, 🟡 programar compra, 🟢 OK. Usa todo el histórico disponible para tener un promedio estable.
 
 ### Pestaña "Alertas"
 - Tabla paginada de productos con stock bajo o agotado.
