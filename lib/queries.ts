@@ -263,6 +263,59 @@ export async function getVentasPorDiaSemana() {
   return acc;
 }
 
+// Ventas de los últimos 7 días (incluyendo hoy), agrupadas por día en zona Bogotá.
+// Devuelve siempre 7 elementos en orden cronológico (día más viejo primero).
+export type VentaDia = {
+  fechaISO: string;       // YYYY-MM-DD (zona horaria Bogotá)
+  diaCorto: string;       // "Lun", "Mar"...
+  fechaCorta: string;     // "12/05"
+  monto: number;
+  transacciones: number;
+};
+
+export async function getVentasUltimaSemana(): Promise<VentaDia[]> {
+  const sb = sbAdmin();
+  const ahora = new Date();
+  // Inicio: hace 6 días → cubre 7 días incluyendo hoy.
+  const desdeBogota = new Date(ahora.getTime() - 6 * 24 * 60 * 60 * 1000);
+  const desdeISO = `${desdeBogota.getUTCFullYear()}-${String(desdeBogota.getUTCMonth() + 1).padStart(2, "0")}-${String(desdeBogota.getUTCDate()).padStart(2, "0")}T00:00:00-05:00`;
+
+  const { data } = await sb
+    .from("transacciones")
+    .select("fecha, total")
+    .eq("tipo", "venta")
+    .gte("fecha", desdeISO);
+
+  const DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+  const acc = new Map<string, { monto: number; count: number }>();
+  for (const t of (data ?? []) as any[]) {
+    const f = new Date(t.fecha);
+    // Bogotá = UTC-5 (sin DST). Resto 5h al UTC para obtener fecha local.
+    const fBogota = new Date(f.getTime() - 5 * 60 * 60 * 1000);
+    const key = `${fBogota.getUTCFullYear()}-${String(fBogota.getUTCMonth() + 1).padStart(2, "0")}-${String(fBogota.getUTCDate()).padStart(2, "0")}`;
+    const cur = acc.get(key) ?? { monto: 0, count: 0 };
+    cur.monto += Number(t.total ?? 0);
+    cur.count += 1;
+    acc.set(key, cur);
+  }
+
+  const out: VentaDia[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(ahora.getTime() - i * 24 * 60 * 60 * 1000);
+    const dBogota = new Date(d.getTime() - 5 * 60 * 60 * 1000);
+    const key = `${dBogota.getUTCFullYear()}-${String(dBogota.getUTCMonth() + 1).padStart(2, "0")}-${String(dBogota.getUTCDate()).padStart(2, "0")}`;
+    const datos = acc.get(key) ?? { monto: 0, count: 0 };
+    out.push({
+      fechaISO: key,
+      diaCorto: DIAS_CORTOS[dBogota.getUTCDay()],
+      fechaCorta: `${String(dBogota.getUTCDate()).padStart(2, "0")}/${String(dBogota.getUTCMonth() + 1).padStart(2, "0")}`,
+      monto: datos.monto,
+      transacciones: datos.count,
+    });
+  }
+  return out;
+}
+
 export async function getDashboardStats() {
   const sb = sbAdmin();
   const [{ count: nProd }, { count: nInv }, { count: nUbi }, { data: stockBajo }, { data: hist }] = await Promise.all([

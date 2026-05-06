@@ -7,7 +7,7 @@ import {
 } from "recharts";
 import { Card, Table, THead, TBody, TR, TH, TD, EmptyState } from "@/components/ui/table";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Select } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { Dialog } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
@@ -42,6 +42,7 @@ type AlertaDetallada = {
 };
 type TopPorDia = { nombre: string; porDia: number[] };
 type VentasPorDia = { monto: number; count: number };
+type VentaDia = { fechaISO: string; diaCorto: string; fechaCorta: string; monto: number; transacciones: number };
 
 const COLORS = ["#FF8C42", "#F5C518", "#FFB366", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#eab308", "#06b6d4", "#f97316"];
 
@@ -123,7 +124,7 @@ function Pager({ page, total, pageSize, onChange }: { page: number; total: numbe
 type Tab = "inventario" | "ventas" | "alertas";
 
 export function DashboardClient({
-  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, stockTotalPorProducto,
+  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, ventasUltimaSemana, stockTotalPorProducto,
 }: {
   stats: {
     nProductosActivos: number;
@@ -140,12 +141,17 @@ export function DashboardClient({
   alertasDetalladas: AlertaDetallada[];
   topPorDiaSemana: TopPorDia[];
   ventasPorDiaSemana: VentasPorDia[];
+  ventasUltimaSemana: VentaDia[];
   stockTotalPorProducto: StockTotalPorProducto[];
 }) {
   const [tab, setTab] = React.useState<Tab>("ventas");
   const [fCats, setFCats] = React.useState<string[]>([]);
-  const [fMesDesde, setFMesDesde] = React.useState<string>("");
-  const [fMesHasta, setFMesHasta] = React.useState<string>("");
+  // Filtros de fecha: el usuario puede elegir UN mes (shortcut) o un rango por
+  // fechas. Si elige mes, las fechas se ignoran. Si elige fechas, el mes queda
+  // en blanco. Esto evita reglas de prioridad confusas.
+  const [fMes, setFMes] = React.useState<string>("");          // YYYY-MM
+  const [fFechaDesde, setFFechaDesde] = React.useState<string>(""); // YYYY-MM-DD
+  const [fFechaHasta, setFFechaHasta] = React.useState<string>(""); // YYYY-MM-DD
   const [vistaTop, setVistaTop] = React.useState<"monto" | "cantidad">("monto");
   const [vistaCat, setVistaCat] = React.useState<"monto" | "cantidad">("monto");
   const [pageMeses, setPageMeses] = React.useState(0);
@@ -162,11 +168,34 @@ export function DashboardClient({
     return [...set].sort();
   }, [historico]);
 
+  // Traduce los filtros (mes único o rango de fechas) al rango de meses
+  // aplicable al histórico mensual.
+  const rangoMeses = React.useMemo(() => {
+    if (fMes) return { desde: fMes, hasta: fMes };
+    const desde = fFechaDesde ? fFechaDesde.slice(0, 7) : "";
+    const hasta = fFechaHasta ? fFechaHasta.slice(0, 7) : "";
+    return { desde, hasta };
+  }, [fMes, fFechaDesde, fFechaHasta]);
+
   function inRangoFecha(anio: number, mes: number) {
     const key = `${anio}-${String(mes).padStart(2, "0")}`;
-    if (fMesDesde && key < fMesDesde) return false;
-    if (fMesHasta && key > fMesHasta) return false;
+    if (rangoMeses.desde && key < rangoMeses.desde) return false;
+    if (rangoMeses.hasta && key > rangoMeses.hasta) return false;
     return true;
+  }
+
+  // Cuando se selecciona un mes específico, limpiar el rango de fechas (y vice versa).
+  function elegirMes(m: string) {
+    setFMes(m);
+    if (m) { setFFechaDesde(""); setFFechaHasta(""); }
+  }
+  function elegirFechaDesde(d: string) {
+    setFFechaDesde(d);
+    if (d) setFMes("");
+  }
+  function elegirFechaHasta(d: string) {
+    setFFechaHasta(d);
+    if (d) setFMes("");
   }
 
   const catNameSet = new Set(fCats.map((id) => categorias.find((c) => c.id === id)?.nombre).filter(Boolean) as string[]);
@@ -341,7 +370,7 @@ export function DashboardClient({
       {/* Filtro común para ventas */}
       {tab === "ventas" ? (
         <Card>
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-5">
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">Categoría</p>
               <MultiSelect
@@ -352,34 +381,69 @@ export function DashboardClient({
               />
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Mes desde</p>
-              <Select value={fMesDesde} onChange={(e) => setFMesDesde(e.target.value)}>
-                <option value="">Sin límite inferior</option>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Mes</p>
+              <Select value={fMes} onChange={(e) => elegirMes(e.target.value)}>
+                <option value="">Todos los meses</option>
                 {mesesDisponibles.map((m) => <option key={m} value={m}>{m}</option>)}
               </Select>
             </div>
             <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">Mes hasta</p>
-              <Select value={fMesHasta} onChange={(e) => setFMesHasta(e.target.value)}>
-                <option value="">Sin límite superior</option>
-                {mesesDisponibles.map((m) => <option key={m} value={m}>{m}</option>)}
-              </Select>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Fecha desde</p>
+              <Input type="date" value={fFechaDesde} onChange={(e) => elegirFechaDesde(e.target.value)} max={fFechaHasta || undefined} />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Fecha hasta</p>
+              <Input type="date" value={fFechaHasta} onChange={(e) => elegirFechaHasta(e.target.value)} min={fFechaDesde || undefined} />
             </div>
             <div className="flex items-end">
               <button
-                onClick={() => { setFCats([]); setFMesDesde(""); setFMesHasta(""); }}
+                onClick={() => { setFCats([]); setFMes(""); setFFechaDesde(""); setFFechaHasta(""); }}
                 className="h-10 w-full rounded-md border border-border px-3 text-sm text-muted-foreground hover:border-brand-orange hover:text-brand-orange"
               >
                 Limpiar filtros
               </button>
             </div>
           </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Tip: el filtro <span className="text-white">Mes</span> es un atajo para ver un mes específico. Si usas <span className="text-white">Fecha desde / hasta</span>, el rango aplica sobre los meses cubiertos (los datos del histórico son mensuales).
+          </p>
         </Card>
       ) : null}
 
       {/* ============================ TAB VENTAS ============================ */}
       {tab === "ventas" ? (
         <>
+          <Card>
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-lg font-semibold text-white">Ventas última semana</h2>
+              <span className="text-xs text-muted-foreground">
+                Total: {formatCOP(ventasUltimaSemana.reduce((s, d) => s + d.monto, 0))} · {formatInt(ventasUltimaSemana.reduce((s, d) => s + d.transacciones, 0))} transacciones
+              </span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer>
+                <BarChart data={ventasUltimaSemana}>
+                  <CartesianGrid stroke="#1f1f1f" vertical={false} />
+                  <XAxis
+                    dataKey="fechaCorta"
+                    stroke="#A3A3A3"
+                    tick={{ fontSize: 12 }}
+                    tickFormatter={(v, i) => `${ventasUltimaSemana[i]?.diaCorto ?? ""} ${v}`}
+                  />
+                  <YAxis stroke="#A3A3A3" tick={{ fontSize: 12 }} tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
+                  <Tooltip
+                    content={<DarkTooltip formatter={(v: number, name: string) => name === "Monto" ? formatCOP(v) : formatInt(v)} />}
+                    cursor={{ fill: "#ffffff10" }}
+                  />
+                  <Bar dataKey="monto" name="Monto" fill="#FF8C42" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Calculado en zona horaria Bogotá (UTC-5). Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Alegra).
+            </p>
+          </Card>
+
           <Card>
             <h2 className="mb-3 text-lg font-semibold text-white">Consumo por mes (monto)</h2>
             <div className="h-72">
