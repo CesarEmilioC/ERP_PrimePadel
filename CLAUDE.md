@@ -4,7 +4,7 @@ Guía de contexto para que el asistente (Claude) trabaje eficiente en este repo 
 
 ## 1. Qué es este proyecto
 
-Mini-ERP web para **Prime Padel** (club de pádel en Cali, Colombia). Controla inventario y transacciones (compras/ventas) de bebidas, mecato, bolas de pádel y otros productos del club. Usado por cajeros y administradores.
+Mini-ERP web para **Prime Padel** (club de pádel en Cali, Colombia). Controla inventario y transacciones (compras/ventas) de bebidas, mecato, bolas de pádel y otros productos del club. Usado por personal de recepción, administradores y maestros.
 
 Alcance: **MVP en 1 semana – 1.5 semanas** (mayo 2026 operativo).
 
@@ -70,7 +70,7 @@ Fuente sugerida: Inter o Geist.
 - `transaccion_items` — transaccion_id, producto_id, **ubicacion_origen_id** (venta/traslado), **ubicacion_destino_id** (compra/traslado), cantidad, precio_unitario, subtotal, lista_precio_id.
 - `ajustes_inventario` — auditoría de ajustes manuales de stock (conteo físico, mermas, roturas, correcciones, ingreso inicial).
 - `ventas_historicas_mensuales` — (producto_id, anio, mes) PK. Agregados mensuales importados del reporte de Alegra. El dashboard une esta tabla con `transacciones` para cubrir histórico + operación diaria.
-- `perfiles` — vinculado a `auth.users`; rol (admin | cajero), activo.
+- `perfiles` — vinculado a `auth.users`; rol (`maestro` | `admin` | `recepcion`), activo. Jerarquía: `recepcion` (1) < `admin` (2) < `maestro` (3); ver `lib/auth.ts` para los helpers `requireProfile`, `requireAdmin`, `requireMaestro`.
 
 ### Funciones RPC (atómicas)
 - **`registrar_transaccion(p_tipo, p_fecha, p_usuario, p_notas, p_origen, p_items jsonb) → uuid`** — crea transacción + items; ajusta stock según tipo; bloquea venta/traslado si stock insuficiente; ignora stock para productos no inventariables.
@@ -85,9 +85,9 @@ La fuente de verdad es `stock_por_ubicacion`. El módulo de inventario muestra:
 ## 6. Funcionalidades del MVP
 
 - **Inventario:** listar, crear, editar, eliminar (con confirmación). Filtros multi-select por categoría, ubicación, producto; filtro de rango de cantidad.
-- **Transacciones:** registro individual (compra/venta) o carga CSV masiva con preview + validación. Editar y eliminar (admin).
+- **Transacciones:** registro individual (compra/venta/traslado) o carga CSV masiva con preview + validación. Editar y eliminar según rol (recepción solo sus ventas/traslados del día; admin todo lo que no sea de un maestro; maestro todo). Descarga CSV por rango de fechas en dos modos: por ítem o por transacción (admin/maestro).
 - **Dashboard (por pestañas):** inventario actual, consumo $ por mes, consumo cantidades por mes, top productos mes/histórico, top por día de semana, alertas stock bajo (nevera / bodegas). Filtros globales (mes, rango de fechas, categoría, ubicación) con multi-select. Paginación dentro de gráficas grandes. Leyendas colapsables tras botón.
-- **Auth + RBAC (fase final):** admin ve todo; cajero no accede a dashboard ni elimina.
+- **Auth + RBAC:** maestro acceso total (incluye dashboard, gestión de usuarios, precios y costos); admin operación general (ventas, compras, traslados, inventario, ubicaciones); recepción solo ventas/traslados desde caja. La validación de rol se hace SIEMPRE en server actions vía `requireProfile` / `requireAdmin` / `requireMaestro`, no solo escondiendo botones en la UI.
 
 ## 7. Convenciones de código
 
@@ -101,8 +101,9 @@ La fuente de verdad es `stock_por_ubicacion`. El módulo de inventario muestra:
 ## 8. Seguridad
 
 - La key pública (`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`) va en cliente; está bien.
-- La **service role key** solo en Vercel env vars server-side — **NUNCA** en el repo ni en el chat.
-- Habilitar **Row Level Security (RLS)** en todas las tablas antes de producción.
+- La **service role key** solo en Vercel env vars server-side — **NUNCA** en el repo ni en el chat. Solo se usa desde `lib/supabase/admin-server.ts` (con `import "server-only"`).
+- **RLS:** habilitado en todas las tablas del dominio (ver `supabase/rls.sql`). Sin políticas de acceso → la API REST con la key pública devuelve 0 filas. Toda lectura/escritura pasa por `sbAdmin()` (service role) que bypasea RLS.
+- **RBAC:** la validación de rol se hace en cada server action / server component (helpers `requireProfile`, `requireAdmin`, `requireMaestro`). Ocultar botones en la UI NO es seguridad — el chequeo en backend es lo que cuenta.
 
 ## 9. Estado del proyecto
 

@@ -8,10 +8,10 @@ import { Field, Input, Select } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Badge } from "@/components/ui/badge";
 import { Table, THead, TBody, TR, TH, TD, Card, EmptyState } from "@/components/ui/table";
-import { ConfirmDialog } from "@/components/ui/dialog";
+import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { NuevaTransaccion, type EditarPayload } from "./nueva-transaccion";
-import { deleteTransaccion } from "./actions";
+import { deleteTransaccion, exportarTransaccionesCSV } from "./actions";
 import { formatCOP, formatDate, formatInt, formatFechaHora } from "@/lib/utils";
 import type { Rol } from "@/lib/auth";
 
@@ -66,6 +66,16 @@ export function TransaccionesClient({
   const [fProductos, setFProductos] = React.useState<string[]>([]);
   const [borrar, setBorrar] = React.useState<TransaccionLista | null>(null);
   const [page, setPage] = React.useState(0);
+
+  // Export CSV (solo admin/maestro). Por defecto, mes actual.
+  const [showExport, setShowExport] = React.useState(false);
+  const [exportModo, setExportModo] = React.useState<"por_item" | "por_transaccion">("por_item");
+  const hoy = new Date();
+  const primerDiaMes = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-01`;
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}-${String(hoy.getDate()).padStart(2, "0")}`;
+  const [exportIni, setExportIni] = React.useState<string>(primerDiaMes);
+  const [exportFin, setExportFin] = React.useState<string>(hoyStr);
+  const [exporting, setExporting] = React.useState(false);
 
   // Para evitar hydration mismatch: el cálculo de "es hoy" depende de la zona
   // horaria del cliente, así que solo renderizamos los botones de acción tras
@@ -126,6 +136,32 @@ export function TransaccionesClient({
     });
   }
 
+  async function handleExport() {
+    setExporting(true);
+    const res = await exportarTransaccionesCSV({
+      modo: exportModo,
+      fecha_inicio: exportIni,
+      fecha_fin: exportFin,
+    });
+    setExporting(false);
+    if ("error" in res) {
+      toast.push({ message: res.error, tone: "error" });
+      return;
+    }
+    // BOM para que Excel en Windows abra el CSV con UTF-8 correctamente (tildes/ñ).
+    const blob = new Blob(["﻿" + res.csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = res.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExport(false);
+    toast.push({ message: "CSV descargado", tone: "success" });
+  }
+
   async function confirmarBorrar() {
     if (!borrar) return;
     const res = await deleteTransaccion(borrar.id);
@@ -175,6 +211,9 @@ export function TransaccionesClient({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {!esRecepcion ? (
+            <Button variant="outline" onClick={() => setShowExport(true)}>⬇ Descargar CSV</Button>
+          ) : null}
           <Link href="/transacciones/carga-masiva">
             <Button variant="outline">⬆ Carga masiva (CSV)</Button>
           </Link>
@@ -329,6 +368,101 @@ export function TransaccionesClient({
         confirmText="Eliminar"
         danger
       />
+
+      <Dialog
+        open={showExport}
+        onClose={() => (exporting ? null : setShowExport(false))}
+        title="Descargar transacciones a CSV"
+        size="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setShowExport(false)}
+              disabled={exporting}
+              className="inline-flex h-10 items-center rounded-md border border-border px-4 text-sm text-white hover:border-brand-orange disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting || !exportIni || !exportFin}
+              className="inline-flex h-10 items-center rounded-md bg-brand-orange px-4 text-sm font-medium text-white hover:bg-brand-orange/90 disabled:opacity-50"
+            >
+              {exporting ? "Generando…" : "Descargar"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4 text-sm">
+          <div>
+            <label className="mb-2 block text-xs font-medium text-muted-foreground">
+              Tipo de reporte
+            </label>
+            <div className="space-y-2">
+              <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3 hover:border-brand-orange">
+                <input
+                  type="radio"
+                  name="export-modo"
+                  value="por_item"
+                  checked={exportModo === "por_item"}
+                  onChange={() => setExportModo("por_item")}
+                  className="mt-0.5 accent-brand-orange"
+                />
+                <div>
+                  <div className="font-medium text-white">Historial por ítem</div>
+                  <div className="text-xs text-muted-foreground">
+                    Una fila por cada producto vendido/comprado/trasladado. Útil para
+                    analizar consumo de cada producto en el rango.
+                  </div>
+                </div>
+              </label>
+              <label className="flex cursor-pointer items-start gap-3 rounded-md border border-border p-3 hover:border-brand-orange">
+                <input
+                  type="radio"
+                  name="export-modo"
+                  value="por_transaccion"
+                  checked={exportModo === "por_transaccion"}
+                  onChange={() => setExportModo("por_transaccion")}
+                  className="mt-0.5 accent-brand-orange"
+                />
+                <div>
+                  <div className="font-medium text-white">Historial por transacción</div>
+                  <div className="text-xs text-muted-foreground">
+                    Una fila por transacción, con resumen de productos y total. Útil
+                    para listado de operaciones.
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Fecha inicial">
+              <Input
+                type="date"
+                value={exportIni}
+                onChange={(e) => setExportIni(e.target.value)}
+                max={exportFin || undefined}
+              />
+            </Field>
+            <Field label="Fecha final">
+              <Input
+                type="date"
+                value={exportFin}
+                onChange={(e) => setExportFin(e.target.value)}
+                min={exportIni || undefined}
+              />
+            </Field>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Se incluyen todas las transacciones cuya fecha esté entre el inicio y el
+            fin del rango (zona horaria Bogotá). Rango máximo: 2 años.
+          </p>
+        </div>
+      </Dialog>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import Papa from "papaparse";
 import { transaccionSchema } from "@/lib/validators/producto";
+import { exportCsvSchema } from "@/lib/validators/export-csv";
 import { sbAdmin } from "@/lib/supabase/admin-server";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireAdmin } from "@/lib/auth";
 
 type ActionResult<T = unknown> =
   T extends object ? ({ ok: true } & T) | { error: string } : { ok: true } | { error: string };
@@ -116,6 +118,127 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
   revalidatePath("/inventario");
   revalidatePath("/dashboard");
   return { ok: true, newId: newId as string };
+}
+
+// ---------------------------------------------------------------------------
+// Exportar transacciones a CSV (admin/maestro). Dos modos:
+//   - por_item:        una fila por cada ítem (consumo detallado por producto).
+//   - por_transaccion: una fila por transacción (resumen).
+// ---------------------------------------------------------------------------
+export async function exportarTransaccionesCSV(
+  input: unknown,
+): Promise<{ ok: true; csv: string; filename: string } | { error: string }> {
+  await requireAdmin();
+  const parsed = exportCsvSchema.parse(input);
+
+  // Bogotá es UTC-5 sin DST. Convertimos las fechas locales a un rango UTC.
+  const inicioISO = `${parsed.fecha_inicio}T00:00:00-05:00`;
+  const finISO = `${parsed.fecha_fin}T23:59:59-05:00`;
+
+  const sb = sbAdmin();
+  const { data: txs, error } = await sb
+    .from("transacciones")
+    .select(
+      `id, tipo, fecha, total, notas, origen, usuario_id,
+       transaccion_items(
+         cantidad, precio_unitario, subtotal,
+         ubicacion_origen_id, ubicacion_destino_id,
+         productos(codigo, nombre, categorias(nombre)),
+         listas_precios(nombre)
+       )`,
+    )
+    .gte("fecha", inicioISO)
+    .lte("fecha", finISO)
+    .order("fecha", { ascending: false });
+
+  if (error) return { error: error.message };
+
+  // Resolver nombres de usuario y ubicaciones en lote.
+  const userIds = Array.from(
+    new Set((txs ?? []).map((t: any) => t.usuario_id).filter(Boolean) as string[]),
+  );
+  const ubicIds = new Set<string>();
+  for (const t of (txs ?? []) as any[]) {
+    for (const it of t.transaccion_items ?? []) {
+      if (it.ubicacion_origen_id) ubicIds.add(it.ubicacion_origen_id);
+      if (it.ubicacion_destino_id) ubicIds.add(it.ubicacion_destino_id);
+    }
+  }
+
+  const [perfilesRes, ubicRes] = await Promise.all([
+    userIds.length
+      ? sb.from("perfiles").select("user_id, nombre").in("user_id", userIds)
+      : Promise.resolve({ data: [] as { user_id: string; nombre: string }[] }),
+    ubicIds.size
+      ? sb.from("ubicaciones").select("id, nombre").in("id", Array.from(ubicIds))
+      : Promise.resolve({ data: [] as { id: string; nombre: string }[] }),
+  ]);
+  const nombrePorUser = new Map(
+    (perfilesRes.data ?? []).map((p: any) => [p.user_id as string, p.nombre as string]),
+  );
+  const nombrePorUbic = new Map(
+    (ubicRes.data ?? []).map((u: any) => [u.id as string, u.nombre as string]),
+  );
+
+  const fmtFecha = (iso: string) =>
+    new Date(iso).toLocaleString("es-CO", { timeZone: "America/Bogota", hour12: false });
+
+  let rows: Record<string, unknown>[];
+  if (parsed.modo === "por_item") {
+    rows = [];
+    for (const t of (txs ?? []) as any[]) {
+      for (const it of t.transaccion_items ?? []) {
+        rows.push({
+          fecha: fmtFecha(t.fecha),
+          tipo: t.tipo,
+          codigo_producto: it.productos?.codigo ?? "",
+          producto: it.productos?.nombre ?? "",
+          categoria: it.productos?.categorias?.nombre ?? "",
+          cantidad: Number(it.cantidad),
+          precio_unitario: Number(it.precio_unitario),
+          subtotal: Number(it.subtotal),
+          ubicacion_origen: it.ubicacion_origen_id
+            ? nombrePorUbic.get(it.ubicacion_origen_id) ?? ""
+            : "",
+          ubicacion_destino: it.ubicacion_destino_id
+            ? nombrePorUbic.get(it.ubicacion_destino_id) ?? ""
+            : "",
+          lista_precio: it.listas_precios?.nombre ?? "",
+          usuario: t.usuario_id ? nombrePorUser.get(t.usuario_id) ?? "" : "",
+          notas: t.notas ?? "",
+          origen: t.origen,
+          transaccion_id: t.id,
+        });
+      }
+    }
+  } else {
+    rows = ((txs ?? []) as any[]).map((t) => {
+      const items = (t.transaccion_items ?? []) as any[];
+      const cantidad_total = items.reduce((s, it) => s + Number(it.cantidad), 0);
+      const resumen = items
+        .slice(0, 5)
+        .map((it) => `${Number(it.cantidad)}× ${it.productos?.nombre ?? ""}`)
+        .join(" | ");
+      const productos_resumen =
+        items.length > 5 ? `${resumen} | (+${items.length - 5} más)` : resumen;
+      return {
+        fecha: fmtFecha(t.fecha),
+        tipo: t.tipo,
+        num_items: items.length,
+        cantidad_total,
+        productos_resumen,
+        total: Number(t.total),
+        usuario: t.usuario_id ? nombrePorUser.get(t.usuario_id) ?? "" : "",
+        notas: t.notas ?? "",
+        origen: t.origen,
+        transaccion_id: t.id,
+      };
+    });
+  }
+
+  const csv = Papa.unparse(rows, { quotes: true });
+  const filename = `transacciones_${parsed.modo}_${parsed.fecha_inicio}_${parsed.fecha_fin}.csv`;
+  return { ok: true, csv, filename };
 }
 
 // ---------------------------------------------------------------------------
