@@ -205,16 +205,14 @@ Cada fila: fecha y hora exactas, tipo, **quién registró**, ítems, total, nota
 5. Por cada línea ajusta:
     - **Ubicación de origen** (al lado del nombre se ve cuánto hay disponible).
     - **Cantidad**.
-    - **Costo unit.**: se autocompleta con el costo del producto en el catálogo. Puedes modificarlo si en esa venta puntual el costo fue distinto.
     - **Precio venta**: se autocompleta con el precio Detal, puedes modificarlo si aplica un descuento o un precio especial (ej. Equipo Prime).
-6. Si pones un precio MENOR al costo, sale aviso amarillo "margen negativo" — solo es alerta, no bloquea la venta.
-7. Repite para más productos. **Puedes agregar el mismo producto dos veces si vendes desde ubicaciones distintas** (ej. 3 cervezas de Nevera + 2 de Vitrina).
-8. Agrega **Notas** (mesa, cliente, factura, etc.).
-9. Click **Registrar venta**.
+6. Repite para más productos. **Puedes agregar el mismo producto dos veces si vendes desde ubicaciones distintas** (ej. 3 cervezas de Nevera + 2 de Vitrina).
+7. Agrega **Notas** (mesa, cliente, factura, etc.).
+8. Click **Registrar venta**.
 
 **Validación automática:** si no hay suficiente stock en la ubicación elegida, el sistema avisa en rojo y no deja registrar.
 
-> Tanto el costo como el precio quedan guardados en la transacción. Si después cambia el costo del producto en el catálogo, las ventas pasadas no cambian — siempre conservan los valores que tenían cuando se registraron.
+> El costo del producto al momento de la venta se guarda automáticamente en la transacción (no te lo pide la UI). Esto permite que los reportes de margen sean exactos aunque después cambie el costo en el catálogo.
 
 ### Registrar una compra
 
@@ -224,9 +222,11 @@ Igual flujo, eligiendo el botón **"Compra / Ingreso"**. Aparece un solo campo *
 
 Eliges **"Traslado"**, agregas el producto, y para cada línea seleccionas **dos ubicaciones**: origen y destino. El campo **"Costo unitario"** se prellena con el costo actual del producto y es editable (sirve solo de referencia para conocer el valor del stock que se mueve). Validaciones: origen ≠ destino, stock suficiente en origen.
 
-### Editar costos / precios de una transacción ya guardada
+### Editar precios de una transacción ya guardada
 
-Al editar una transacción, los campos de costo y precio aparecen **con los valores que tenían cuando se guardó la transacción** (no con los valores actuales del catálogo). Si los modificas, se reemplazan; si no los tocas, quedan igual.
+Al editar una transacción, el **Precio venta** (o **Costo unitario** en compras y traslados) aparece **con el valor que tenía cuando se guardó la transacción** (no con el valor actual del catálogo). Si lo modificas, se reemplaza; si no lo tocas, queda igual.
+
+En ventas, el costo de adquisición no se muestra en la UI pero queda guardado como snapshot histórico del momento de la venta.
 
 ### Editar y eliminar
 

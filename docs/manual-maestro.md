@@ -242,19 +242,16 @@ Ajuste de inventario con motivo **"Merma"** o **"Rotura"** y notas explicativas.
 
 Es normal: los **totales estimados** del histórico de Alegra (los marcados con asterisco *) se calculan con el precio actual. Las transacciones reales registradas en el sistema mantienen su precio original.
 
-### Costo vs precio en ventas (margen)
+### Costo guardado en cada venta (margen automático)
 
-Al registrar una **venta** ahora se piden dos campos por cada ítem:
-- **Costo unit.**: cuánto te costó a ti ese producto (snapshot del costo al momento de la venta).
-- **Precio venta**: cuánto pagó el cliente.
+Al registrar una **venta** solo se te pide el **Precio venta** (lo que paga el cliente). El sistema **guarda automáticamente** el costo del producto en ese momento (tomándolo del catálogo) sin que tengas que pensarlo. Esto sirve para:
 
-Ambos se prellenan automáticamente desde el catálogo del producto (el costo desde "Costo unitario" del producto, el precio desde la lista DETAL). Puedes editarlos si en una venta puntual el costo o el precio fue distinto.
+- Calcular **margen real** en el reporte CSV "Resumen por ítem".
+- Preservar el **costo histórico** de cada venta aunque después cambies el costo del producto en el catálogo.
 
-El sistema te avisa si el precio queda **menor que el costo** (margen negativo). Esto NO te bloquea — puede ser intencional (ej. liquidación) — pero es una alerta visual.
+En **compra** y **traslado** solo se pide un campo (Costo unitario), igual que antes.
 
-En **compra** y **traslado** solo se pide un campo (Costo unitario) porque el precio coincide con el costo en esos casos.
-
-Estos valores se guardan en cada transacción (no se actualizan si después cambias el costo del producto en el catálogo). Al editar una transacción, se cargan los valores guardados — si los modificas, se reemplazan; si no, quedan igual.
+> Si necesitas corregir el costo guardado en una venta pasada (por ejemplo, porque sabes que en esa venta puntual el costo fue distinto), pídeselo al proveedor del software — se puede ajustar directamente en la BD.
 
 ### Un usuario está bloqueado / no puede entrar
 

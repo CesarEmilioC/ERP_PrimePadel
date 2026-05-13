@@ -118,40 +118,38 @@ Login como `maestro` o `admin`:
 ### C.1 Crear venta nueva
 - [ ] Como `maestro` o `admin`, abrir Nueva transacción → tipo "Venta".
 - [ ] Buscar y agregar un producto que tenga costo y precio definidos en catálogo.
-- [ ] Verificar que aparecen **dos columnas separadas**: "Costo unit." y "Precio venta", ambas pre-llenadas con los valores del catálogo.
-- [ ] Cambiar manualmente el costo a un valor distinto (ej. costo del producto era 1000, ponerlo en 1200).
-- [ ] Guardar la venta.
-- [ ] Editar la venta recién creada → el costo aparece en **1200** (el snapshot guardado), NO en 1000 (el actual del producto).
+- [ ] Verificar que aparece **una sola columna editable**: "Precio venta", pre-llenada con el precio Detal del catálogo (el costo NO se muestra).
+- [ ] Modificar el precio si quieres, guardar la venta.
+- [ ] En Supabase (o vía CSV "Resumen por ítem"), verificar que la fila guardada tiene `costo_unitario = costo del producto al momento de la venta` (snapshot automático).
 
-### C.2 Margen negativo
-- [ ] En Nueva transacción → Venta, agregar un producto y poner un precio MENOR al costo (ej. costo 1000, precio 800).
-- [ ] Verificar que sale advertencia amarilla "Atención: el precio de venta es menor que el costo (margen negativo)".
-- [ ] Aún así, se puede guardar la venta (es solo un aviso visual).
+### C.2 Editar venta — el costo se preserva
+- [ ] Editar la venta recién creada → solo se ve "Precio venta", igual que al crear.
+- [ ] Cambia el costo del producto en `/inventario` (ej. de 1000 a 1500).
+- [ ] Vuelve a editar la venta → guarda sin tocar nada.
+- [ ] En Supabase, verificar que `costo_unitario` de la venta SIGUE siendo 1000 (NO se refrescó al 1500 nuevo).
 
 ### C.3 Crear compra nueva
-- [ ] Tipo "Compra" → solo aparece **una columna** "Costo unitario" (no dos).
-- [ ] Editar el costo del proveedor.
-- [ ] Guardar.
+- [ ] Tipo "Compra" → aparece columna "Costo unitario" editable.
+- [ ] Editar el costo del proveedor, guardar.
 
 ### C.4 Crear traslado nuevo
-- [ ] Tipo "Traslado" → solo aparece **una columna** "Costo unitario" (renombrada de "Costo unit. (ref.)").
-- [ ] El campo es **editable** (ya no read-only). Pre-llenado con el costo actual del producto.
+- [ ] Tipo "Traslado" → aparece columna "Costo unitario" editable, pre-llenada con el costo actual del producto.
 - [ ] Guardar.
 
-### C.5 Editar traslado y NO modificar costo
-- [ ] Editar un traslado existente.
-- [ ] Verificar que el costo aparece tal cual estaba (snapshot guardado), NO refrescado del producto actual.
+### C.5 Editar traslado/compra y NO modificar costo
+- [ ] Editar un traslado o compra existente.
+- [ ] Verificar que el "Costo unitario" aparece tal cual estaba (snapshot guardado), NO refrescado del producto actual.
 - [ ] Guardar sin tocar el costo → el valor sigue igual al original.
 
-### C.6 Editar y SÍ modificar costo
-- [ ] Editar un traslado o venta → cambiar el costo manualmente.
-- [ ] Guardar.
-- [ ] Volver a abrir → el nuevo costo aparece como snapshot guardado.
-
-### C.7 CSV import (carga masiva)
+### C.6 CSV import (carga masiva)
 - [ ] Importar un CSV de ventas (sin columna costo en el CSV).
 - [ ] En Supabase, verificar que las filas creadas tienen `costo_unitario = costo actual del producto` (snapshot best-effort).
 - [ ] Importar un CSV de compras → `costo_unitario = precio_unitario` (mismo valor que el del CSV).
+
+### C.7 Margen en CSV export
+- [ ] Descargar CSV "Resumen por ítem" con un rango que incluya las ventas anteriores.
+- [ ] Las filas de `venta` tienen `costo_total`, `margen_total` y `margen_pct` calculados con base en el costo guardado.
+- [ ] Las filas de `compra` tienen `margen_total` y `margen_pct` vacíos (no aplica).
 
 ---
 

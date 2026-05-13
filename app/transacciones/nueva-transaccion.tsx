@@ -195,8 +195,8 @@ export function NuevaTransaccion({
         ubicacion_destino_id: tipo === "venta" ? null : i.ubicacion_destino_id,
         cantidad: Number(i.cantidad),
         precio_unitario: Number(i.precio_unitario),
-        // En compra y traslado el costo coincide con el "precio" (no se pide
-        // por separado en la UI). En venta es un campo independiente.
+        // Venta: costo es snapshot del catálogo al crear, o el valor guardado
+        // al editar (no se pide en la UI). Compra/Traslado: costo = precio.
         costo_unitario: tipo === "venta" ? Number(i.costo_unitario) : Number(i.precio_unitario),
         lista_precio_id: i.lista_precio_id,
       })),
@@ -321,22 +321,12 @@ export function NuevaTransaccion({
                 <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
-            ) : tipo === "venta" ? (
-              <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <div className="col-span-3">Producto</div>
-                <div className="col-span-2">Ubicación (origen)</div>
-                <div className="col-span-1 text-right">Cant.</div>
-                <div className="col-span-2 text-right">Costo unit.</div>
-                <div className="col-span-2 text-right">Precio venta</div>
-                <div className="col-span-1 text-right">Subtotal</div>
-                <div className="col-span-1"></div>
-              </div>
             ) : (
               <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
                 <div className="col-span-3">Producto</div>
-                <div className="col-span-3">Ubicación (destino)</div>
+                <div className="col-span-3">Ubicación {tipo === "venta" ? "(origen)" : "(destino)"}</div>
                 <div className="col-span-2 text-right">Cant.</div>
-                <div className="col-span-2 text-right">Costo unitario</div>
+                <div className="col-span-2 text-right">{tipo === "compra" ? "Costo unitario" : "Precio venta"}</div>
                 <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
@@ -380,7 +370,7 @@ export function NuevaTransaccion({
                       </div>
                     </>
                   ) : (
-                    <div className={isVenta ? "col-span-2" : "col-span-3"}>
+                    <div className="col-span-3">
                       {p?.es_inventariable ? (
                         <Select value={ubiSelSimple ?? ""} onChange={(e) => updateItem(i, { [ubiField]: e.target.value } as any)}>
                           {ubicaciones.map((u) => (
@@ -395,24 +385,22 @@ export function NuevaTransaccion({
                     </div>
                   )}
 
-                  <div className={isVenta ? "col-span-1" : "col-span-2"}>
+                  <div className="col-span-2">
                     <NumericInput value={it.cantidad} onChange={(n) => updateItem(i, { cantidad: n })} min={1} />
                   </div>
 
-                  {isVenta ? (
-                    <>
-                      <div className="col-span-2">
-                        <NumericInput value={it.costo_unitario} onChange={(n) => updateItem(i, { costo_unitario: n })} min={0} />
-                      </div>
-                      <div className="col-span-2">
-                        <NumericInput value={it.precio_unitario} onChange={(n) => updateItem(i, { precio_unitario: n })} min={0} />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="col-span-2">
-                      <NumericInput value={it.precio_unitario} onChange={(n) => updateItem(i, { precio_unitario: n, costo_unitario: n })} min={0} />
-                    </div>
-                  )}
+                  <div className="col-span-2">
+                    {/*
+                      Venta: solo se edita precio_unitario; costo_unitario queda como snapshot
+                        (al crear viene del catálogo; al editar se preserva del valor en BD).
+                      Compra/Traslado: el costo coincide con el precio, se actualizan juntos.
+                    */}
+                    <NumericInput
+                      value={it.precio_unitario}
+                      onChange={(n) => updateItem(i, isVenta ? { precio_unitario: n } : { precio_unitario: n, costo_unitario: n })}
+                      min={0}
+                    />
+                  </div>
 
                   <div className="col-span-1 text-right font-mono text-white">{formatCOP(it.cantidad * it.precio_unitario)}</div>
                   <div className="col-span-1 text-right">
@@ -426,11 +414,6 @@ export function NuevaTransaccion({
                   {trasladoMismo ? (
                     <div className="col-span-12 -mt-1 text-xs text-red-400">
                       Origen y destino no pueden ser la misma ubicación.
-                    </div>
-                  ) : null}
-                  {isVenta && it.precio_unitario > 0 && it.costo_unitario > 0 && it.precio_unitario < it.costo_unitario ? (
-                    <div className="col-span-12 -mt-1 text-xs text-yellow-400">
-                      Atención: el precio de venta es menor que el costo (margen negativo).
                     </div>
                   ) : null}
                 </div>
