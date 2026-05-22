@@ -23,11 +23,20 @@ export type DetalleProps = {
   categorias: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
   listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean; descuento_porcentaje: number }[];
+  analisisCostos: {
+    numCompras: number;
+    cantidadTotalCompras: number;
+    valorTotalCompras: number;
+    costoPromedioCompra: number;
+    ultimaCompraFecha: string | null;
+    ultimaCompraCosto: number | null;
+    ultimaCompraCantidad: number | null;
+  };
   isMaestro: boolean;
 };
 
 export function DetalleClient(props: DetalleProps) {
-  const { producto, ubicacionesConStock, ubicacionesDisponibles, precios, historialMensual, ajustes, categorias, impuestos, listasPrecios, isMaestro } = props;
+  const { producto, ubicacionesConStock, ubicacionesDisponibles, precios, historialMensual, ajustes, categorias, impuestos, listasPrecios, analisisCostos, isMaestro } = props;
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = React.useState(false);
@@ -99,6 +108,49 @@ export function DetalleClient(props: DetalleProps) {
           </p>
         </Card>
       </div>
+
+      {producto.es_inventariable && isMaestro ? (
+        <section>
+          <h2 className="mb-2 text-lg font-semibold text-white">Análisis de costos (compras registradas)</h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Estos valores se calculan a partir de las transacciones de tipo <strong>compra</strong> registradas en el sistema. El "valor total comprado" es la suma acumulada de <code>cantidad × costo unitario</code> de cada compra individual — refleja cuánta plata se ha invertido en este producto.
+          </p>
+          {analisisCostos.numCompras === 0 ? (
+            <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Aún no hay compras registradas para este producto. Cuando registres una compra, este resumen se llena automáticamente.
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-4">
+              <Card>
+                <p className="text-xs uppercase text-muted-foreground">Costo promedio</p>
+                <p className="mt-1 text-2xl font-bold text-white">{formatCOP(Math.round(analisisCostos.costoPromedioCompra))}</p>
+                <p className="mt-1 text-xs text-muted-foreground">por unidad, ponderado por cantidad</p>
+              </Card>
+              <Card>
+                <p className="text-xs uppercase text-muted-foreground">Última compra</p>
+                <p className="mt-1 text-2xl font-bold text-white">
+                  {analisisCostos.ultimaCompraCosto != null ? formatCOP(analisisCostos.ultimaCompraCosto) : "—"}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {analisisCostos.ultimaCompraFecha
+                    ? `${formatInt(analisisCostos.ultimaCompraCantidad ?? 0)} uds el ${new Date(analisisCostos.ultimaCompraFecha).toLocaleDateString("es-CO", { timeZone: "America/Bogota" })}`
+                    : ""}
+                </p>
+              </Card>
+              <Card>
+                <p className="text-xs uppercase text-muted-foreground">Total comprado</p>
+                <p className="mt-1 text-2xl font-bold text-white">{formatInt(analisisCostos.cantidadTotalCompras)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">unidades en {analisisCostos.numCompras} compras</p>
+              </Card>
+              <Card>
+                <p className="text-xs uppercase text-muted-foreground">Valor total comprado</p>
+                <p className="mt-1 text-2xl font-bold text-brand-orange">{formatCOP(Math.round(analisisCostos.valorTotalCompras))}</p>
+                <p className="mt-1 text-xs text-muted-foreground">suma real de cantidad × costo</p>
+              </Card>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       {producto.es_inventariable ? (
         <section>
