@@ -22,7 +22,7 @@ export type DetalleProps = {
   ajustes: { id: string; cantidad_antes: number; cantidad_despues: number; diferencia: number; motivo: string; notas: string | null; fecha: string; ubicaciones: { nombre: string } | null }[];
   categorias: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
-  listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
+  listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean; descuento_porcentaje: number }[];
   isMaestro: boolean;
 };
 
@@ -122,20 +122,64 @@ export function DetalleClient(props: DetalleProps) {
         </section>
       ) : null}
 
-      {precios.length > 0 ? (
+      {listasPrecios.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-lg font-semibold text-white">Precios</h2>
-          <Table>
-            <THead><TR><TH>Lista</TH><TH className="text-right">Precio</TH></TR></THead>
-            <TBody>
-              {precios.map((p) => (
-                <TR key={p.lista_precio_id}>
-                  <TD>{p.nombre}</TD>
-                  <TD className="text-right font-mono">{formatCOP(p.precio)}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          <h2 className="mb-2 text-lg font-semibold text-white">Precios por tarifa</h2>
+          {(() => {
+            const detalLista = listasPrecios.find((l) => l.es_default);
+            const detalPrecio = detalLista
+              ? precios.find((p) => p.lista_precio_id === detalLista.id)?.precio ?? 0
+              : 0;
+            return (
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Tarifa</TH>
+                    <TH className="text-right">Precio</TH>
+                    <TH>Origen</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {listasPrecios.map((l) => {
+                    const override = precios.find((p) => p.lista_precio_id === l.id);
+                    const tieneOverride = !!override;
+                    const autoCalc = l.es_default
+                      ? null
+                      : detalPrecio > 0
+                        ? Math.round(detalPrecio * (1 - l.descuento_porcentaje / 100))
+                        : null;
+                    const precioMostrado = tieneOverride
+                      ? override!.precio
+                      : autoCalc;
+                    return (
+                      <TR key={l.id}>
+                        <TD>
+                          {l.nombre}
+                          {!l.es_default && l.descuento_porcentaje > 0 ? (
+                            <span className="ml-2 text-xs text-muted-foreground">−{l.descuento_porcentaje}%</span>
+                          ) : null}
+                        </TD>
+                        <TD className="text-right font-mono">
+                          {precioMostrado != null ? formatCOP(precioMostrado) : <span className="text-muted-foreground">—</span>}
+                        </TD>
+                        <TD className="text-xs">
+                          {l.es_default ? (
+                            <span className="text-muted-foreground">Precio base</span>
+                          ) : tieneOverride ? (
+                            <span className="text-yellow-300">Manual</span>
+                          ) : autoCalc != null ? (
+                            <span className="text-muted-foreground">Auto (Detal − {l.descuento_porcentaje}%)</span>
+                          ) : (
+                            <span className="text-muted-foreground italic">Falta precio Detal</span>
+                          )}
+                        </TD>
+                      </TR>
+                    );
+                  })}
+                </TBody>
+              </Table>
+            );
+          })()}
         </section>
       ) : null}
 

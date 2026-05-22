@@ -63,7 +63,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       ajustes={(ajustes ?? []) as any}
       categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}
       impuestos={impuestos.map((i) => ({ id: i.id, nombre: i.nombre, porcentaje: Number(i.porcentaje) }))}
-      listasPrecios={listasPrecios.map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, es_default: l.es_default }))}
+      listasPrecios={listasPrecios.map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, es_default: l.es_default, descuento_porcentaje: Number(l.descuento_porcentaje ?? 0) }))}
       isMaestro={perfil.rol === "maestro"}
     />
   );

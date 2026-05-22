@@ -72,7 +72,7 @@ export default async function InventarioPage() {
       categorias={categorias}
       ubicaciones={ubicaciones.filter((u) => u.activa)}
       impuestos={impuestos}
-      listasPrecios={listasPrecios}
+      listasPrecios={(listasPrecios as any[]).map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, es_default: l.es_default, descuento_porcentaje: Number(l.descuento_porcentaje ?? 0) }))}
       isMaestro={perfil.rol === "maestro"}
     />
   );

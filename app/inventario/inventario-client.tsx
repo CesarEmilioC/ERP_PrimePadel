@@ -36,7 +36,7 @@ export function InventarioClient({
   categorias: { id: string; nombre: string }[];
   ubicaciones: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
-  listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
+  listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean; descuento_porcentaje: number }[];
   isMaestro: boolean;
 }) {
   const PAGE_SIZE = 10;

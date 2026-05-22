@@ -38,7 +38,7 @@ export function ProductoDialog({
   precios?: { lista_precio_id: string; precio: number }[];
   categorias: { id: string; nombre: string }[];
   impuestos: { id: string; nombre: string; porcentaje: number }[];
-  listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean }[];
+  listasPrecios: { id: string; codigo: string; nombre: string; es_default: boolean; descuento_porcentaje: number }[];
   isMaestro: boolean;
 }) {
   const router = useRouter();
@@ -202,22 +202,56 @@ export function ProductoDialog({
 
         {isMaestro ? (
           <div className="md:col-span-2">
-            <h3 className="mb-2 mt-2 text-sm font-semibold text-white">Precios por lista</h3>
+            <h3 className="mb-2 mt-2 text-sm font-semibold text-white">Precios por tarifa</h3>
             <p className="mb-3 text-xs text-muted-foreground">
-              Deja en blanco o 0 las listas que no apliquen. "Detal" es el precio por defecto al cliente final.
+              Configura el precio Detal (base). Para las demás tarifas, deja el campo vacío y se aplicará automáticamente el descuento configurado en cada tarifa sobre el precio Detal. Si pones un valor manual, ese precio anula el cálculo automático.
             </p>
-            <div className="grid gap-3 md:grid-cols-3">
-              {listasPrecios.map((l) => (
-                <Field key={l.id} label={l.nombre + (l.es_default ? " (default)" : "")}>
-                  <NumericInput
-                    value={Number(preciosState[l.id] ?? 0) || 0}
-                    onChange={(n) => setPreciosState({ ...preciosState, [l.id]: n === 0 ? "" : String(n) })}
-                    min={0}
-                    placeholder="0"
-                  />
-                </Field>
-              ))}
-            </div>
+            {(() => {
+              const detalLista = listasPrecios.find((l) => l.es_default);
+              const detalPrecio = detalLista ? Number(preciosState[detalLista.id] || 0) : 0;
+              return (
+                <div className="grid gap-3 md:grid-cols-3">
+                  {listasPrecios.map((l) => {
+                    const valorActual = preciosState[l.id] ?? "";
+                    const tieneOverride = valorActual !== "" && Number(valorActual) > 0;
+                    const autoCalc = l.es_default
+                      ? null
+                      : detalPrecio > 0
+                        ? Math.round(detalPrecio * (1 - l.descuento_porcentaje / 100))
+                        : null;
+                    return (
+                      <div key={l.id}>
+                        <Field
+                          label={
+                            l.es_default
+                              ? `${l.nombre} (base)`
+                              : `${l.nombre}${l.descuento_porcentaje > 0 ? ` (−${l.descuento_porcentaje}%)` : ""}`
+                          }
+                        >
+                          <NumericInput
+                            value={Number(valorActual) || 0}
+                            onChange={(n) => setPreciosState({ ...preciosState, [l.id]: n === 0 ? "" : String(n) })}
+                            min={0}
+                            placeholder={autoCalc != null ? `auto: ${autoCalc}` : "0"}
+                          />
+                        </Field>
+                        {!l.es_default ? (
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {tieneOverride
+                              ? <span className="text-yellow-300">Precio fijo (anula el descuento automático)</span>
+                              : autoCalc != null
+                                ? <>Auto: <span className="text-white">${autoCalc.toLocaleString("es-CO")}</span> (Detal − {l.descuento_porcentaje}%)</>
+                                : detalPrecio === 0
+                                  ? "Define primero el precio Detal para ver el cálculo automático."
+                                  : null}
+                          </p>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         ) : (
           <div className="md:col-span-2 rounded border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
