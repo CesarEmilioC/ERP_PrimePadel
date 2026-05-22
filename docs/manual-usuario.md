@@ -17,7 +17,7 @@ _Sistema web para gestión de inventario, ventas, compras, traslados y análisis
 8. [Carga masiva de transacciones (CSV)](#8-carga-masiva-csv)
 9. [Ubicaciones](#9-ubicaciones)
 10. [Categorías](#10-categorías)
-11. [Listas de precios](#11-listas-de-precios)
+11. [Tarifas](#11-tarifas)
 12. [Dashboard — análisis del negocio](#12-dashboard)
 13. [Usuarios](#13-usuarios)
 14. [Preguntas frecuentes](#14-preguntas-frecuentes)
@@ -60,7 +60,7 @@ El sistema tiene **tres niveles de acceso** según las responsabilidades del usu
 | Ajuste de inventario (conteo, merma, etc.) | ✅ | ✅ | ❌ |
 | Gestionar Ubicaciones | ✅ | ✅ | ❌ |
 | Gestionar Categorías | ✅ | ❌ | ❌ |
-| Gestionar Listas de precios | ✅ | ❌ | ❌ |
+| Gestionar Tarifas | ✅ | ❌ | ❌ |
 | Ver Dashboard | ✅ | ❌ | ❌ |
 | Gestionar Usuarios | ✅ | ❌ | ❌ |
 
@@ -148,8 +148,13 @@ Click en el nombre del producto → ficha con:
 
 - **Encabezado**: nombre, código, categoría, impuesto.
 - **Tarjetas resumen**: stock total, costo unitario, valor total en costo, precio Detal.
+- **Análisis de costos** (solo Maestro, solo productos inventariables): 4 cards calculadas a partir de las compras registradas:
+    - **Costo promedio**: ponderado por cantidad (todas las compras del producto).
+    - **Última compra**: costo + cantidad + fecha de la compra más reciente.
+    - **Total comprado**: unidades acumuladas y número de compras.
+    - **Valor total comprado**: suma real de `cantidad × costo` de cada compra individual. Refleja cuánta plata se ha invertido en el producto.
 - **Stock por ubicación**: tabla con cada lugar físico y su cantidad.
-- **Precios por lista**: todos los precios cargados según el canal.
+- **Precios por tarifa**: todos los precios efectivos del producto en cada tarifa, con indicador del origen (Manual, Auto o Precio base).
 - **Histórico de ventas mensuales**: cantidad y monto vendido cada mes (datos de Alegra). Los totales con asterisco (*) son estimados con el precio actual cuando el reporte original no traía monto.
 - **Historial de ajustes**: cada conteo físico, merma o corrección registrada.
 
@@ -241,38 +246,41 @@ En ventas, el costo de adquisición no se muestra en la UI pero queda guardado c
 
 Útil para cargar varias transacciones de un golpe (ej. el resumen de ventas del fin de semana).
 
-> 👤 **Acceso:** Maestro y Admin (todas). Recepción puede subir solo ventas y traslados.
+> 👤 **Acceso:** Maestro y Admin (todas). Recepción solo ventas y traslados (no compras).
 
 ### Flujo
 
-1. Entra a **Transacciones → "⬆ Carga masiva (CSV)"**.
-2. Descarga la plantilla CSV (ya trae las columnas correctas con ejemplos).
-3. Llena el archivo en Excel:
-    - Columnas obligatorias: `fecha, tipo, codigo_producto, ubicacion, cantidad, precio_unitario`.
-    - Opcionales: `notas, ticket`.
-    - Borra las líneas que empiezan con `#` (son comentarios).
-4. Arrastra el archivo o selecciónalo.
+1. Entra a **Transacciones → "⬆ Carga masiva CSV"**.
+2. Descarga la plantilla CSV. **La plantilla viene pre-llenada** con una fila por cada producto activo del catálogo y por cada tipo de transacción permitido para tu rol:
+    - **Recepción**: una fila de **venta** + una de **traslado** por cada producto inventariable (los servicios solo traen fila de venta).
+    - **Admin/Maestro**: además añade una fila de **compra** por cada producto inventariable.
+3. Abre el archivo en Excel y **solo modifica las cantidades** de los productos que se movieron. Las filas que dejas con cantidad 0 se ignoran al importar (no son error).
+4. Si lo necesitas también puedes ajustar fecha, ubicación, precio o notas.
+5. Arrastra el archivo de vuelta al sistema o selecciónalo.
 
-### Reglas del archivo
+### Columnas
 
-- **fecha**: `DD/MM/AAAA`, `DD-MM-AAAA` o `AAAA-MM-DD`. Opcional con hora: `DD/MM/AAAA HH:MM`.
-- **tipo**: `venta` o `compra` (recepción no puede subir compras).
-- **codigo_producto**: el SKU exacto del producto.
-- **ubicacion**: nombre exacto de la ubicación.
-- **cantidad**: entero positivo.
-- **precio_unitario**:
-    - En **ventas** = precio que pagó el cliente.
-    - En **compras** = costo unitario al proveedor.
-- **ticket** (opcional): rows con el mismo ticket se agrupan en una sola transacción con varios ítems.
+| Columna | Para qué |
+|---------|----------|
+| `fecha` | `DD/MM/AAAA`, `DD-MM-AAAA` o `AAAA-MM-DD`. Opcional con hora: `DD/MM/AAAA HH:MM`. |
+| `tipo` | `venta`, `compra` o `traslado`. |
+| `codigo_producto` | El SKU exacto del producto (ya viene pre-llenado en la plantilla). |
+| `ubicacion` | Origen para venta/traslado, destino para compra. |
+| `ubicacion_destino` | **Solo para traslados**: a dónde llega el stock. |
+| `cantidad` | Entero positivo. **0 o vacío = fila ignorada**. |
+| `precio_unitario` | En venta: precio al cliente. En compra/traslado: costo unitario. |
+| `notas` | Opcional: cliente, mesa, factura, etc. |
+| `ticket` | Opcional: agrupa varias filas en una sola transacción. |
 
 ### Preview con validación
 
 - **Filas verdes**: válidas, listas para importar.
-- **Filas rojas**: con errores específicos (código no existe, stock insuficiente, ubicación errada, servicio no admite compra, etc.).
+- **Filas rojas**: con errores específicos (código no existe, stock insuficiente, ubicación errada, etc.).
+- **Filas ignoradas**: las que dejaste con cantidad 0 (no se cuentan ni como válidas ni como error).
 
-**No se puede importar si hay filas rojas** — corriges el CSV y vuelves a subir.
+**Importación parcial:** ahora aunque haya filas con error, se importan las válidas y se reportan las inválidas en el resumen. Ya no hace falta corregir el CSV para importar el resto.
 
-Cuando todo está verde, click **"Confirmar e importar"**. Las transacciones aparecen marcadas con un badge **CSV** en la lista.
+Cuando confirmas, las transacciones aparecen marcadas con un badge **CSV** en la lista.
 
 ---
 
@@ -290,6 +298,12 @@ Lugares físicos donde se guarda el inventario.
 
 > **Tip:** el campo "Orden" se usa para acomodar el dropdown de ubicaciones cuando registras una venta. Las que más se usan deberían tener orden bajo (1, 2, 3...).
 
+### Ver el contenido de una ubicación
+
+Click en el nombre de cualquier ubicación (o en su botón **"Ver"**) para abrir su ficha. Ahí encontrás:
+- 3 KPIs: productos distintos con stock, unidades totales y valor estimado al costo actual.
+- Tabla con los productos que el sistema cree que hay en esa ubicación en este momento, ordenados por cantidad descendente. Click en el nombre del producto te lleva a su ficha (donde puedes hacer un ajuste si el conteo físico no cuadra).
+
 ---
 
 ## 10. Categorías
@@ -304,37 +318,37 @@ CRUD igual a ubicaciones. Soft-delete si la categoría tiene productos asociados
 
 ---
 
-## 11. Listas de precios
+## 11. Tarifas
 
 > 👤 **Acceso:** Maestro.
 
-Permite que un mismo producto tenga **precios distintos según el canal o destinatario**.
+Permite que un mismo producto tenga **precios distintos según el canal o destinatario**. Cada tarifa puede tener un **descuento predeterminado** que se aplica automáticamente sobre el precio Detal.
 
 ### ¿Qué son?
 
 Imagina la siguiente tabla:
 
-| Producto | Detal (público) | Equipo Prime | Profesor Kevin | Profesor Bryan |
-|----------|:---:|:---:|:---:|:---:|
-| Botella agua | $4.000 | $3.000 | — | — |
-| Clase 1h | $80.000 | — | $70.000 | $75.000 |
+| Producto | Detal (público) | Staff Prime (−20%) | Profesor Kevin (precio fijo) |
+|----------|:---:|:---:|:---:|
+| Botella agua | $4.000 | $3.200 *(auto)* | $4.000 |
+| Clase 1h | $80.000 | $64.000 *(auto)* | $70.000 *(manual)* |
 
-Cada columna es una "lista de precios". Permite que el mismo producto se cobre distinto según el cliente.
+Cada columna es una **tarifa**. En cada producto se puede o bien dejar que el precio se calcule automáticamente según el descuento de la tarifa, o configurar un precio manual que anule el cálculo.
 
-**Listas precargadas:**
+**Tarifas precargadas:**
 - **Detal** (default — la que se usa por defecto en cada venta).
-- Equipo Prime, Pro Team.
+- Equipo Prime / Staff Prime.
 - Kevin García, Bryan Perafán (profesores).
 - Alterno 1 al 8 (reservados para nuevos canales).
 
 ### Cómo gestionar
-- **Crear**: + Nueva lista → nombre + código interno (ej. `PEDRO_LOPEZ`) + orden + estado.
-- **Editar**: cambiar nombre, código, orden o desactivar.
-- **Eliminar**: si tiene precios asociados se desactiva en lugar de borrar. **Detal no se puede borrar**.
+- **Crear**: + Nueva tarifa → nombre + código interno (ej. `STAFF_PRIME`) + descuento % + orden + estado.
+- **Editar**: cambiar nombre, código, descuento %, orden o desactivar. Si cambias el descuento %, todos los productos sin precio manual se ajustan automáticamente.
+- **Eliminar**: si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico). **Detal no se puede borrar**.
 
 ### Cómo se usa
-1. **Maestro**: en la ficha del producto → sección "Precios por lista" → asigna el precio para cada canal que aplique. Las listas que no apliquen se dejan en blanco.
-2. **Cajero**: cuando registra una venta, el precio se autocompleta con Detal. Si está vendiendo a un Equipo Prime, modifica manualmente el precio.
+1. **Maestro**: en la ficha del producto → sección "Precios por tarifa" → ves el precio efectivo (manual o automático) por cada tarifa. Si quieres anular el cálculo automático, escribes un valor en el campo.
+2. **Cajero**: cuando registra una venta, el precio se autocompleta con Detal. Si está vendiendo a un Staff, modifica manualmente el precio según corresponda.
 
 > Si no manejas precios diferenciados, ignora esta función — todo se vende a precio Detal por defecto.
 
@@ -358,6 +372,9 @@ Productos activos, ubicaciones, stock total, valor del inventario, alertas, vari
 - **Ventas por día de la semana** (cuando hay transacciones reales).
 - **Top 5 productos por día** (gráfica apilada).
 - **Tabla paginada con TODAS las cantidades vendidas**.
+- **Utilidades brutas: costos vs ingresos** (gráfica top 10 con KPIs de margen + tabla completa). Para responder "¿qué tan rentable es cada producto?". Solo cuenta ventas reales del sistema (no el histórico de Alegra).
+
+Cada gráfica trae una descripción corta debajo del título para que sepas qué te está mostrando.
 
 ### Pestaña "Inventario"
 - **Stock por ubicación**: gráfica + tarjetas con cantidad y valor en costo de cada ubicación.

@@ -121,40 +121,84 @@ Esto define el orden en que aparecen los selectores de ubicación cuando recepci
 
 ---
 
-## 5. Gestión de listas de precios
+## 5. Gestión de tarifas
 
 ### Concepto
 
-Una "lista de precios" es un canal de venta con sus propios precios. Permite que el mismo producto se cobre diferente según a quién se le venda.
+Una **tarifa** (antes llamada "lista de precios") es un canal de venta con su propio precio. Permite cobrar el mismo producto distinto según a quién se le venda.
 
-### Listas precargadas
+Cada tarifa tiene un **descuento predeterminado en %** que se aplica al precio Detal. Esto significa:
 
-| Código | Nombre | Para qué |
-|--------|--------|----------|
-| `DETAL` | Detal (default) | Precio público al cliente final |
-| `EQUIPO_PRIME` | Equipo Prime | Miembros del equipo del club con descuento |
-| `KEVIN_GARCIA` | Kevin García | Profesor externo |
-| `BRYAN_PERAFAN` | Bryan Perafán | Profesor externo |
-| `ALTERNO_1` ... `ALTERNO_8` | Alternos 1-8 | Reservados para nuevos canales |
+```
+precio efectivo de un producto en la tarifa X = precio Detal × (1 − descuento%)
+```
 
-### Casos de uso
+Si un producto tiene un precio fijo configurado para esa tarifa, ese precio **anula** el cálculo automático.
 
-**1. Llega un profesor nuevo (ej. "Pedro López")**
-- Editas una de las listas Alterno: cambias nombre a "Pedro López" y código a `PEDRO_LOPEZ`.
-- En cada producto/clase relevante, vas a su ficha → "Precios por lista" → asignas el precio especial para Pedro López.
-- Cuando recepción venda una clase con Pedro López, modifica manualmente el precio (lo cambia del Detal al precio especial).
+### Tarifas precargadas
 
-**2. Cambia el descuento del Equipo Prime**
-- Ve a cada producto que aplica → ficha → "Precios por lista" → actualiza el precio Equipo Prime.
-- Las ventas anteriores conservan el precio que tenían cuando se registraron (no se afectan).
+| Código | Nombre | Descuento sugerido | Para qué |
+|--------|--------|--------------------|----------|
+| `DETAL` | Detal (default) | 0% (base) | Precio público al cliente final |
+| `EQUIPO_PRIME` | Equipo Prime | ~15-20% | Miembros del equipo del club |
+| `KEVIN_GARCIA` | Kevin García | (configurable) | Profesor externo |
+| `BRYAN_PERAFAN` | Bryan Perafán | (configurable) | Profesor externo |
+| `ALTERNO_1` ... `ALTERNO_8` | Alternos 1-8 | — | Reservados para nuevos canales |
 
-**3. Un profesor ya no trabaja en el club**
-- Vas a `/listas-precios` → click "Editar" en su lista → cambias el estado a **Inactiva**.
-- O si es un profesor que no volverá, click "Eliminar". Si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico).
+### Caso de uso completo — Crear una tarifa para el staff de Prime Padel
 
-### ¿Cuándo NO usar listas de precios?
+Imaginemos que quieres darle a tu staff (cajeros, profesores internos, etc.) un 20% de descuento sobre todos los productos.
 
-Si todos tus productos se venden a un solo precio público, **ignora esta función**. Solo usa Detal y olvídate de las demás. La función es opcional para casos especiales.
+**Paso 1 — Crear la tarifa**
+
+1. Entra al menú **Tarifas** (arriba en el nav).
+2. Click en **"+ Nueva tarifa"**.
+3. Llena el formulario:
+    - **Nombre:** `Staff Prime Padel`
+    - **Código (interno):** `STAFF_PRIME` (mayúsculas y guion bajo)
+    - **Descuento predeterminado:** `20` (significa 20%)
+    - **Orden:** déjalo como viene (sirve para ordenar la lista)
+    - **Estado:** Activa
+4. Click **Crear**.
+
+A partir de ese momento, **todos los productos del catálogo automáticamente tienen un precio Staff Prime Padel = Detal × 0.8** (sin necesidad de configurar cada producto uno por uno).
+
+**Paso 2 — (Opcional) Ajustar el precio puntual de algún producto**
+
+Si para un producto específico el descuento debe ser distinto (ej. una cerveza importada no entra en la promoción), vas a la ficha del producto:
+
+1. **Inventario** → busca el producto → click en su nombre.
+2. Click **Editar**.
+3. Baja hasta la sección **Precios por tarifa**.
+4. En la fila de "Staff Prime Padel" verás:
+    - El placeholder del campo dice `auto: $8.000` (por ejemplo) — eso es el cálculo automático.
+    - Si escribes un valor manualmente (ej. $9.000), ese precio anula el automático.
+    - Para volver al cálculo automático, vacía el campo (déjalo en 0 o en blanco).
+
+**Paso 3 — (Opcional) Cambiar el descuento global más adelante**
+
+Si en el futuro decides que el descuento Staff sube al 25%, ve a **Tarifas → Editar → cambia "Descuento predeterminado" a 25 → Guardar**. Automáticamente todos los productos que usan el cálculo automático ajustan su precio. Los productos con precio manual NO se ven afectados (siguen con su precio fijo).
+
+### Cómo ver los precios efectivos de un producto
+
+Entra a la ficha del producto (**Inventario → click en el nombre**). En la sección **"Precios por tarifa"** aparece una tabla con:
+- **Tarifa**: nombre + descuento si tiene.
+- **Precio**: el precio efectivo (manual o calculado).
+- **Origen**: `Precio base` (Detal), `Manual` (override puntual) o `Auto (Detal − X%)` (cálculo automático).
+
+### Otros casos comunes
+
+**Llega un profesor nuevo (ej. "Pedro López")**
+- Vas a `/tarifas` → editas una tarifa Alterno: nombre → `Pedro López`, código → `PEDRO_LOPEZ`, descuento → el que aplique.
+- Si Pedro tiene un precio especial para clases puntuales, vas a la ficha de esos productos y configura el precio manual.
+
+**Un profesor ya no trabaja en el club**
+- Vas a `/tarifas` → "Editar" en su tarifa → cambias estado a **Inactiva**.
+- O click "Eliminar": si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico de ventas).
+
+### ¿Cuándo NO usar tarifas distintas?
+
+Si todos tus productos se venden a un solo precio público, ignora esta función. Solo usa Detal con descuento 0% y olvídate de las demás. Es opcional para casos especiales.
 
 ---
 
@@ -210,12 +254,15 @@ Si tienes 100+ productos, hacer un ajuste por cada uno es lento. **Alternativa**
 - **Top productos**: cuáles son los productos estrella. Útil para saber qué stockear más y qué productos podrías negociar mejor con el proveedor.
 - **Por categoría**: qué tipo de productos genera más ingresos.
 - **Días de la semana**: identifica los días de mayor venta. Sirve para programar personal y compras.
+- **Utilidades brutas (costos vs ingresos)**: gráfica top 10 con barras verde (ingresos) y rojo (costos) por producto/servicio. KPIs arriba con totales y margen %. Filtro Todos / Solo productos / Solo servicios. Útil para responder "¿cuáles son mis productos más rentables?" — el margen % te dice cuánto ganas por cada peso de venta. Solo cuenta ventas reales del sistema (no el histórico de Alegra, porque ahí no hay costo por venta).
 
 ### Pestaña "Inventario"
 
 - **Stock por ubicación**: detecta si hay desbalance (ej. mucho stock en Bodega y poco en Vitrina → mover).
 - **SKUs por categoría**: salud del catálogo.
 - **Días estimados de stock**: 🔴 productos a punto de agotarse. Calculado dividiendo el stock actual entre la velocidad promedio de venta de **todo el histórico** (independiente de los filtros del tab Ventas, para tener un promedio estable). **Revisa esta sección semanalmente** para evitar quiebres de stock.
+
+> Cada gráfica del dashboard ahora trae una descripción corta debajo del título para que sepas qué te está mostrando.
 
 ### Pestaña "Alertas"
 

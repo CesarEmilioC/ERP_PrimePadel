@@ -22,7 +22,8 @@ Mini-ERP web para el control de inventario, compras, ventas y traslados del club
 12. [Seguridad](#seguridad)
 13. [Carga masiva por CSV](#carga-masiva-por-csv)
 14. [Descarga de transacciones a CSV](#descarga-de-transacciones-a-csv)
-15. [Migraciones SQL](#migraciones-sql)
+15. [Tarifas y precios diferenciados](#tarifas-y-precios-diferenciados)
+16. [Migraciones SQL](#migraciones-sql)
 
 ---
 
@@ -98,7 +99,7 @@ Schema completo en [`supabase/schema.sql`](supabase/schema.sql). Resumen:
 
 - `categorias`, `impuestos`, `listas_precios`, `ubicaciones` — catálogos maestros.
 - `productos` — catálogo de productos y servicios. Distinción `tipo` (producto/servicio) y `es_inventariable`.
-- `precios_producto` — N–N entre productos y listas de precios (un producto puede tener distintos precios según el canal).
+- `precios_producto` — N–N entre productos y tarifas (`listas_precios`). Un producto puede tener un precio manual para una tarifa específica. Si no lo tiene, el sistema usa `precio_detal × (1 − descuento_porcentaje/100)` de esa tarifa.
 - `stock_por_ubicacion` — cantidad por (producto, ubicación). PK compuesta. **Fuente de verdad** del inventario.
 - `transacciones` — compra | venta | traslado. Header con tipo, fecha, total, usuario, notas, origen.
 - `transaccion_items` — líneas de cada transacción. Incluye `precio_unitario` Y `costo_unitario` (snapshot histórico al momento de la transacción).
@@ -129,7 +130,8 @@ Schema completo en [`supabase/schema.sql`](supabase/schema.sql). Resumen:
 Tres pestañas: Ventas / Inventario / Alertas. Filtros del tab Ventas: categoría (multi), Mes (atajo) o Fecha desde / hasta (excluyentes).
 
 - **Ventas:** ventas última semana (transacciones reales), consumo por mes, top productos, por categoría, por día de la semana.
-- **Inventario:** stock por ubicación, SKUs por categoría, **días estimados de stock** (predictivo, sobre todo el histórico).
+- **Inventario:** stock por ubicación, SKUs por categoría, **días estimados de stock** (predictivo, sobre todo el histórico). Ver también la **vista detallada de cada ubicación** en `/ubicaciones/<id>` que lista los productos presentes y sus cantidades.
+- **Utilidades:** gráfica de costos vs ingresos por producto/servicio, utilidad bruta total y margen %, tabla paginada con margen por producto.
 - **Alertas:** productos por acabarse en nevera, en bodegas, sin movimiento.
 - **KPIs (siempre visibles):** productos activos, ubicaciones, stock total, valor del inventario, alertas activas.
 
@@ -189,8 +191,8 @@ Jerarquía: `recepcion (1) < admin (2) < maestro (3)`. Definida en [`lib/auth.ts
 | Editar costos y precios | ✅ | ❌ | ❌ |
 | Eliminar productos | ✅ | ❌ | ❌ |
 | Ajuste de inventario | ✅ | ✅ | ❌ |
-| CRUD ubicaciones | ✅ | ✅ | ❌ |
-| CRUD categorías / listas de precios | ✅ | ❌ | ❌ |
+| CRUD ubicaciones (incl. vista detallada) | ✅ | ✅ | ❌ |
+| CRUD categorías / tarifas | ✅ | ❌ | ❌ |
 | Ver Dashboard | ✅ | ❌ | ❌ |
 | Gestionar usuarios | ✅ | ❌ | ❌ |
 
@@ -205,20 +207,30 @@ La validación de rol se hace SIEMPRE en server actions (`requireProfile`, `requ
 
 ## Carga masiva por CSV
 
-Flujo: subir archivo → parsear con Papa Parse → validar con Zod → mostrar preview con errores resaltados → el usuario confirma → inserción transaccional en BD vía RPC `registrar_transaccion`.
+Flujo: descargar plantilla → llenar cantidades → subir → parsear con Papa Parse → validar con Zod → mostrar preview con errores resaltados → el usuario confirma → inserción transaccional en BD vía RPC `registrar_transaccion`.
 
-Formato esperado:
+La **plantilla** se genera dinámicamente en el server con una fila por (producto × tipo de transacción) permitido para el rol:
+- **Recepción**: una fila de venta y una de traslado por cada producto inventariable, una fila de venta por cada servicio.
+- **Admin/Maestro**: además añade una fila de compra por cada producto inventariable.
+
+El usuario solo modifica las **cantidades** de los productos que efectivamente se movieron. Las filas con cantidad 0 (las que dejó sin tocar) se ignoran al importar.
+
+Formato:
 
 ```csv
-fecha,tipo,codigo_producto,ubicacion,cantidad,precio_unitario,notas,ticket
-20/04/2026,venta,CERV-001,Barra,2,8000,,T-001
-20/04/2026,compra,CERV-001,Bodega Principal,24,5500,Pedido proveedor,
+fecha,tipo,codigo_producto,ubicacion,ubicacion_destino,cantidad,precio_unitario,notas,ticket
+20/04/2026,venta,CERV-001,Barra,,2,8000,,T-001
+20/04/2026,compra,CERV-001,Bodega Principal,,24,5500,Pedido proveedor,
+20/04/2026,traslado,CERV-001,Bodega Principal,Nevera Barra,12,5500,,
 ```
 
-- `fecha` en formato `DD/MM/AAAA`.
-- `tipo` solo acepta `venta` o `compra` (los traslados se hacen vía formulario).
-- `ticket` (opcional) agrupa varios ítems en una sola transacción.
-- `costo_unitario` se backfillea automáticamente: en compras coincide con `precio_unitario`; en ventas se usa el costo actual del producto en el catálogo.
+- `fecha`: `DD/MM/AAAA` o `AAAA-MM-DD`.
+- `tipo`: `venta`, `compra` o `traslado`.
+- `ubicacion`: origen para venta/traslado, destino para compra.
+- `ubicacion_destino`: solo aplica en traslado.
+- `cantidad = 0` o vacía → fila ignorada.
+- `costo_unitario` se backfillea automáticamente: en compras y traslados coincide con `precio_unitario`; en ventas se usa el costo actual del producto en el catálogo.
+- **Importación parcial**: si hay filas con error, las filas válidas se importan igual y las inválidas se reportan en el resumen (no bloquean a las buenas).
 
 ## Descarga de transacciones a CSV
 
@@ -229,6 +241,24 @@ Botón en `/transacciones` (solo admin/maestro). Dos modos:
 
 Validaciones: rango ≤ 2 años, fechas válidas, fecha inicial ≤ final. Salida en UTF-8 con BOM (Excel en Windows abre acentos correctamente).
 
+## Tarifas y precios diferenciados
+
+Cada tarifa (registro en `listas_precios`, ruta `/tarifas`) tiene un `descuento_porcentaje` (0-100). El sistema calcula el precio de cualquier producto en una tarifa como:
+
+```
+precio = override_manual ?? precio_detal × (1 − descuento_porcentaje / 100)
+```
+
+Donde `override_manual` es el precio en `precios_producto` para esa (producto, tarifa) si existe.
+
+Ejemplo: tarifa "Staff Prime Padel" con `descuento_porcentaje = 20`. Para un producto cuyo precio Detal es $10.000:
+- Si no hay precio configurado para `STAFF_PRIME` en `precios_producto` → precio automático = $8.000.
+- Si configuras un override de $7.500 → ese precio anula el cálculo automático.
+
+La tarifa marcada como `es_default` (Detal) siempre tiene `descuento_porcentaje = 0` y se usa como precio base.
+
+En la UI de productos (`/inventario/<id>` → editar), se muestra para cada tarifa el precio efectivo y un indicador del origen (Manual / Auto / Precio base).
+
 ## Migraciones SQL
 
 Los cambios de schema viven en archivos numerados/descriptivos en [`supabase/`](supabase/) y se ejecutan **manualmente** en el SQL Editor de Supabase (en orden):
@@ -236,5 +266,6 @@ Los cambios de schema viven en archivos numerados/descriptivos en [`supabase/`](
 1. `schema.sql` — instalación inicial completa. **Recrea** todas las tablas (DROP CASCADE), úsalo solo en setup desde cero.
 2. `rls.sql` — habilita RLS en todas las tablas del dominio. Idempotente.
 3. `migration-costo-unitario.sql` — añade columna `costo_unitario` a `transaccion_items` con backfill + recrea el RPC para aceptarla. Idempotente.
+4. `migration-tarifas-descuento.sql` — añade columna `descuento_porcentaje` a `listas_precios` (por defecto 0). Idempotente.
 
 Para futuras migraciones: crear un nuevo archivo `migration-<descripcion>.sql` en `supabase/`, idempotente (con `IF NOT EXISTS` o `IF EXISTS`), y mantener `schema.sql` actualizado para reflejar el modelo final.

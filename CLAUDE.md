@@ -60,7 +60,7 @@ Fuente sugerida: Inter o Geist.
 
 - `categorias` — id, nombre (único), descripcion, orden, activa. Normalizadas desde el CSV original (elimina duplicados como "2 bebidas gaseosas" vs "21 Bebidas Gaseosas y Energizantes").
 - `impuestos` — catálogo de impuestos (IVA 19%, Impoconsumo 8%, Sin impuesto). Solo informativo en la UI.
-- `listas_precios` — tipos de cliente/canal (Detal, Equipo Prime, Kevin García, Bryan Perafán, Alterno 1-8). `DETAL` es la default.
+- `listas_precios` — **UI: "Tarifas"**. Tipos de cliente/canal (Detal, Staff Prime, Kevin García, Bryan Perafán, Alterno 1-8). `DETAL` es la default. Cada tarifa tiene `descuento_porcentaje`: si un producto no tiene precio configurado para esa tarifa, el sistema usa `precio_detal × (1 − descuento_porcentaje/100)`. La tabla DB sigue llamándose `listas_precios` (la ruta es `/tarifas`).
 - `ubicaciones` — id, nombre, tipo (bodega | nevera | barra | vitrina | oficina | otro), orden, activa. CRUD desde `/ubicaciones`.
 - `productos` — id, codigo (SKU), nombre, **tipo** (`producto` | `servicio`), categoria_id, **es_inventariable**, costo_unitario, stock_minimo_alerta, impuesto_id, unidad_medida, descripcion_larga, ref_fabrica, codigo_barras, marca, modelo, visible_en_factura, activo. Los servicios no tienen stock.
 - `precios_producto` — tabla N–N entre productos y listas_precios: (producto_id, lista_precio_id, precio). Permite múltiples precios por producto según el canal.
