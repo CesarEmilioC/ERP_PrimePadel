@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, ConfirmDialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
@@ -62,12 +63,19 @@ export function UbicacionesClient({ initial }: { initial: Ubicacion[] }) {
           <TBody>
             {rows.map((u) => (
               <TR key={u.id}>
-                <TD className="font-medium text-white">{u.nombre}</TD>
+                <TD className="font-medium">
+                  <Link href={`/ubicaciones/${u.id}`} className="text-white hover:text-brand-orange">
+                    {u.nombre}
+                  </Link>
+                </TD>
                 <TD><Badge tone="blue">{u.tipo}</Badge></TD>
                 <TD className="max-w-md text-muted-foreground">{u.descripcion ?? "—"}</TD>
                 <TD>{u.activa ? <Badge tone="green">Activa</Badge> : <Badge tone="gray">Inactiva</Badge>}</TD>
                 <TD className="text-right">
                   <div className="inline-flex gap-2">
+                    <Link href={`/ubicaciones/${u.id}`} className="rounded-md px-2 py-1 text-sm text-brand-orange hover:opacity-80">
+                      Ver
+                    </Link>
                     <Button variant="ghost" size="sm" onClick={() => setEditing(u)}>Editar</Button>
                     <Button variant="ghost" size="sm" onClick={() => setConfirming(u)}>Eliminar</Button>
                   </div>
