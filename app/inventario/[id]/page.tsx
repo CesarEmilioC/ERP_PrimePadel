@@ -11,18 +11,21 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
   const { id } = await params;
   const sb = sbAdmin();
 
-  const [{ data: producto }, { data: stock }, { data: precios }, { data: historial }, { data: ajustes }, { data: compras }, categorias, ubicaciones, impuestos, listasPrecios] =
+  const [{ data: producto }, { data: stock }, { data: precios }, { data: historial }, { data: ajustes }, { data: transaccionItems }, categorias, ubicaciones, impuestos, listasPrecios] =
     await Promise.all([
       sb.from("productos").select("*, categorias(id, nombre), impuestos(id, nombre, porcentaje)").eq("id", id).single(),
       sb.from("stock_por_ubicacion").select("cantidad, ubicaciones(id, nombre, tipo)").eq("producto_id", id),
       sb.from("precios_producto").select("lista_precio_id, precio, listas_precios(codigo, nombre, es_default, orden)").eq("producto_id", id),
       sb.from("ventas_historicas_mensuales").select("anio, mes, cantidad_vendida, total").eq("producto_id", id).order("anio", { ascending: false }).order("mes", { ascending: false }),
-      sb.from("ajustes_inventario").select("id, cantidad_antes, cantidad_despues, diferencia, motivo, notas, fecha, ubicaciones(nombre)").eq("producto_id", id).order("fecha", { ascending: false }).limit(50),
-      // Items de COMPRAS para calcular costo promedio, última compra, valor total.
+      sb.from("ajustes_inventario").select("id, cantidad_antes, cantidad_despues, diferencia, motivo, notas, fecha, ubicaciones(nombre)").eq("producto_id", id).order("fecha", { ascending: false }),
+      // TODAS las transacciones del producto: para análisis de costos (compras) y para histórico.
       sb.from("transaccion_items")
-        .select("cantidad, costo_unitario, precio_unitario, transacciones!inner(fecha, tipo)")
-        .eq("producto_id", id)
-        .eq("transacciones.tipo", "compra"),
+        .select(
+          "id, cantidad, costo_unitario, precio_unitario, subtotal, transaccion_id, " +
+          "ubicacion_origen_id, ubicacion_destino_id, " +
+          "transacciones!inner(id, tipo, fecha, notas, origen)"
+        )
+        .eq("producto_id", id),
       getCategorias(),
       getUbicaciones(),
       getImpuestos(),
@@ -31,16 +34,31 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
 
   if (!producto) notFound();
 
-  // Análisis de costos según compras registradas.
-  const comprasRows = ((compras ?? []) as any[])
-    .map((r) => ({
-      fecha: r.transacciones?.fecha as string,
-      cantidad: Number(r.cantidad),
-      // Para compras antiguas costo_unitario puede ser 0; caer a precio_unitario.
-      costo_unitario: Number(r.costo_unitario ?? 0) || Number(r.precio_unitario ?? 0),
+  // Lookup de nombres de ubicaciones (usadas en cualquier transacción del producto).
+  const ubiNombrePorId = new Map((ubicaciones ?? []).map((u) => [u.id, u.nombre as string]));
+
+  // Histórico completo de transacciones (ventas + compras + traslados).
+  const historialTx = ((transaccionItems ?? []) as any[])
+    .map((it) => ({
+      id: it.id as string,
+      transaccion_id: it.transaccion_id as string,
+      fecha: it.transacciones?.fecha as string,
+      tipo: it.transacciones?.tipo as "venta" | "compra" | "traslado",
+      cantidad: Number(it.cantidad),
+      precio_unitario: Number(it.precio_unitario ?? 0),
+      costo_unitario: Number(it.costo_unitario ?? 0) || Number(it.precio_unitario ?? 0),
+      subtotal: Number(it.subtotal ?? 0),
+      ubicacion_origen_nombre: it.ubicacion_origen_id ? ubiNombrePorId.get(it.ubicacion_origen_id) ?? null : null,
+      ubicacion_destino_nombre: it.ubicacion_destino_id ? ubiNombrePorId.get(it.ubicacion_destino_id) ?? null : null,
+      notas: (it.transacciones?.notas as string | null) ?? null,
+      origen: (it.transacciones?.origen as string | null) ?? "manual",
     }))
-    .filter((r) => r.fecha && r.cantidad > 0);
-  const comprasOrdenadas = [...comprasRows].sort((a, b) => a.fecha.localeCompare(b.fecha));
+    .filter((t) => t.fecha) // descartar filas sin transacción asociada
+    .sort((a, b) => b.fecha.localeCompare(a.fecha)); // más reciente primero
+
+  // Análisis de costos: solo las COMPRAS del histórico.
+  const compras = historialTx.filter((t) => t.tipo === "compra" && t.cantidad > 0 && t.costo_unitario > 0);
+  const comprasOrdenadas = [...compras].sort((a, b) => a.fecha.localeCompare(b.fecha));
   const valorTotalCompras = comprasOrdenadas.reduce((s, r) => s + r.cantidad * r.costo_unitario, 0);
   const cantidadTotalCompras = comprasOrdenadas.reduce((s, r) => s + r.cantidad, 0);
   const costoPromedioCompra = cantidadTotalCompras > 0 ? valorTotalCompras / cantidadTotalCompras : 0;
@@ -94,6 +112,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       impuestos={impuestos.map((i) => ({ id: i.id, nombre: i.nombre, porcentaje: Number(i.porcentaje) }))}
       listasPrecios={listasPrecios.map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, es_default: l.es_default, descuento_porcentaje: Number(l.descuento_porcentaje ?? 0) }))}
       analisisCostos={analisisCostos}
+      historialTransacciones={historialTx}
       isMaestro={perfil.rol === "maestro"}
     />
   );

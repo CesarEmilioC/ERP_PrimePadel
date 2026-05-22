@@ -7,11 +7,27 @@ import { Button } from "@/components/ui/button";
 import { Card, Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { ProductoDialog } from "../producto-dialog";
 import { AjusteDialog } from "./ajuste-dialog";
 import { deleteProducto } from "../actions";
-import { formatCOP, formatInt, formatDate } from "@/lib/utils";
+import { formatCOP, formatInt, formatDate, formatFechaHora } from "@/lib/utils";
+
+export type HistoricoTx = {
+  id: string;
+  transaccion_id: string;
+  fecha: string;
+  tipo: "venta" | "compra" | "traslado";
+  cantidad: number;
+  precio_unitario: number;
+  costo_unitario: number;
+  subtotal: number;
+  ubicacion_origen_nombre: string | null;
+  ubicacion_destino_nombre: string | null;
+  notas: string | null;
+  origen: string;
+};
 
 export type DetalleProps = {
   producto: any;
@@ -32,26 +48,44 @@ export type DetalleProps = {
     ultimaCompraCosto: number | null;
     ultimaCompraCantidad: number | null;
   };
+  historialTransacciones: HistoricoTx[];
   isMaestro: boolean;
 };
 
+const PAGE_SIZE = 10;
+
 export function DetalleClient(props: DetalleProps) {
-  const { producto, ubicacionesConStock, ubicacionesDisponibles, precios, historialMensual, ajustes, categorias, impuestos, listasPrecios, analisisCostos, isMaestro } = props;
+  const {
+    producto, ubicacionesConStock, ubicacionesDisponibles, precios, historialMensual,
+    ajustes, categorias, impuestos, listasPrecios, analisisCostos, historialTransacciones, isMaestro,
+  } = props;
   const router = useRouter();
   const toast = useToast();
   const [editing, setEditing] = React.useState(false);
   const [ajustando, setAjustando] = React.useState(false);
   const [eliminando, setEliminando] = React.useState(false);
 
-  const cantidadTotal = ubicacionesConStock.reduce((a, u) => a + u.cantidad, 0);
-  const valorCosto = cantidadTotal * Number(producto.costo_unitario ?? 0);
+  const [pageTx, setPageTx] = React.useState(0);
+  const [pageHistMes, setPageHistMes] = React.useState(0);
+  const [pageAjustes, setPageAjustes] = React.useState(0);
 
-  // Unión: ubicaciones con stock (aunque sea 0 en esta tabla) + disponibles que no tengan stock aún.
+  // Stock por ubicación: solo donde hay cantidad > 0.
+  const ubicacionesConStockReal = ubicacionesConStock.filter((u) => u.cantidad > 0);
+  const cantidadTotal = ubicacionesConStockReal.reduce((a, u) => a + u.cantidad, 0);
+
+  // Para el dialog de ajuste necesitamos todas las ubicaciones (incl. las vacías).
   const ubiSet = new Set(ubicacionesConStock.map((u) => u.id));
   const ubisParaAjuste = [
     ...ubicacionesConStock,
     ...ubicacionesDisponibles.filter((u) => !ubiSet.has(u.id)).map((u) => ({ ...u, cantidad: 0 })),
   ];
+
+  // Valor del inventario actual usando el costo promedio de compras (no el del catálogo).
+  // Si no hay compras registradas, cae al costo del catálogo como fallback.
+  const costoReferencia = analisisCostos.numCompras > 0
+    ? analisisCostos.costoPromedioCompra
+    : Number(producto.costo_unitario ?? 0);
+  const valorInventarioActual = cantidadTotal * costoReferencia;
 
   return (
     <div className="space-y-6">
@@ -83,6 +117,7 @@ export function DetalleClient(props: DetalleProps) {
         </div>
       </div>
 
+      {/* KPIs principales: basados en COMPRAS reales, no en el catálogo. */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Stock total</p>
@@ -91,86 +126,112 @@ export function DetalleClient(props: DetalleProps) {
             <p className="mt-1 text-xs text-muted-foreground">Alerta si baja de {producto.stock_minimo_alerta}</p>
           ) : null}
         </Card>
+
         <Card>
-          <p className="text-xs uppercase text-muted-foreground">Costo unitario</p>
-          <p className="mt-1 text-3xl font-bold text-white">{formatCOP(Number(producto.costo_unitario ?? 0))}</p>
+          <p className="text-xs uppercase text-muted-foreground">Costo promedio</p>
+          {analisisCostos.numCompras > 0 ? (
+            <>
+              <p className="mt-1 text-3xl font-bold text-white">
+                {formatCOP(Math.round(analisisCostos.costoPromedioCompra))}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                ponderado por cantidad de {analisisCostos.numCompras} compra{analisisCostos.numCompras > 1 ? "s" : ""}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-3xl font-bold text-muted-foreground">
+                {formatCOP(Number(producto.costo_unitario ?? 0))}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                catálogo (sin compras registradas)
+              </p>
+            </>
+          )}
         </Card>
+
         <Card>
-          <p className="text-xs uppercase text-muted-foreground">Valor total en costo</p>
-          <p className="mt-1 text-3xl font-bold text-white">{producto.es_inventariable ? formatCOP(valorCosto) : "—"}</p>
+          <p className="text-xs uppercase text-muted-foreground">Última compra</p>
+          {analisisCostos.ultimaCompraCosto != null ? (
+            <>
+              <p className="mt-1 text-3xl font-bold text-white">
+                {formatCOP(analisisCostos.ultimaCompraCosto)}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {formatInt(analisisCostos.ultimaCompraCantidad ?? 0)} uds el{" "}
+                {analisisCostos.ultimaCompraFecha
+                  ? new Date(analisisCostos.ultimaCompraFecha).toLocaleDateString("es-CO", { timeZone: "America/Bogota" })
+                  : "—"}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-3xl font-bold text-muted-foreground">—</p>
+              <p className="mt-1 text-xs text-muted-foreground">aún no hay compras</p>
+            </>
+          )}
         </Card>
+
         <Card>
-          <p className="text-xs uppercase text-muted-foreground">Precio Detal</p>
-          <p className="mt-1 text-3xl font-bold text-brand-orange">
-            {precios.find((p) => p.codigo === "DETAL")?.precio != null
-              ? formatCOP(precios.find((p) => p.codigo === "DETAL")!.precio)
-              : "—"}
-          </p>
+          <p className="text-xs uppercase text-muted-foreground">Valor invertido</p>
+          {analisisCostos.numCompras > 0 ? (
+            <>
+              <p className="mt-1 text-3xl font-bold text-brand-orange">
+                {formatCOP(Math.round(analisisCostos.valorTotalCompras))}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                suma de cantidad × costo en todas las compras ({formatInt(analisisCostos.cantidadTotalCompras)} uds total)
+              </p>
+            </>
+          ) : producto.es_inventariable ? (
+            <>
+              <p className="mt-1 text-3xl font-bold text-muted-foreground">
+                {formatCOP(Math.round(valorInventarioActual))}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                estimado con costo del catálogo × stock actual
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-3xl font-bold text-muted-foreground">—</p>
+              <p className="mt-1 text-xs text-muted-foreground">no aplica</p>
+            </>
+          )}
         </Card>
       </div>
-
-      {producto.es_inventariable && isMaestro ? (
-        <section>
-          <h2 className="mb-2 text-lg font-semibold text-white">Análisis de costos (compras registradas)</h2>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Estos valores se calculan a partir de las transacciones de tipo <strong>compra</strong> registradas en el sistema. El "valor total comprado" es la suma acumulada de <code>cantidad × costo unitario</code> de cada compra individual — refleja cuánta plata se ha invertido en este producto.
-          </p>
-          {analisisCostos.numCompras === 0 ? (
-            <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              Aún no hay compras registradas para este producto. Cuando registres una compra, este resumen se llena automáticamente.
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-4">
-              <Card>
-                <p className="text-xs uppercase text-muted-foreground">Costo promedio</p>
-                <p className="mt-1 text-2xl font-bold text-white">{formatCOP(Math.round(analisisCostos.costoPromedioCompra))}</p>
-                <p className="mt-1 text-xs text-muted-foreground">por unidad, ponderado por cantidad</p>
-              </Card>
-              <Card>
-                <p className="text-xs uppercase text-muted-foreground">Última compra</p>
-                <p className="mt-1 text-2xl font-bold text-white">
-                  {analisisCostos.ultimaCompraCosto != null ? formatCOP(analisisCostos.ultimaCompraCosto) : "—"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {analisisCostos.ultimaCompraFecha
-                    ? `${formatInt(analisisCostos.ultimaCompraCantidad ?? 0)} uds el ${new Date(analisisCostos.ultimaCompraFecha).toLocaleDateString("es-CO", { timeZone: "America/Bogota" })}`
-                    : ""}
-                </p>
-              </Card>
-              <Card>
-                <p className="text-xs uppercase text-muted-foreground">Total comprado</p>
-                <p className="mt-1 text-2xl font-bold text-white">{formatInt(analisisCostos.cantidadTotalCompras)}</p>
-                <p className="mt-1 text-xs text-muted-foreground">unidades en {analisisCostos.numCompras} compras</p>
-              </Card>
-              <Card>
-                <p className="text-xs uppercase text-muted-foreground">Valor total comprado</p>
-                <p className="mt-1 text-2xl font-bold text-brand-orange">{formatCOP(Math.round(analisisCostos.valorTotalCompras))}</p>
-                <p className="mt-1 text-xs text-muted-foreground">suma real de cantidad × costo</p>
-              </Card>
-            </div>
-          )}
-        </section>
-      ) : null}
 
       {producto.es_inventariable ? (
         <section>
           <h2 className="mb-2 text-lg font-semibold text-white">Stock por ubicación</h2>
-          <Table>
-            <THead><TR><TH>Ubicación</TH><TH>Tipo</TH><TH className="text-right">Cantidad</TH></TR></THead>
-            <TBody>
-              {ubicacionesConStock.length === 0 ? (
-                <TR><TD colSpan={3} className="py-6 text-center text-muted-foreground">Sin stock registrado. Usa "Ajuste de inventario" para cargar el conteo inicial.</TD></TR>
-              ) : (
-                ubicacionesConStock.map((u) => (
+          {ubicacionesConStockReal.length === 0 ? (
+            <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              Sin stock registrado en ninguna ubicación. Usa "Ajuste de inventario" para cargar el conteo inicial.
+            </div>
+          ) : (
+            <Table>
+              <THead>
+                <TR>
+                  <TH>Ubicación</TH>
+                  <TH>Tipo</TH>
+                  <TH className="text-right">Cantidad</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {ubicacionesConStockReal.map((u) => (
                   <TR key={u.id}>
-                    <TD className="font-medium text-white">{u.nombre}</TD>
+                    <TD>
+                      <Link href={`/ubicaciones/${u.id}`} className="font-medium text-white hover:text-brand-orange">
+                        {u.nombre}
+                      </Link>
+                    </TD>
                     <TD><Badge tone="blue">{u.tipo}</Badge></TD>
                     <TD className="text-right font-mono text-lg">{formatInt(u.cantidad)}</TD>
                   </TR>
-                ))
-              )}
-            </TBody>
-          </Table>
+                ))}
+              </TBody>
+            </Table>
+          )}
         </section>
       ) : null}
 
@@ -200,9 +261,7 @@ export function DetalleClient(props: DetalleProps) {
                       : detalPrecio > 0
                         ? Math.round(detalPrecio * (1 - l.descuento_porcentaje / 100))
                         : null;
-                    const precioMostrado = tieneOverride
-                      ? override!.precio
-                      : autoCalc;
+                    const precioMostrado = tieneOverride ? override!.precio : autoCalc;
                     return (
                       <TR key={l.id}>
                         <TD>
@@ -235,18 +294,92 @@ export function DetalleClient(props: DetalleProps) {
         </section>
       ) : null}
 
+      {/* Histórico de transacciones (ventas + compras + traslados) */}
+      {historialTransacciones.length > 0 ? (
+        <section>
+          <h2 className="mb-2 text-lg font-semibold text-white">
+            Histórico de transacciones
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              ({historialTransacciones.length})
+            </span>
+          </h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Cada vez que se vende, compra o traslada este producto queda una fila aquí. Útil para auditar cómo se calculan el costo promedio y el valor invertido (en compras), y para ver patrones de venta.
+          </p>
+          <Table>
+            <THead>
+              <TR>
+                <TH>Fecha</TH>
+                <TH>Tipo</TH>
+                <TH>Ubicación</TH>
+                <TH className="text-right">Cantidad</TH>
+                <TH className="text-right">Precio unit.</TH>
+                <TH className="text-right">Costo unit.</TH>
+                <TH className="text-right">Subtotal</TH>
+                <TH>Notas</TH>
+              </TR>
+            </THead>
+            <TBody>
+              {historialTransacciones.slice(pageTx * PAGE_SIZE, (pageTx + 1) * PAGE_SIZE).map((t) => (
+                <TR key={t.id}>
+                  <TD className="whitespace-nowrap text-xs text-muted-foreground">{formatFechaHora(t.fecha)}</TD>
+                  <TD>
+                    {t.tipo === "venta" ? <Badge tone="green">Venta</Badge>
+                      : t.tipo === "compra" ? <Badge tone="blue">Compra</Badge>
+                      : <Badge tone="yellow">Traslado</Badge>}
+                    {t.origen === "csv" ? <span className="ml-2 rounded bg-blue-950/40 px-1.5 py-0.5 text-[10px] uppercase text-blue-300">CSV</span> : null}
+                  </TD>
+                  <TD className="text-xs text-muted-foreground">
+                    {t.tipo === "traslado"
+                      ? `${t.ubicacion_origen_nombre ?? "—"} → ${t.ubicacion_destino_nombre ?? "—"}`
+                      : t.tipo === "venta"
+                        ? (t.ubicacion_origen_nombre ?? "—")
+                        : (t.ubicacion_destino_nombre ?? "—")}
+                  </TD>
+                  <TD className="text-right font-mono">{formatInt(t.cantidad)}</TD>
+                  <TD className="text-right font-mono">
+                    {t.tipo === "venta" ? formatCOP(t.precio_unitario) : <span className="text-muted-foreground">—</span>}
+                  </TD>
+                  <TD className="text-right font-mono">
+                    {t.costo_unitario > 0 ? formatCOP(t.costo_unitario) : <span className="text-muted-foreground">—</span>}
+                  </TD>
+                  <TD className="text-right font-mono">
+                    {t.tipo === "traslado" ? <span className="text-muted-foreground">—</span> : formatCOP(t.subtotal)}
+                  </TD>
+                  <TD className="max-w-xs truncate text-xs text-muted-foreground">{t.notas ?? "—"}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+          <Pagination
+            page={pageTx}
+            totalPages={Math.ceil(historialTransacciones.length / PAGE_SIZE)}
+            onChange={setPageTx}
+            totalItems={historialTransacciones.length}
+            pageSize={PAGE_SIZE}
+          />
+        </section>
+      ) : null}
+
       {historialMensual.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-lg font-semibold text-white">Histórico de ventas (mensual)</h2>
+          <h2 className="mb-2 text-lg font-semibold text-white">
+            Histórico de ventas (mensual)
+            <span className="ml-2 text-sm font-normal text-muted-foreground">({historialMensual.length})</span>
+          </h2>
           {historialMensual.some((h) => h.total_estimado) ? (
             <p className="mb-2 text-xs text-muted-foreground">
-              Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte original solo traía cantidad.
+              Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte original solo traía cantidad. Datos importados desde Alegra (no incluye transacciones registradas en este sistema, que están arriba).
             </p>
-          ) : null}
+          ) : (
+            <p className="mb-2 text-xs text-muted-foreground">
+              Agregados mensuales importados desde Alegra. Para el detalle día a día revisa el histórico de transacciones arriba.
+            </p>
+          )}
           <Table>
             <THead><TR><TH>Período</TH><TH className="text-right">Cantidad</TH><TH className="text-right">Total</TH></TR></THead>
             <TBody>
-              {historialMensual.map((h) => (
+              {historialMensual.slice(pageHistMes * PAGE_SIZE, (pageHistMes + 1) * PAGE_SIZE).map((h) => (
                 <TR key={`${h.anio}-${h.mes}`}>
                   <TD>{h.anio}-{String(h.mes).padStart(2,"0")}</TD>
                   <TD className="text-right font-mono">{formatInt(h.cantidad_vendida)}</TD>
@@ -258,16 +391,27 @@ export function DetalleClient(props: DetalleProps) {
               ))}
             </TBody>
           </Table>
+          <Pagination
+            page={pageHistMes}
+            totalPages={Math.ceil(historialMensual.length / PAGE_SIZE)}
+            onChange={setPageHistMes}
+          />
         </section>
       ) : null}
 
       {ajustes.length > 0 ? (
         <section>
-          <h2 className="mb-2 text-lg font-semibold text-white">Historial de ajustes</h2>
+          <h2 className="mb-2 text-lg font-semibold text-white">
+            Historial de ajustes
+            <span className="ml-2 text-sm font-normal text-muted-foreground">({ajustes.length})</span>
+          </h2>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Conteos físicos, mermas, roturas y correcciones manuales registradas en este producto.
+          </p>
           <Table>
             <THead><TR><TH>Fecha</TH><TH>Ubicación</TH><TH>Motivo</TH><TH>Antes</TH><TH>Después</TH><TH>Diferencia</TH><TH>Notas</TH></TR></THead>
             <TBody>
-              {ajustes.map((a) => (
+              {ajustes.slice(pageAjustes * PAGE_SIZE, (pageAjustes + 1) * PAGE_SIZE).map((a) => (
                 <TR key={a.id}>
                   <TD className="whitespace-nowrap text-muted-foreground">{formatDate(a.fecha)}</TD>
                   <TD>{a.ubicaciones?.nombre ?? "—"}</TD>
@@ -282,6 +426,11 @@ export function DetalleClient(props: DetalleProps) {
               ))}
             </TBody>
           </Table>
+          <Pagination
+            page={pageAjustes}
+            totalPages={Math.ceil(ajustes.length / PAGE_SIZE)}
+            onChange={setPageAjustes}
+          />
         </section>
       ) : null}
 
