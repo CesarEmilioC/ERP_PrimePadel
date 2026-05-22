@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { productoSchema, ajusteInventarioSchema } from "@/lib/validators/producto";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireAdmin, requireMaestro } from "@/lib/auth";
+import { humanizarError } from "@/lib/errors";
 
 // Campos que solo puede tocar maestro (afectan finanzas).
 const CAMPOS_MAESTRO = ["costo_unitario"] as const;
@@ -20,7 +21,7 @@ export async function createProducto(input: unknown, precios: { lista_precio_id:
   const payload = perfil.rol === "maestro" ? parsed : stripMaestroFields(parsed);
   const sb = sbAdmin();
   const { data, error } = await sb.from("productos").insert(payload).select("id").single();
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   // Solo maestro puede fijar precios.
   if (perfil.rol === "maestro" && precios.length > 0) {
     const payloadPrecios = precios.filter((p) => p.precio > 0).map((p) => ({ ...p, producto_id: data.id }));
@@ -40,7 +41,7 @@ export async function updateProducto(id: string, input: unknown, precios: { list
   const payload = perfil.rol === "maestro" ? parsed : stripMaestroFields(parsed);
   const sb = sbAdmin();
   const { error } = await sb.from("productos").update(payload).eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   if (perfil.rol === "maestro" && precios.length > 0) {
     const ids = precios.map((p) => p.lista_precio_id);
     await sb.from("precios_producto").delete().eq("producto_id", id).in("lista_precio_id", ids);
@@ -65,12 +66,12 @@ export async function deleteProducto(id: string) {
   ]);
   if ((histCount ?? 0) + (txItems ?? 0) > 0) {
     const { error } = await sb.from("productos").update({ activo: false }).eq("id", id);
-    if (error) return { error: error.message };
+    if (error) return { error: humanizarError(error.message) };
     revalidatePath("/inventario");
     return { ok: true, softDeleted: true };
   }
   const { error } = await sb.from("productos").delete().eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/inventario");
   return { ok: true };
 }
@@ -87,7 +88,7 @@ export async function registrarAjusteInventario(input: unknown) {
     p_notas: parsed.notas ?? null,
     p_usuario: perfil.user_id,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/inventario");
   revalidatePath(`/inventario/${parsed.producto_id}`);
   revalidatePath("/dashboard");

@@ -6,6 +6,7 @@ import { transaccionSchema } from "@/lib/validators/producto";
 import { exportCsvSchema } from "@/lib/validators/export-csv";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireProfile, requireAdmin } from "@/lib/auth";
+import { humanizarError } from "@/lib/errors";
 
 type ActionResult<T = unknown> =
   T extends object ? ({ ok: true } & T) | { error: string } : { ok: true } | { error: string };
@@ -28,7 +29,7 @@ export async function registrarTransaccion(input: unknown): Promise<ActionResult
     p_origen: parsed.origen,
     p_items: parsed.items,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/transacciones");
   revalidatePath("/inventario");
   revalidatePath("/dashboard");
@@ -47,10 +48,12 @@ export async function deleteTransaccion(id: string): Promise<ActionResult> {
   if (!permiso.ok) return { error: permiso.error };
 
   const reversa = await aplicarReversaStock(tx);
-  if (reversa.error) return { error: reversa.error };
+  if (reversa.error) {
+    return { error: "No se pudo revertir el stock para eliminar esta transacción: " + humanizarError(reversa.error) };
+  }
 
   const { error } = await sbAdmin().from("transacciones").delete().eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
 
   revalidatePath("/transacciones");
   revalidatePath("/inventario");
@@ -59,7 +62,16 @@ export async function deleteTransaccion(id: string): Promise<ActionResult> {
 }
 
 // ---------------------------------------------------------------------------
-// Editar transacción: borra original + crea nueva, con rollback si falla
+// Editar transacción
+//
+// Camino A — "edición ligera" (sin tocar stock): se aplica cuando los items
+// estructurales (producto, ubicaciones, cantidad) NO cambian. Solo se editan
+// precio_unitario, costo_unitario, lista_precio_id, fecha o notas. Esto es
+// crítico porque revertir y recrear una compra antigua puede fallar si ya se
+// vendió/movió parte del stock (cantidad negativa al revertir).
+//
+// Camino B — "reverse + recreate": cuando cambia algo del stock (cantidades,
+// ubicaciones, productos, tipo). Mantiene el rollback automático si falla.
 // ---------------------------------------------------------------------------
 export async function editarTransaccion(id: string, input: unknown): Promise<ActionResult<{ newId: string }>> {
   const perfil = await requireProfile();
@@ -76,15 +88,27 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
   const permiso = checarPermisoEdicion(perfil, original);
   if (!permiso.ok) return { error: permiso.error };
 
+  // ¿Cambió la estructura (tipo, items, ubicaciones, cantidades)?
+  const cambiaEstructura = detectarCambioEstructura(original, parsed);
+
+  // -------------------- Camino A: edición ligera (sin tocar stock) --------------------
+  if (!cambiaEstructura) {
+    return await editarSoloMetadata(id, parsed);
+  }
+
+  // -------------------- Camino B: reverse + recreate --------------------
+
   // Snapshot completo de la original para poder rehacerla si la nueva falla.
   const snapshot = await fetchTxCompleta(id);
   if (!snapshot) return { error: "No se pudo capturar la transacción original" };
 
   // 1. Borrar original (revierte stock + DELETE row).
   const reversa = await aplicarReversaStock(original);
-  if (reversa.error) return { error: "Error al revertir la transacción original: " + reversa.error };
+  if (reversa.error) {
+    return { error: "No se pudo revertir la transacción original: " + humanizarError(reversa.error) };
+  }
   const { error: eDel } = await sbAdmin().from("transacciones").delete().eq("id", id);
-  if (eDel) return { error: "Error al eliminar la transacción original: " + eDel.message };
+  if (eDel) return { error: "No se pudo eliminar la transacción original: " + humanizarError(eDel.message) };
 
   // 2. Crear nueva.
   const { data: newId, error: eIns } = await sbAdmin().rpc("registrar_transaccion", {
@@ -108,16 +132,112 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
     });
     if (eRoll) {
       return {
-        error: `Error al editar (${eIns.message}). El rollback también falló (${eRoll.message}). Revisa el inventario manualmente.`,
+        error: `No se pudo guardar la edición (${humanizarError(eIns.message)}). El intento de restaurar la versión original también falló (${humanizarError(eRoll.message)}). Por favor revisa el inventario manualmente y avísale al administrador.`,
       };
     }
-    return { error: "Error al editar: " + eIns.message + " — Se restauró la versión original." };
+    return { error: "No se pudo guardar la edición: " + humanizarError(eIns.message) + " — Se restauró la versión original sin cambios." };
   }
 
   revalidatePath("/transacciones");
   revalidatePath("/inventario");
   revalidatePath("/dashboard");
   return { ok: true, newId: newId as string };
+}
+
+// Comprueba si los items nuevos preservan la estructura (producto + ubicaciones + cantidad).
+// Si todo eso es igual, no hace falta tocar stock — solo cambian precio/costo/notas/fecha/lista.
+function detectarCambioEstructura(
+  original: TxParaReversa,
+  parsed: { tipo: string; items: { producto_id: string; ubicacion_origen_id?: string | null; ubicacion_destino_id?: string | null; cantidad: number }[] },
+): boolean {
+  if (original.tipo !== parsed.tipo) return true;
+  if (original.items.length !== parsed.items.length) return true;
+
+  // Empareja items por firma (producto + origen + destino + cantidad).
+  const firma = (it: { producto_id: string; ubicacion_origen_id?: string | null; ubicacion_destino_id?: string | null; cantidad: number }) =>
+    `${it.producto_id}|${it.ubicacion_origen_id ?? ""}|${it.ubicacion_destino_id ?? ""}|${it.cantidad}`;
+
+  const firmasOriginal = original.items.map((it) =>
+    firma({
+      producto_id: it.producto_id,
+      ubicacion_origen_id: it.ubicacion_origen_id,
+      ubicacion_destino_id: it.ubicacion_destino_id,
+      cantidad: it.cantidad,
+    }),
+  ).sort();
+  const firmasNuevas = parsed.items.map(firma).sort();
+
+  for (let i = 0; i < firmasOriginal.length; i++) {
+    if (firmasOriginal[i] !== firmasNuevas[i]) return true;
+  }
+  return false;
+}
+
+// Edición sin tocar stock: UPDATE directo de header + items.
+async function editarSoloMetadata(
+  id: string,
+  parsed: { fecha?: string; notas?: string | null; items: { producto_id: string; ubicacion_origen_id?: string | null; ubicacion_destino_id?: string | null; cantidad: number; precio_unitario: number; costo_unitario?: number; lista_precio_id?: string | null }[] },
+): Promise<ActionResult<{ newId: string }>> {
+  const sb = sbAdmin();
+
+  // 1. Trae items actuales con ID (necesitamos el id para el UPDATE).
+  const { data: itemsBD, error: eFetch } = await sb
+    .from("transaccion_items")
+    .select("id, producto_id, ubicacion_origen_id, ubicacion_destino_id, cantidad")
+    .eq("transaccion_id", id);
+  if (eFetch) return { error: humanizarError(eFetch.message) };
+
+  // Empareja cada item del payload con su row en BD por firma.
+  const firma = (it: any) =>
+    `${it.producto_id}|${it.ubicacion_origen_id ?? ""}|${it.ubicacion_destino_id ?? ""}|${Number(it.cantidad)}`;
+  const bdPorFirma = new Map<string, string[]>(); // firma -> ids disponibles
+  for (const r of itemsBD ?? []) {
+    const f = firma(r);
+    if (!bdPorFirma.has(f)) bdPorFirma.set(f, []);
+    bdPorFirma.get(f)!.push(r.id as string);
+  }
+
+  // 2. Para cada item del payload, encuentra el id de BD y actualiza precio/costo.
+  let totalNuevo = 0;
+  for (const it of parsed.items) {
+    const f = firma(it);
+    const candidatos = bdPorFirma.get(f);
+    if (!candidatos || candidatos.length === 0) {
+      // No debería pasar si detectarCambioEstructura es correcto, pero por si acaso.
+      return { error: "No se pudo emparejar uno de los productos al actualizar. Intenta de nuevo o avísale al administrador." };
+    }
+    const itemId = candidatos.shift()!;
+    const precio = Number(it.precio_unitario);
+    const costo = Number(it.costo_unitario ?? it.precio_unitario);
+    const cantidad = Number(it.cantidad);
+    const subtotal = cantidad * precio;
+    totalNuevo += subtotal;
+
+    const { error: eUpd } = await sb
+      .from("transaccion_items")
+      .update({
+        precio_unitario: precio,
+        costo_unitario: costo,
+        subtotal,
+        lista_precio_id: it.lista_precio_id ?? null,
+      })
+      .eq("id", itemId);
+    if (eUpd) return { error: humanizarError(eUpd.message) };
+  }
+
+  // 3. Actualiza header (fecha + notas + total).
+  const headerPayload: Record<string, unknown> = {
+    notas: parsed.notas ?? null,
+    total: totalNuevo,
+  };
+  if (parsed.fecha) headerPayload.fecha = parsed.fecha;
+  const { error: eHdr } = await sb.from("transacciones").update(headerPayload).eq("id", id);
+  if (eHdr) return { error: humanizarError(eHdr.message) };
+
+  revalidatePath("/transacciones");
+  revalidatePath("/inventario");
+  revalidatePath("/dashboard");
+  return { ok: true, newId: id };
 }
 
 // ---------------------------------------------------------------------------

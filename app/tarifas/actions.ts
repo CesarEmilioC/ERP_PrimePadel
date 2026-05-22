@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireMaestro } from "@/lib/auth";
+import { humanizarError } from "@/lib/errors";
 
 type ActionResult = { ok: true } | { error: string };
 
@@ -45,7 +46,7 @@ export async function createTarifa(input: {
     es_default: false,
     descuento_porcentaje: input.descuento_porcentaje,
   });
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/tarifas");
   revalidatePath("/inventario");
   return { ok: true };
@@ -76,7 +77,7 @@ export async function updateTarifa(id: string, input: {
   }
 
   const { error } = await sbAdmin().from("listas_precios").update(payload).eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/tarifas");
   revalidatePath("/inventario");
   return { ok: true };
@@ -93,13 +94,13 @@ export async function deleteTarifa(id: string): Promise<ActionResult> {
   const { count } = await sb.from("precios_producto").select("*", { head: true, count: "exact" }).eq("lista_precio_id", id);
   if ((count ?? 0) > 0) {
     const { error } = await sb.from("listas_precios").update({ activa: false }).eq("id", id);
-    if (error) return { error: error.message };
+    if (error) return { error: humanizarError(error.message) };
     revalidatePath("/tarifas");
     revalidatePath("/inventario");
     return { ok: true };
   }
   const { error } = await sb.from("listas_precios").delete().eq("id", id);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/tarifas");
   revalidatePath("/inventario");
   return { ok: true };

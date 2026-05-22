@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireMaestro, usernameToEmail, type Rol } from "@/lib/auth";
+import { humanizarError } from "@/lib/errors";
 
 export type CreateUsuarioResult =
   | { ok: true; usuario: string; password: string }
@@ -79,7 +80,7 @@ export async function createUsuario(input: {
 export async function toggleActivo(userId: string, activo: boolean): Promise<ActionResult> {
   await requireMaestro();
   const { error } = await sbAdmin().from("perfiles").update({ activo }).eq("user_id", userId);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/usuarios");
   return { ok: true };
 }
@@ -88,7 +89,7 @@ export async function cambiarRol(userId: string, rol: Rol): Promise<ActionResult
   await requireMaestro();
   if (!ROLES_VALIDOS.includes(rol)) return { error: "Rol inválido." };
   const { error } = await sbAdmin().from("perfiles").update({ rol }).eq("user_id", userId);
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/usuarios");
   return { ok: true };
 }
@@ -97,7 +98,7 @@ export async function resetPassword(userId: string): Promise<{ ok: true; passwor
   await requireMaestro();
   const password = generatePassword();
   const { error } = await sbAdmin().auth.admin.updateUserById(userId, { password });
-  if (error) return { error: error.message };
+  if (error) return { error: humanizarError(error.message) };
   revalidatePath("/usuarios");
   return { ok: true, password };
 }
@@ -128,12 +129,12 @@ export async function updateUsuario(
 
   if (Object.keys(authPayload).length > 0) {
     const { error } = await sb.auth.admin.updateUserById(userId, authPayload);
-    if (error) return { error: error.message };
+    if (error) return { error: humanizarError(error.message) };
   }
 
   if (nombre) {
     const { error } = await sb.from("perfiles").update({ nombre }).eq("user_id", userId);
-    if (error) return { error: error.message };
+    if (error) return { error: humanizarError(error.message) };
   }
 
   revalidatePath("/usuarios");
