@@ -16,7 +16,7 @@ const LINKS: LinkDef[] = [
   { href: "/ubicaciones", label: "Ubicaciones", minRol: "admin" },
   { href: "/dashboard", label: "Dashboard", minRol: "maestro" },
   { href: "/categorias", label: "Categorías", minRol: "maestro" },
-  { href: "/listas-precios", label: "Listas de precios", minRol: "maestro" },
+  { href: "/tarifas", label: "Tarifas", minRol: "maestro" },
   { href: "/usuarios", label: "Usuarios", minRol: "maestro" },
 ];
 

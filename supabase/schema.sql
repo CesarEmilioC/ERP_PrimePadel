@@ -73,16 +73,21 @@ create table impuestos (
   created_at    timestamptz not null default now()
 );
 
--- 2.3 Listas de precios (tipos de cliente / canales de venta)
+-- 2.3 Tarifas / Listas de precios (tipos de cliente / canales de venta)
+-- UI: se muestra como "Tarifas". Internamente sigue siendo listas_precios.
 create table listas_precios (
-  id          uuid primary key default gen_random_uuid(),
-  codigo      text not null unique,              -- 'DETAL', 'EQUIPO_PRIME', 'KEVIN_GARCIA'
-  nombre      text not null,                     -- 'Detal consumidor final'
-  descripcion text,
-  es_default  boolean not null default false,
-  orden       integer not null default 0,
-  activa      boolean not null default true,
-  created_at  timestamptz not null default now()
+  id                   uuid primary key default gen_random_uuid(),
+  codigo               text not null unique,              -- 'DETAL', 'STAFF_PRIME', 'KEVIN_GARCIA'
+  nombre               text not null,                     -- 'Detal consumidor final'
+  descripcion          text,
+  es_default           boolean not null default false,
+  orden                integer not null default 0,
+  activa               boolean not null default true,
+  -- Descuento aplicado al precio Detal cuando un producto no tiene precio
+  -- configurado para esta tarifa. 0 = sin descuento (igual al Detal).
+  descuento_porcentaje numeric(5,2) not null default 0
+                       check (descuento_porcentaje >= 0 and descuento_porcentaje <= 100),
+  created_at           timestamptz not null default now()
 );
 create unique index uq_listas_precios_default on listas_precios(es_default) where es_default = true;
 
