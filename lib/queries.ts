@@ -316,6 +316,55 @@ export async function getVentasUltimaSemana(): Promise<VentaDia[]> {
   return out;
 }
 
+// Utilidades brutas por producto/servicio: suma de (precio - costo) * cantidad
+// sobre todas las ventas registradas en el sistema. Solo cuenta ventas reales,
+// no el histórico mensual de Alegra (porque ahí no tenemos costo por venta).
+export type UtilidadProducto = {
+  producto_id: string;
+  codigo: string | null;
+  nombre: string;
+  tipo: "producto" | "servicio";
+  cantidad_vendida: number;
+  ingresos: number;
+  costos: number;
+  utilidad: number;
+  margen_pct: number;
+};
+
+export async function getUtilidadPorProducto(): Promise<UtilidadProducto[]> {
+  const sb = sbAdmin();
+  const { data } = await sb
+    .from("transaccion_items")
+    .select("cantidad, precio_unitario, costo_unitario, producto_id, transacciones!inner(tipo), productos(codigo, nombre, tipo)")
+    .eq("transacciones.tipo", "venta");
+
+  const acc = new Map<string, UtilidadProducto>();
+  for (const it of (data ?? []) as any[]) {
+    const pid = it.producto_id as string;
+    const cant = Number(it.cantidad);
+    const precio = Number(it.precio_unitario ?? 0);
+    const costo = Number(it.costo_unitario ?? 0);
+    const cur = acc.get(pid) ?? {
+      producto_id: pid,
+      codigo: it.productos?.codigo ?? null,
+      nombre: it.productos?.nombre ?? "—",
+      tipo: (it.productos?.tipo as "producto" | "servicio") ?? "producto",
+      cantidad_vendida: 0,
+      ingresos: 0,
+      costos: 0,
+      utilidad: 0,
+      margen_pct: 0,
+    };
+    cur.cantidad_vendida += cant;
+    cur.ingresos += cant * precio;
+    cur.costos += cant * costo;
+    cur.utilidad = cur.ingresos - cur.costos;
+    cur.margen_pct = cur.ingresos > 0 ? Math.round((cur.utilidad / cur.ingresos) * 10000) / 100 : 0;
+    acc.set(pid, cur);
+  }
+  return [...acc.values()].sort((a, b) => b.utilidad - a.utilidad);
+}
+
 export async function getDashboardStats() {
   const sb = sbAdmin();
   const [{ count: nProd }, { count: nInv }, { count: nUbi }, { data: stockBajo }, { data: hist }] = await Promise.all([

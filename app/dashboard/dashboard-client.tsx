@@ -43,6 +43,17 @@ type AlertaDetallada = {
 type TopPorDia = { nombre: string; porDia: number[] };
 type VentasPorDia = { monto: number; count: number };
 type VentaDia = { fechaISO: string; diaCorto: string; fechaCorta: string; monto: number; transacciones: number };
+type UtilidadProducto = {
+  producto_id: string;
+  codigo: string | null;
+  nombre: string;
+  tipo: "producto" | "servicio";
+  cantidad_vendida: number;
+  ingresos: number;
+  costos: number;
+  utilidad: number;
+  margen_pct: number;
+};
 
 const COLORS = ["#FF8C42", "#F5C518", "#FFB366", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#eab308", "#06b6d4", "#f97316"];
 
@@ -124,7 +135,7 @@ function Pager({ page, total, pageSize, onChange }: { page: number; total: numbe
 type Tab = "inventario" | "ventas" | "alertas";
 
 export function DashboardClient({
-  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, ventasUltimaSemana, stockTotalPorProducto,
+  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, ventasUltimaSemana, utilidadPorProducto, stockTotalPorProducto,
 }: {
   stats: {
     nProductosActivos: number;
@@ -142,6 +153,7 @@ export function DashboardClient({
   topPorDiaSemana: TopPorDia[];
   ventasPorDiaSemana: VentasPorDia[];
   ventasUltimaSemana: VentaDia[];
+  utilidadPorProducto: UtilidadProducto[];
   stockTotalPorProducto: StockTotalPorProducto[];
 }) {
   const [tab, setTab] = React.useState<Tab>("ventas");
@@ -160,6 +172,8 @@ export function DashboardClient({
   const [pageTodos, setPageTodos] = React.useState(0);
   const [pageAlertas, setPageAlertas] = React.useState(0);
   const [leyendaAbierta, setLeyendaAbierta] = React.useState<null | "categoria">(null);
+  const [pageUtil, setPageUtil] = React.useState(0);
+  const [filtroUtil, setFiltroUtil] = React.useState<"todos" | "producto" | "servicio">("todos");
 
   // Meses disponibles en el histórico (para selectors).
   const mesesDisponibles = React.useMemo(() => {
@@ -446,7 +460,10 @@ export function DashboardClient({
           </Card>
 
           <Card>
-            <h2 className="mb-3 text-lg font-semibold text-white">Consumo por mes (monto)</h2>
+            <h2 className="text-lg font-semibold text-white">Consumo por mes (monto)</h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Ventas totales por mes. Incluye el histórico de Alegra (sep 2025 – abr 2026) y todas las ventas registradas desde entonces.
+            </p>
             <div className="h-72">
               <ResponsiveContainer>
                 <BarChart data={serieMensual}>
@@ -463,7 +480,7 @@ export function DashboardClient({
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
-              <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="mb-1 flex items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold text-white">
                   Top productos
                   <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -475,6 +492,9 @@ export function DashboardClient({
                   <option value="cantidad">Por cantidad</option>
                 </Select>
               </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Ranking de productos más vendidos en el rango filtrado. Cambia el selector para ordenar por monto facturado o por cantidad de unidades.
+              </p>
               <div className="h-72">
                 <ResponsiveContainer>
                   <BarChart data={topPage} layout="vertical" margin={{ left: 130 }}>
@@ -490,7 +510,7 @@ export function DashboardClient({
             </Card>
 
             <Card>
-              <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="mb-1 flex items-center justify-between gap-2">
                 <h2 className="text-lg font-semibold text-white">Consumo por categoría</h2>
                 <div className="flex items-center gap-2">
                   <Select value={vistaCat} onChange={(e) => setVistaCat(e.target.value as "monto" | "cantidad")} className="max-w-[140px]">
@@ -504,6 +524,9 @@ export function DashboardClient({
                   )}
                 </div>
               </div>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Distribución del consumo entre las categorías del catálogo. Útil para ver qué tipo de productos genera más ingresos.
+              </p>
               <div className="h-72">
                 <ResponsiveContainer>
                   <PieChart>
@@ -519,7 +542,10 @@ export function DashboardClient({
 
           {/* Análisis por día de la semana */}
           <Card>
-            <h2 className="mb-3 text-lg font-semibold text-white">Ventas por día de la semana</h2>
+            <h2 className="text-lg font-semibold text-white">Ventas por día de la semana</h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Total acumulado por día (lunes a domingo) de todas las ventas registradas en el sistema. Sirve para identificar los días pico y planear personal o compras.
+            </p>
             {hayTransaccionesReales ? (
               <div className="h-64">
                 <ResponsiveContainer>
@@ -564,12 +590,15 @@ export function DashboardClient({
 
           {/* Tabla paginada de TODAS las cantidades vendidas */}
           <Card>
-            <h2 className="mb-3 text-lg font-semibold text-white">
+            <h2 className="mb-1 text-lg font-semibold text-white">
               Cantidades vendidas por producto
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({topTodos.length === 0 ? "0" : `${pageTodos * PAGE_TOP + 1}–${Math.min((pageTodos + 1) * PAGE_TOP, topTodos.length)}`} de {topTodos.length})
               </span>
             </h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Tabla completa con todos los productos vendidos en el rango filtrado. Útil para exportar a Excel o revisar productos puntuales.
+            </p>
             <Table>
               <THead>
                 <TR>
@@ -595,6 +624,127 @@ export function DashboardClient({
             <Pager page={pageTodos} total={topTodos.length} pageSize={PAGE_TOP} onChange={setPageTodos} />
           </Card>
 
+          {/* Utilidades brutas: costos vs ingresos por producto/servicio */}
+          {(() => {
+            const filtrada = utilidadPorProducto.filter((u) => filtroUtil === "todos" ? true : u.tipo === filtroUtil);
+            const totalIngresos = filtrada.reduce((s, u) => s + u.ingresos, 0);
+            const totalCostos = filtrada.reduce((s, u) => s + u.costos, 0);
+            const totalUtilidad = totalIngresos - totalCostos;
+            const margenGlobal = totalIngresos > 0 ? Math.round((totalUtilidad / totalIngresos) * 10000) / 100 : 0;
+            const page = filtrada.slice(pageUtil * PAGE_TOP, (pageUtil + 1) * PAGE_TOP);
+            // Datos para gráfica: top 10 con costos vs ingresos.
+            const chartData = filtrada.slice(0, 10).map((u) => ({
+              nombre: u.nombre.length > 22 ? u.nombre.slice(0, 22) + "…" : u.nombre,
+              Ingresos: Math.round(u.ingresos),
+              Costos: Math.round(u.costos),
+            }));
+            return (
+              <>
+                <Card>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">Utilidades brutas: costos vs ingresos</h2>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) acumulados de cada producto/servicio en las ventas registradas en el sistema. La utilidad bruta es la diferencia.
+                      </p>
+                    </div>
+                    <Select value={filtroUtil} onChange={(e) => { setFiltroUtil(e.target.value as any); setPageUtil(0); }} className="max-w-[160px]">
+                      <option value="todos">Todos</option>
+                      <option value="producto">Solo productos</option>
+                      <option value="servicio">Solo servicios</option>
+                    </Select>
+                  </div>
+                  <div className="mb-3 grid gap-3 md:grid-cols-3">
+                    <div className="rounded border border-border bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">Ingresos totales</p>
+                      <p className="mt-1 text-xl font-bold text-green-300">{formatCOP(totalIngresos)}</p>
+                    </div>
+                    <div className="rounded border border-border bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">Costos totales</p>
+                      <p className="mt-1 text-xl font-bold text-red-300">{formatCOP(totalCostos)}</p>
+                    </div>
+                    <div className="rounded border border-border bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">Utilidad bruta</p>
+                      <p className="mt-1 text-xl font-bold text-brand-orange">
+                        {formatCOP(totalUtilidad)} <span className="text-sm text-muted-foreground">({margenGlobal}%)</span>
+                      </p>
+                    </div>
+                  </div>
+                  {chartData.length === 0 ? (
+                    <EmptyState
+                      title="Aún no hay ventas registradas en el sistema"
+                      description="Esta gráfica se llena con las ventas reales registradas (no incluye el histórico de Alegra que es solo mensual y sin costo por venta)."
+                    />
+                  ) : (
+                    <div className="h-80">
+                      <ResponsiveContainer>
+                        <BarChart data={chartData} layout="vertical" margin={{ left: 150 }}>
+                          <CartesianGrid stroke="#1f1f1f" horizontal={false} />
+                          <XAxis type="number" stroke="#A3A3A3" tick={{ fontSize: 11 }} tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
+                          <YAxis type="category" dataKey="nombre" stroke="#A3A3A3" tick={{ fontSize: 11 }} width={140} />
+                          <Tooltip content={<DarkTooltip formatter={(v: number) => formatCOP(v)} />} cursor={{ fill: "#ffffff10" }} />
+                          <Legend wrapperStyle={{ fontSize: 12 }} />
+                          <Bar dataKey="Ingresos" fill="#22c55e" radius={[0, 4, 4, 0]} />
+                          <Bar dataKey="Costos" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  )}
+                </Card>
+
+                {filtrada.length > 0 ? (
+                  <Card>
+                    <h2 className="mb-3 text-lg font-semibold text-white">
+                      Utilidad por producto/servicio
+                      <span className="ml-2 text-sm font-normal text-muted-foreground">
+                        ({pageUtil * PAGE_TOP + 1}–{Math.min((pageUtil + 1) * PAGE_TOP, filtrada.length)} de {filtrada.length})
+                      </span>
+                    </h2>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                      Ordenado por utilidad descendente. El margen % es <code>utilidad / ingresos × 100</code>.
+                    </p>
+                    <Table>
+                      <THead>
+                        <TR>
+                          <TH>#</TH>
+                          <TH>Producto / Servicio</TH>
+                          <TH>Tipo</TH>
+                          <TH className="text-right">Vendidas</TH>
+                          <TH className="text-right">Ingresos</TH>
+                          <TH className="text-right">Costos</TH>
+                          <TH className="text-right">Utilidad</TH>
+                          <TH className="text-right">Margen %</TH>
+                        </TR>
+                      </THead>
+                      <TBody>
+                        {page.map((u, i) => (
+                          <TR key={u.producto_id}>
+                            <TD className="text-muted-foreground">{pageUtil * PAGE_TOP + i + 1}</TD>
+                            <TD className="text-white">
+                              {u.codigo ? <span className="mr-2 font-mono text-xs text-muted-foreground">{u.codigo}</span> : null}
+                              {u.nombre}
+                            </TD>
+                            <TD>
+                              {u.tipo === "servicio" ? <Badge tone="blue">Servicio</Badge> : <Badge tone="gray">Producto</Badge>}
+                            </TD>
+                            <TD className="text-right font-mono">{formatInt(u.cantidad_vendida)}</TD>
+                            <TD className="text-right font-mono text-green-300">{formatCOP(u.ingresos)}</TD>
+                            <TD className="text-right font-mono text-red-300">{formatCOP(u.costos)}</TD>
+                            <TD className={`text-right font-mono ${u.utilidad >= 0 ? "text-brand-orange" : "text-red-400"}`}>
+                              {formatCOP(u.utilidad)}
+                            </TD>
+                            <TD className="text-right font-mono text-muted-foreground">{u.margen_pct}%</TD>
+                          </TR>
+                        ))}
+                      </TBody>
+                    </Table>
+                    <Pager page={pageUtil} total={filtrada.length} pageSize={PAGE_TOP} onChange={setPageUtil} />
+                  </Card>
+                ) : null}
+              </>
+            );
+          })()}
+
         </>
       ) : null}
 
@@ -602,7 +752,10 @@ export function DashboardClient({
       {tab === "inventario" ? (
         <>
           <Card>
-            <h2 className="mb-3 text-lg font-semibold text-white">Stock por ubicación</h2>
+            <h2 className="text-lg font-semibold text-white">Stock por ubicación</h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Suma de unidades del inventario en cada ubicación. Si hay desbalance (mucho en una y poco en otra), considera registrar un traslado.
+            </p>
             {stockPorUbicacion.length === 0 || stockPorUbicacion.every((u) => u.cantidad === 0) ? (
               <div className="rounded border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
                 Aún no hay stock registrado. Cuando se cargue el inventario inicial físico aparecerá aquí el desglose por ubicación.
@@ -640,12 +793,15 @@ export function DashboardClient({
           </Card>
 
           <Card>
-            <h2 className="mb-3 text-lg font-semibold text-white">
+            <h2 className="mb-1 text-lg font-semibold text-white">
               Productos por categoría
               <span className="ml-2 text-sm font-normal text-muted-foreground">
                 ({skusOrdenados.length === 0 ? "0" : `${pageSkus * PAGE_TOP + 1}–${Math.min((pageSkus + 1) * PAGE_TOP, skusOrdenados.length)}`} de {skusOrdenados.length})
               </span>
             </h2>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Cuántos SKUs distintos hay en cada categoría del catálogo. Útil para ver la salud del catálogo y detectar categorías sub-representadas.
+            </p>
             <div className="h-72">
               <ResponsiveContainer>
                 <BarChart data={skusPage} layout="vertical" margin={{ left: 150 }}>

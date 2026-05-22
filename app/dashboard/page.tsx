@@ -9,6 +9,7 @@ import {
   getTopPorDiaSemana,
   getVentasPorDiaSemana,
   getVentasUltimaSemana,
+  getUtilidadPorProducto,
 } from "@/lib/queries";
 import { requireMaestro } from "@/lib/auth";
 import { DashboardClient } from "./dashboard-client";
@@ -33,6 +34,7 @@ export default async function DashboardPage() {
     topPorDia,
     ventasPorDia,
     ventasUltSemana,
+    utilidadPorProducto,
   ] = await Promise.all([
     sb.from("productos").select("*", { head: true, count: "exact" }).eq("activo", true),
     sb.from("productos").select("*", { head: true, count: "exact" }).eq("activo", true).eq("es_inventariable", true),
@@ -47,6 +49,7 @@ export default async function DashboardPage() {
     getTopPorDiaSemana(),
     getVentasPorDiaSemana(),
     getVentasUltimaSemana(),
+    getUtilidadPorProducto(),
   ]);
   const stockTotalPorProducto = await getStockTotalPorProducto();
 
@@ -77,6 +80,7 @@ export default async function DashboardPage() {
       topPorDiaSemana={topPorDia}
       ventasPorDiaSemana={ventasPorDia}
       ventasUltimaSemana={ventasUltSemana}
+      utilidadPorProducto={utilidadPorProducto}
       stockTotalPorProducto={stockTotalPorProducto}
     />
   );
