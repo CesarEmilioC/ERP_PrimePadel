@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, Table, THead, TBody, TR, TH, TD } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
-import { parseCSV, agruparPorTicket, CSV_TEMPLATE, type Catalogo, type ParseResult } from "@/lib/csv/transacciones";
-import { importarTransacciones } from "./actions";
+import { parseCSV, agruparPorTicket, type Catalogo, type ParseResult } from "@/lib/csv/transacciones";
+import { importarTransacciones, descargarPlantillaCSV } from "./actions";
 import { formatCOP, formatDate } from "@/lib/utils";
 
 export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo; soloVentas?: boolean }) {
@@ -19,15 +19,25 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [result, setResult] = React.useState<ParseResult | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
+  const [downloading, setDownloading] = React.useState(false);
   const [resumen, setResumen] = React.useState<{ creadas: number; fallidas: { ticket: string | null; razon: string }[] } | null>(null);
 
-  function descargarPlantilla() {
-    const blob = new Blob(["﻿" + CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
+  async function descargarPlantilla() {
+    setDownloading(true);
+    const res = await descargarPlantillaCSV();
+    setDownloading(false);
+    if ("error" in res) {
+      toast.push({ message: res.error, tone: "error" });
+      return;
+    }
+    const blob = new Blob(["﻿" + res.csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "plantilla-transacciones.csv";
+    a.download = res.filename;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
@@ -50,14 +60,16 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
         }
         return true;
       });
-      setResult({ valid: validasFinal, invalid: [...parsed.invalid, ...movidos], total: parsed.total });
+      setResult({ valid: validasFinal, invalid: [...parsed.invalid, ...movidos], total: parsed.total, ignoradas: parsed.ignoradas });
     } else {
       setResult(parsed);
     }
   }
 
   async function confirmar() {
-    if (!result || result.invalid.length > 0 || result.valid.length === 0) return;
+    // Permitimos importar las filas válidas aunque haya filas con error
+    // (las inválidas se omiten, no detienen la importación).
+    if (!result || result.valid.length === 0) return;
     setSubmitting(true);
     const grupos = agruparPorTicket(result.valid);
     const res = await importarTransacciones(grupos);
@@ -101,11 +113,12 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
               <div>
                 <p className="text-sm font-medium text-white">1. Descarga la plantilla</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  El CSV ya trae las columnas correctas y ejemplos que puedes borrar.
+                  El CSV viene <strong>pre-llenado con una fila por cada producto</strong> y tipo de transacción permitido para tu rol.
+                  Modifica solo las cantidades de los productos que efectivamente se movieron — las filas que dejes en 0 se ignoran al importar.
                 </p>
               </div>
-              <Button variant="outline" onClick={descargarPlantilla}>
-                ⬇ Descargar plantilla CSV
+              <Button variant="outline" onClick={descargarPlantilla} disabled={downloading}>
+                {downloading ? "Generando..." : "⬇ Descargar plantilla CSV"}
               </Button>
             </div>
           </Card>
@@ -113,19 +126,20 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
           <Card>
             <p className="text-sm font-medium text-white">2. Llena el archivo</p>
             <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-              <p><strong className="text-white">Columnas obligatorias:</strong> fecha, tipo, codigo_producto, ubicacion, cantidad, precio_unitario</p>
-              <p><strong className="text-white">Columnas opcionales:</strong> notas, ticket</p>
+              <p><strong className="text-white">Columnas:</strong> fecha, tipo, codigo_producto, ubicacion, ubicacion_destino, cantidad, precio_unitario, notas, ticket.</p>
+              <p><strong className="text-white">cantidad = 0</strong> → la fila se ignora (no toques las que no aplican).</p>
               <p><strong className="text-white">fecha</strong> acepta <code className="text-brand-orange">DD/MM/AAAA</code>, <code className="text-brand-orange">DD-MM-AAAA</code> o <code className="text-brand-orange">AAAA-MM-DD</code>. Opcionalmente con hora: <code className="text-brand-orange">DD/MM/AAAA HH:MM</code>.</p>
-              <p><strong className="text-white">tipo</strong> = <code className="text-brand-orange">venta</code> o <code className="text-brand-orange">compra</code>.</p>
+              <p><strong className="text-white">tipo</strong> = <code className="text-brand-orange">venta</code>, <code className="text-brand-orange">compra</code> o <code className="text-brand-orange">traslado</code>.</p>
               <p><strong className="text-white">codigo_producto</strong> debe existir en el catálogo (revisa en <Link href="/inventario" className="text-brand-orange hover:underline">Inventario</Link>).</p>
-              <p><strong className="text-white">ubicacion</strong> debe ser el nombre exacto de una ubicación activa (Barra Cajero, Nevera Barra, etc.).</p>
-              <p><strong className="text-white">ticket</strong> (opcional) agrupa varias filas en una sola transacción. Ej: una venta de 2 cervezas + 1 gatorade al mismo cliente = 2 filas con el mismo valor en ticket.</p>
+              <p><strong className="text-white">ubicacion</strong>: origen para venta/traslado, destino para compra.</p>
+              <p><strong className="text-white">ubicacion_destino</strong>: solo se usa en filas de tipo traslado.</p>
+              <p><strong className="text-white">ticket</strong> (opcional) agrupa varias filas en una sola transacción.</p>
             </div>
             <div className="mt-3 rounded border border-brand-orange/40 bg-brand-orange/5 p-3 text-xs">
               <p className="font-semibold text-brand-orange">⚠ Importante — sobre <code>precio_unitario</code>:</p>
               <ul className="mt-1 space-y-1 text-muted-foreground">
                 <li>• En filas con <code className="text-brand-orange">tipo = venta</code> → escribe el <strong className="text-white">precio de venta al cliente</strong>.</li>
-                <li>• En filas con <code className="text-brand-orange">tipo = compra</code> → escribe el <strong className="text-white">costo unitario que pagamos al proveedor</strong>.</li>
+                <li>• En filas con <code className="text-brand-orange">tipo = compra</code> o <code className="text-brand-orange">traslado</code> → escribe el <strong className="text-white">costo unitario</strong> del producto.</li>
               </ul>
             </div>
           </Card>
@@ -196,7 +210,7 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
               <div>
                 <p className="text-sm font-medium text-white">📄 {fileName}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  {result.total} filas leídas · {result.valid.length} válidas · {result.invalid.length} con error
+                  {result.total + result.ignoradas} filas leídas · {result.valid.length} válidas · {result.invalid.length} con error · {result.ignoradas} ignoradas (cantidad 0)
                   {result.valid.length > 0 ? (
                     <>
                       {" "}· se crearán <strong className="text-white">{gruposPreview.length}</strong> transacciones
@@ -209,15 +223,15 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                 <Button variant="outline" onClick={reset}>Cambiar archivo</Button>
                 <Button
                   onClick={confirmar}
-                  disabled={submitting || result.invalid.length > 0 || result.valid.length === 0}
+                  disabled={submitting || result.valid.length === 0}
                 >
-                  {submitting ? "Importando..." : `Confirmar e importar (${gruposPreview.length})`}
+                  {submitting ? "Importando..." : `Importar ${gruposPreview.length} transacc. válidas`}
                 </Button>
               </div>
             </div>
             {result.invalid.length > 0 ? (
-              <p className="mt-3 rounded border border-red-900/40 bg-red-950/20 p-2 text-xs text-red-300">
-                No se puede importar mientras haya filas con error. Corrige el CSV y súbelo de nuevo.
+              <p className="mt-3 rounded border border-yellow-900/40 bg-yellow-950/20 p-2 text-xs text-yellow-300">
+                Hay {result.invalid.length} fila(s) con error. Se importarán <strong>solo las {result.valid.length} válidas</strong> — las que tienen error se omitirán. Revisa la lista de abajo si quieres corregir el CSV antes.
               </p>
             ) : null}
           </Card>
@@ -285,13 +299,21 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                         <TD className="text-muted-foreground">{r.rowNumber}</TD>
                         <TD className="text-xs text-muted-foreground">{formatDate(r.fecha)}</TD>
                         <TD>
-                          {r.tipo === "venta" ? <Badge tone="green">Venta</Badge> : <Badge tone="blue">Compra</Badge>}
+                          {r.tipo === "venta"
+                            ? <Badge tone="green">Venta</Badge>
+                            : r.tipo === "compra"
+                              ? <Badge tone="blue">Compra</Badge>
+                              : <Badge tone="yellow">Traslado</Badge>}
                         </TD>
                         <TD className="text-white">
                           <span className="mr-2 font-mono text-xs text-muted-foreground">{r.producto_codigo}</span>
                           {r.producto_nombre}
                         </TD>
-                        <TD className="text-muted-foreground">{r.ubicacion_nombre}</TD>
+                        <TD className="text-muted-foreground">
+                          {r.tipo === "traslado"
+                            ? <span>{r.ubicacion_nombre} → {r.ubicacion_destino_nombre}</span>
+                            : r.ubicacion_nombre}
+                        </TD>
                         <TD className="text-right font-mono">{r.cantidad}</TD>
                         <TD className="text-right font-mono">{formatCOP(r.precio_unitario)}</TD>
                         <TD className="text-xs text-muted-foreground">{r.ticket ?? "—"}</TD>

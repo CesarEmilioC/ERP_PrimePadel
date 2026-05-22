@@ -10,7 +10,7 @@ export default async function CargaMasivaPage() {
 
   const [{ data: productos }, { data: ubicaciones }, { data: stock }] = await Promise.all([
     sb.from("productos").select("id, codigo, nombre, activo, es_inventariable").order("nombre"),
-    sb.from("ubicaciones").select("id, nombre, activa").order("orden"),
+    sb.from("ubicaciones").select("id, nombre, tipo, activa").order("orden"),
     sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
   ]);
 
@@ -33,7 +33,7 @@ export default async function CargaMasivaPage() {
     <CargaMasivaClient
       catalogo={{
         productos: productosOpt,
-        ubicaciones: (ubicaciones ?? []).map((u: any) => ({ id: u.id, nombre: u.nombre, activa: u.activa })),
+        ubicaciones: (ubicaciones ?? []).map((u: any) => ({ id: u.id, nombre: u.nombre, tipo: u.tipo, activa: u.activa })),
       }}
       soloVentas={perfil.rol === "recepcion"}
     />

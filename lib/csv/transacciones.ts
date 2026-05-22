@@ -4,15 +4,19 @@ import Papa from "papaparse";
 
 export type RawRow = Record<string, string | undefined>;
 
+export type TipoTx = "venta" | "compra" | "traslado";
+
 export type ValidRow = {
   rowNumber: number; // 1-based dentro del CSV (sin header)
   fecha: string; // ISO timestamp (UTC)
-  tipo: "venta" | "compra";
+  tipo: TipoTx;
   producto_id: string;
   producto_codigo: string;
   producto_nombre: string;
-  ubicacion_id: string;
+  ubicacion_id: string;             // origen en venta/traslado, destino en compra
   ubicacion_nombre: string;
+  ubicacion_destino_id?: string;    // solo traslado: ubicación destino
+  ubicacion_destino_nombre?: string;
   cantidad: number;
   precio_unitario: number;
   notas: string | null;
@@ -29,12 +33,22 @@ export type RowError = {
 export type ParseResult = {
   valid: ValidRow[];
   invalid: RowError[];
-  total: number;
+  total: number;       // filas relevantes (no contiene las ignoradas con cantidad 0/vacía)
+  ignoradas: number;   // filas con cantidad=0 o vacía (el usuario no las tocó)
 };
 
 export type Catalogo = {
-  productos: { id: string; codigo: string | null; nombre: string; activo: boolean; es_inventariable: boolean; stock_por_ubicacion: Record<string, number> }[];
-  ubicaciones: { id: string; nombre: string; activa: boolean }[];
+  productos: {
+    id: string;
+    codigo: string | null;
+    nombre: string;
+    activo: boolean;
+    es_inventariable: boolean;
+    precio_detal?: number | null;
+    costo_unitario?: number;
+    stock_por_ubicacion: Record<string, number>;
+  }[];
+  ubicaciones: { id: string; nombre: string; tipo: string; activa: boolean }[];
 };
 
 export const CSV_HEADERS = [
@@ -42,45 +56,136 @@ export const CSV_HEADERS = [
   "tipo",
   "codigo_producto",
   "ubicacion",
+  "ubicacion_destino",
   "cantidad",
   "precio_unitario",
   "notas",
   "ticket",
 ] as const;
 
-// Plantilla descargable — header + 3 filas de ejemplo comentadas con #.
-export const CSV_TEMPLATE = [
-  CSV_HEADERS.join(","),
-  "# ---------------------------------------------------------------------------",
-  "# PLANTILLA — TRANSACCIONES MASIVAS (PRIME PADEL ERP)",
-  "# Borra todas las líneas que empiezan con # y llena con tus datos.",
-  "# ---------------------------------------------------------------------------",
-  "# Columnas obligatorias: fecha, tipo, codigo_producto, ubicacion, cantidad, precio_unitario",
-  "# Columnas opcionales:   notas, ticket",
-  "#",
-  "# fecha:           formatos aceptados (con o sin hora):",
-  "#                     DD/MM/AAAA              ej. 01/05/2026",
-  "#                     DD-MM-AAAA              ej. 01-05-2026",
-  "#                     AAAA-MM-DD              ej. 2026-05-01",
-  "#                     DD/MM/AAAA HH:MM        ej. 01/05/2026 14:30",
-  "# tipo:            venta  |  compra",
-  "# codigo_producto: el código (SKU) tal como aparece en el módulo Inventario",
-  "# ubicacion:       el nombre exacto de la ubicación (ej. Barra Cajero, Nevera Barra, Bodega Principal)",
-  "# cantidad:        entero positivo",
-  "#",
-  "# >>> precio_unitario — IMPORTANTE: <<<",
-  "#   - Si tipo = venta   → precio_unitario es el PRECIO DE VENTA al cliente final",
-  "#   - Si tipo = compra  → precio_unitario es el COSTO UNITARIO que le pagamos al proveedor",
-  "#",
-  "# notas (opcional):  texto libre (cliente, mesa, número de factura, etc.)",
-  "# ticket (opcional): código que agrupa varias filas en UNA sola transacción.",
-  "#                    Ej: 2 cervezas + 1 agua a la misma mesa = 2 filas con ticket = 'T001'.",
-  "# ---------------------------------------------------------------------------",
-  "# Ejemplos (borra estas tres líneas antes de subir):",
-  '01/05/2026,venta,CERV-001,Barra Cajero,2,8000,mesa 3,T001',
-  '01/05/2026,venta,AGUA-001,Barra Cajero,1,3000,mesa 3,T001',
-  '01/05/2026,compra,CERV-001,Bodega Principal,24,5500,Proveedor Corona,',
-].join("\n");
+// ----------------------------------------------------------------------------
+// Plantilla dinámica: una fila por (producto, tipo) con cantidades en 0.
+// El usuario llena solo las cantidades de los productos que vendió/movió/compró.
+// Filas con cantidad 0 al subir el CSV se ignoran (el usuario no las tocó).
+// ----------------------------------------------------------------------------
+export type OpcionesPlantilla = {
+  incluyeCompras: boolean;  // false para recepción (solo venta + traslado)
+  incluyeTraslados: boolean;
+};
+
+function fechaHoyDDMMAAAA(): string {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+
+// Heurística simple para sugerir ubicaciones por tipo.
+function ubicacionesSugeridas(ubicaciones: Catalogo["ubicaciones"]) {
+  const activas = ubicaciones.filter((u) => u.activa);
+  const venta = activas.find((u) => ["barra", "vitrina", "nevera"].includes(u.tipo)) ?? activas[0];
+  const bodega = activas.find((u) => u.tipo === "bodega") ?? activas[0];
+  const trasladoOrigen = bodega;
+  const trasladoDestino = venta && venta.id !== bodega?.id ? venta : activas.find((u) => u.id !== bodega?.id) ?? activas[0];
+  return { venta, bodega, trasladoOrigen, trasladoDestino };
+}
+
+function escapeCSV(s: string): string {
+  if (s == null) return "";
+  const str = String(s);
+  if (/[",\n\r]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function fila(values: (string | number)[]): string {
+  return values.map((v) => escapeCSV(String(v))).join(",");
+}
+
+export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantilla): string {
+  const productos = catalogo.productos.filter((p) => p.activo);
+  const { venta, bodega, trasladoOrigen, trasladoDestino } = ubicacionesSugeridas(catalogo.ubicaciones);
+  const fecha = fechaHoyDDMMAAAA();
+
+  const lineas: string[] = [];
+  lineas.push(CSV_HEADERS.join(","));
+  lineas.push("# ---------------------------------------------------------------------------");
+  lineas.push("# PLANTILLA — TRANSACCIONES MASIVAS (PRIME PADEL ERP)");
+  lineas.push("# ---------------------------------------------------------------------------");
+  lineas.push("# Cómo funciona:");
+  lineas.push("#  - Esta plantilla viene con una fila por cada producto y tipo de transacción.");
+  lineas.push('#  - Modifica solo las CANTIDADES de los productos que efectivamente se movieron.');
+  lineas.push("#  - Las filas que dejes con cantidad = 0 se IGNORAN al importar.");
+  lineas.push("#  - Puedes editar también fecha, ubicación, precio o notas si lo necesitas.");
+  lineas.push("#");
+  lineas.push("# Columnas:");
+  lineas.push("#  fecha:             DD/MM/AAAA o AAAA-MM-DD (con o sin hora HH:MM)");
+  lineas.push("#  tipo:              venta | compra | traslado");
+  lineas.push("#  codigo_producto:   código (SKU) tal como aparece en Inventario");
+  lineas.push("#  ubicacion:         origen para venta/traslado, destino para compra");
+  lineas.push("#  ubicacion_destino: SOLO para traslado (a dónde llega el stock)");
+  lineas.push("#  cantidad:          entero positivo (0 = ignora la fila)");
+  lineas.push("#  precio_unitario:   venta → precio al cliente. compra/traslado → costo unitario.");
+  lineas.push("#  notas (opcional):  texto libre (cliente, mesa, número de factura, etc.)");
+  lineas.push("#  ticket (opcional): código que agrupa varias filas en UNA sola transacción.");
+  lineas.push("# ---------------------------------------------------------------------------");
+
+  for (const p of productos) {
+    const codigo = p.codigo ?? "";
+    if (!codigo) continue; // sin código no se puede referenciar
+
+    // Venta: todos los productos activos (servicios incluidos).
+    if (venta) {
+      lineas.push(fila([
+        fecha,
+        "venta",
+        codigo,
+        venta.nombre,
+        "",
+        0,
+        p.precio_detal ?? 0,
+        "",
+        "",
+      ]));
+    }
+
+    // Solo productos inventariables admiten traslado / compra.
+    if (!p.es_inventariable) continue;
+
+    if (opciones.incluyeTraslados && trasladoOrigen && trasladoDestino && trasladoOrigen.id !== trasladoDestino.id) {
+      lineas.push(fila([
+        fecha,
+        "traslado",
+        codigo,
+        trasladoOrigen.nombre,
+        trasladoDestino.nombre,
+        0,
+        p.costo_unitario ?? 0,
+        "",
+        "",
+      ]));
+    }
+
+    if (opciones.incluyeCompras && bodega) {
+      lineas.push(fila([
+        fecha,
+        "compra",
+        codigo,
+        bodega.nombre,
+        "",
+        0,
+        p.costo_unitario ?? 0,
+        "",
+        "",
+      ]));
+    }
+  }
+
+  return lineas.join("\n");
+}
+
+// ----------------------------------------------------------------------------
+// Parseo
+// ----------------------------------------------------------------------------
 
 function parseFechaISO(raw: string): string | null {
   if (!raw) return null;
@@ -139,7 +244,7 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
   );
 
   // Pre-calcular stock esperado por (producto, ubicación) después de aplicar cada fila,
-  // para validar que las ventas no sobregiren el stock disponible acumuladamente.
+  // para validar que las ventas/traslados no sobregiren el stock disponible acumuladamente.
   const stockPend = new Map<string, number>(); // key = `${producto_id}|${ubicacion_id}`
   function stockActual(productoId: string, ubicacionId: string): number {
     const key = `${productoId}|${ubicacionId}`;
@@ -152,6 +257,7 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
 
   const valid: ValidRow[] = [];
   const invalid: RowError[] = [];
+  let ignoradas = 0;
 
   (result.data ?? []).forEach((raw, idx) => {
     const rowNumber = idx + 2; // +1 por el header, +1 por 1-based
@@ -161,6 +267,7 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
     const tipoStr = normalize(raw.tipo).toLowerCase();
     const codigoStr = normalize(raw.codigo_producto);
     const ubiStr = normalize(raw.ubicacion);
+    const ubiDestStr = normalize(raw.ubicacion_destino);
     const cantStr = normalize(raw.cantidad);
     const precioStr = normalize(raw.precio_unitario);
     const notasStr = normalize(raw.notas);
@@ -170,11 +277,18 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
       return; // fila completamente vacía — ignorar silenciosamente
     }
 
-    const fechaIso = parseFechaISO(fechaStr);
-    if (!fechaIso) errors.push(`fecha inválida ("${fechaStr}") — usa YYYY-MM-DD o YYYY-MM-DD HH:MM`);
+    // Si cantidad es 0 o vacía → fila no fue tocada por el usuario, se ignora.
+    const cantidadParsed = Number((cantStr || "0").replace(",", "."));
+    if (!Number.isFinite(cantidadParsed) || cantidadParsed === 0) {
+      ignoradas++;
+      return;
+    }
 
-    if (tipoStr !== "venta" && tipoStr !== "compra") {
-      errors.push(`tipo inválido ("${tipoStr}") — debe ser "venta" o "compra"`);
+    const fechaIso = parseFechaISO(fechaStr);
+    if (!fechaIso) errors.push(`Fecha inválida ("${fechaStr}") — usa DD/MM/AAAA o AAAA-MM-DD`);
+
+    if (tipoStr !== "venta" && tipoStr !== "compra" && tipoStr !== "traslado") {
+      errors.push(`Tipo inválido ("${tipoStr}") — debe ser "venta", "compra" o "traslado"`);
     }
 
     const prod = prodByCodigo.get(codigoStr.toLowerCase());
@@ -185,27 +299,38 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
     if (!ubi) errors.push(`Ubicación "${ubiStr}" no encontrada`);
     else if (!ubi.activa) errors.push(`Ubicación "${ubiStr}" está desactivada`);
 
-    // Servicios no aplican para compras ni traslados (no tienen stock).
-    if (prod && !prod.es_inventariable && (tipoStr === "compra" || tipoStr === "traslado")) {
-      errors.push(`"${prod.nombre}" no se inventaría (es servicio o no inventariable); no admite ${tipoStr}s`);
+    let ubiDest = undefined as { id: string; nombre: string; activa: boolean } | undefined;
+    if (tipoStr === "traslado") {
+      if (!ubiDestStr) {
+        errors.push(`Traslado requiere "ubicacion_destino"`);
+      } else {
+        ubiDest = ubiByNombre.get(ubiDestStr.toLowerCase());
+        if (!ubiDest) errors.push(`Ubicación destino "${ubiDestStr}" no encontrada`);
+        else if (!ubiDest.activa) errors.push(`Ubicación destino "${ubiDestStr}" está desactivada`);
+        else if (ubi && ubiDest.id === ubi.id) errors.push(`Traslado: origen y destino deben ser distintos`);
+      }
     }
 
-    const cantidad = Number(cantStr.replace(",", "."));
-    if (!Number.isFinite(cantidad) || cantidad <= 0 || !Number.isInteger(cantidad)) {
+    // Servicios no aplican para compras ni traslados (no tienen stock).
+    if (prod && !prod.es_inventariable && (tipoStr === "compra" || tipoStr === "traslado")) {
+      errors.push(`"${prod.nombre}" no se inventaría (servicio); no admite ${tipoStr}s`);
+    }
+
+    if (!Number.isInteger(cantidadParsed) || cantidadParsed < 0) {
       errors.push(`Cantidad inválida ("${cantStr}") — debe ser entero positivo`);
     }
 
-    const precio = Number(precioStr.replace(/[,$ ]/g, ""));
+    const precio = Number((precioStr || "0").replace(/[,$ ]/g, ""));
     if (!Number.isFinite(precio) || precio < 0) {
       errors.push(`Precio inválido ("${precioStr}")`);
     }
 
-    // Validación de stock para ventas — acumula las filas previas del mismo archivo.
-    if (errors.length === 0 && prod && ubi && tipoStr === "venta" && prod.es_inventariable) {
+    // Validación de stock para ventas y traslados — acumula las filas previas.
+    if (errors.length === 0 && prod && ubi && (tipoStr === "venta" || tipoStr === "traslado") && prod.es_inventariable) {
       const disponible = stockActual(prod.id, ubi.id);
-      if (disponible < cantidad) {
+      if (disponible < cantidadParsed) {
         errors.push(
-          `Stock insuficiente: "${prod.nombre}" tiene ${disponible} en ${ubi.nombre}, se intenta vender ${cantidad}`,
+          `Stock insuficiente: "${prod.nombre}" tiene ${disponible} en ${ubi.nombre}, se intenta ${tipoStr === "venta" ? "vender" : "mover"} ${cantidadParsed}`,
         );
       }
     }
@@ -217,22 +342,32 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
 
     // Actualizar stock pendiente para validar filas posteriores.
     if (prod!.es_inventariable) {
-      const key = `${prod!.id}|${ubi!.id}`;
-      const prev = stockActual(prod!.id, ubi!.id);
-      const delta = tipoStr === "venta" ? -cantidad : cantidad;
-      stockPend.set(key, prev + delta);
+      if (tipoStr === "venta") {
+        const key = `${prod!.id}|${ubi!.id}`;
+        stockPend.set(key, stockActual(prod!.id, ubi!.id) - cantidadParsed);
+      } else if (tipoStr === "compra") {
+        const key = `${prod!.id}|${ubi!.id}`;
+        stockPend.set(key, stockActual(prod!.id, ubi!.id) + cantidadParsed);
+      } else if (tipoStr === "traslado" && ubiDest) {
+        const keyOrig = `${prod!.id}|${ubi!.id}`;
+        const keyDest = `${prod!.id}|${ubiDest.id}`;
+        stockPend.set(keyOrig, stockActual(prod!.id, ubi!.id) - cantidadParsed);
+        stockPend.set(keyDest, stockActual(prod!.id, ubiDest.id) + cantidadParsed);
+      }
     }
 
     valid.push({
       rowNumber,
       fecha: fechaIso!,
-      tipo: tipoStr as "venta" | "compra",
+      tipo: tipoStr as TipoTx,
       producto_id: prod!.id,
       producto_codigo: prod!.codigo ?? "",
       producto_nombre: prod!.nombre,
       ubicacion_id: ubi!.id,
       ubicacion_nombre: ubi!.nombre,
-      cantidad,
+      ubicacion_destino_id: ubiDest?.id,
+      ubicacion_destino_nombre: ubiDest?.nombre,
+      cantidad: cantidadParsed,
       precio_unitario: precio,
       notas: notasStr || null,
       ticket: ticketStr || null,
@@ -244,14 +379,15 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
     valid,
     invalid,
     total: valid.length + invalid.length,
+    ignoradas,
   };
 }
 
-// Agrupa filas válidas para crear transacciones: filas con mismo `ticket` (no vacío)
-// + mismo tipo + misma fecha (truncada al minuto) se bundlean en una sola transacción.
-// Filas sin ticket → cada una es su propia transacción.
+// ----------------------------------------------------------------------------
+// Agrupación por ticket
+// ----------------------------------------------------------------------------
 export type TransaccionAgrupada = {
-  tipo: "venta" | "compra";
+  tipo: TipoTx;
   fecha: string;
   notas: string | null;
   ticket: string | null;
@@ -260,6 +396,7 @@ export type TransaccionAgrupada = {
     producto_codigo: string;
     producto_nombre: string;
     ubicacion_id: string;
+    ubicacion_destino_id?: string;
     cantidad: number;
     precio_unitario: number;
     es_inventariable: boolean;
@@ -276,6 +413,7 @@ export function agruparPorTicket(rows: ValidRow[]): TransaccionAgrupada[] {
       producto_codigo: r.producto_codigo,
       producto_nombre: r.producto_nombre,
       ubicacion_id: r.ubicacion_id,
+      ubicacion_destino_id: r.ubicacion_destino_id,
       cantidad: r.cantidad,
       precio_unitario: r.precio_unitario,
       es_inventariable: r.es_inventariable,
