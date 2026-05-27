@@ -2,7 +2,7 @@
 
 Mini-ERP web para el control de inventario, compras, ventas y traslados del club **Prime Padel** (Cali, Colombia).
 
-> Documentación técnica viva del sistema. El manual de usuario final (no técnico) está en [`docs/manual-usuario.md`](docs/manual-usuario.md) y la guía extendida del rol Maestro en [`docs/manual-maestro.md`](docs/manual-maestro.md).
+> Documentación técnica viva del sistema. El manual de usuario final (no técnico) está en [`docs/manual-usuario.html`](docs/manual-usuario.html) y la guía extendida del rol Maestro en [`docs/manual-maestro.html`](docs/manual-maestro.html) (se mantienen como HTML, listos para abrir en el navegador o imprimir a PDF).
 
 ---
 

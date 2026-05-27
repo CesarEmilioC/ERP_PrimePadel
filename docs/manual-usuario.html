@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual de usuario — ERP Prime Padel — Prime Padel</title>
+  <style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --text: #e5e5e5;
+    --muted: #a3a3a3;
+    --orange: #FF8C42;
+    --yellow: #F5C518;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 48px 64px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; border-bottom: 2px solid var(--orange); padding-bottom: 10px; margin-top: 32px; }
+  h2 { font-size: 1.25rem; color: var(--yellow); margin-top: 32px; margin-bottom: 10px; }
+  h3 { font-size: 1rem; color: var(--orange); margin-top: 20px; margin-bottom: 6px; }
+
+  p { margin-bottom: 12px; color: var(--text); }
+
+  a { color: var(--orange); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+  li ul, li ol { margin-top: 4px; margin-bottom: 4px; }
+
+  strong { color: #fff; font-weight: 600; }
+  em { color: var(--muted); font-style: italic; }
+
+  code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--orange);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+
+  blockquote {
+    border-left: 3px solid var(--orange);
+    padding: 8px 16px;
+    margin: 16px 0;
+    background: var(--surface);
+    border-radius: 0 6px 6px 0;
+    color: var(--muted);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface);
+    color: var(--yellow);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:hover td { background: #1a1a1a; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* Header con logo y datos del documento */
+  .doc-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .doc-logo { color: #fff; font-size: 1.4rem; font-weight: 700; }
+  .doc-logo span { color: var(--orange); }
+  .doc-meta { text-align: right; font-size: 12px; color: var(--muted); line-height: 1.8; }
+
+  /* Pie de página */
+  .doc-footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; color: #111; padding: 24px 32px; }
+    :root {
+      --bg: #fff;
+      --surface: #f5f5f5;
+      --border: #ddd;
+      --text: #111;
+      --muted: #555;
+      --orange: #cc6d1e;
+      --yellow: #b8930a;
+    }
+    a { color: var(--orange); }
+    h1 { color: #111; }
+    h2 { color: #333; }
+    h3 { color: #555; }
+    strong { color: #111; }
+    pre, code { border: 1px solid #ddd; }
+    @page { margin: 20mm 18mm; }
+  }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <div class="doc-logo">Prime <span>Padel</span></div>
+    <div class="doc-meta">
+      Cesar Emilio Castaño Marin<br>
+      cesarxemiliox@gmail.com · +52 812 346 6691<br>
+      Cali, Colombia<br>
+      27 de mayo de 2026
+    </div>
+  </div>
+
+  <h1>Manual de usuario — ERP Prime Padel</h1>
+<p><strong>Versión completa — abril 2026</strong><br><em>Sistema web para gestión de inventario, ventas, compras, traslados y análisis del club Prime Padel.</em></p>
+<hr>
+<h2>Índice</h2>
+<ol>
+<li><a href="#1-qu%C3%A9-es-el-erp-prime-padel">¿Qué es el ERP Prime Padel?</a></li>
+<li><a href="#2-roles-del-personal">Roles del personal</a></li>
+<li><a href="#3-c%C3%B3mo-entrar-al-sistema">Cómo entrar al sistema (login)</a></li>
+<li><a href="#4-pantalla-principal">Pantalla principal</a></li>
+<li><a href="#5-inventario">Inventario — productos y servicios</a></li>
+<li><a href="#6-detalle-de-un-producto">Detalle de un producto y ajuste de inventario</a></li>
+<li><a href="#7-transacciones">Transacciones — ventas, compras y traslados</a></li>
+<li><a href="#8-carga-masiva-csv">Carga masiva de transacciones (CSV)</a></li>
+<li><a href="#9-ubicaciones">Ubicaciones</a></li>
+<li><a href="#10-categor%C3%ADas">Categorías</a></li>
+<li><a href="#11-tarifas">Tarifas</a></li>
+<li><a href="#12-dashboard">Dashboard — análisis del negocio</a></li>
+<li><a href="#13-usuarios">Usuarios</a></li>
+<li><a href="#14-preguntas-frecuentes">Preguntas frecuentes</a></li>
+</ol>
+<hr>
+<h2>1. ¿Qué es el ERP Prime Padel?</h2>
+<p>Es la plataforma web del club para <strong>controlar el inventario, registrar ventas/compras/traslados y entender cómo se comporta el negocio día a día</strong>.</p>
+<p>Funciona en cualquier computador, tablet o celular con navegador. No se instala nada.</p>
+<p><strong>URL del sistema:</strong> <a href="https://erp-prime-padel.vercel.app/">https://erp-prime-padel.vercel.app/</a></p>
+<p><strong>Equipo que la utiliza:</strong></p>
+<ul>
+<li><strong>Recepción / Caja:</strong> registra ventas y traslados.</li>
+<li><strong>Administración:</strong> gestiona inventario, ubicaciones, registra compras y traslados.</li>
+<li><strong>Maestro (dueño):</strong> acceso total — configura el sistema, ve análisis financieros, gestiona usuarios.</li>
+</ul>
+<hr>
+<h2>2. Roles del personal</h2>
+<p>El sistema tiene <strong>tres niveles de acceso</strong> según las responsabilidades del usuario:</p>
+<table>
+<thead>
+<tr>
+<th>Acción</th>
+<th align="center">Maestro</th>
+<th align="center">Admin</th>
+<th align="center">Recepción</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Registrar venta</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Registrar traslado entre ubicaciones</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Registrar compra (entrada de stock)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Carga masiva por CSV</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅ (solo ventas y traslados)</td>
+</tr>
+<tr>
+<td>Descargar CSV de transacciones (rango de fechas)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Editar / eliminar sus propias transacciones del día</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+</tr>
+<tr>
+<td>Editar / eliminar transacciones de otros usuarios</td>
+<td align="center">✅</td>
+<td align="center">✅ (excepto del Maestro)</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Editar / eliminar transacciones de días pasados</td>
+<td align="center">✅</td>
+<td align="center">✅ (excepto del Maestro)</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Ver inventario</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Crear / editar productos</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Editar costos y precios</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Eliminar productos</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Ajuste de inventario (conteo, merma, etc.)</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Gestionar Ubicaciones</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Gestionar Categorías</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Gestionar Tarifas</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Ver Dashboard</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+</tr>
+<tr>
+<td>Gestionar Usuarios</td>
+<td align="center">✅</td>
+<td align="center">❌</td>
+<td align="center">❌</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Cada acción que se hace en el sistema queda registrada con el usuario que la hizo y la fecha/hora exactas — auditoría completa para revisar después si algo no cuadra.</p>
+</blockquote>
+<hr>
+<h2>3. Cómo entrar al sistema</h2>
+<ol>
+<li>Abre tu navegador (Chrome, Edge, Safari) e ingresa a <code>https://erp-prime-padel.vercel.app/</code>.</li>
+<li>Aparece la pantalla de <strong>Ingreso</strong>.</li>
+<li>Escribe tu <strong>Usuario</strong> (no es un correo, es un nombre como <code>recepcion1</code> o <code>admin</code>).</li>
+<li>Escribe tu <strong>Contraseña</strong>.</li>
+<li>Click en <strong>Ingresar</strong>.</li>
+</ol>
+<p>El usuario no distingue mayúsculas/minúsculas (<code>recepcion1</code> y <code>RECEPCION1</code> son lo mismo). La contraseña sí es estricta.</p>
+<p><strong>Si te equivocas o no recuerdas la contraseña</strong>, contacta al Maestro: él puede restablecerla desde la pantalla de Usuarios.</p>
+<p><strong>Cerrar sesión:</strong> click en el avatar arriba a la derecha → <strong>Cerrar sesión</strong>.</p>
+<hr>
+<h2>4. Pantalla principal</h2>
+<p>Al ingresar ves:</p>
+<ul>
+<li><strong>Saludo personal</strong> con tu nombre y rol (MAESTRO, ADMIN o RECEPCIÓN).</li>
+<li><strong>Tarjetas de resumen</strong>: cuántos productos hay, stock total actual, valor del inventario (solo Maestro), alertas de stock bajo, transacciones registradas.</li>
+<li><strong>Tarjetas de acceso</strong> a cada módulo al que tienes permiso.</li>
+<li><strong>Barra superior</strong> con el logo Prime Padel y los links a cada módulo. En celular se compacta a un menú hamburguesa (☰).</li>
+</ul>
+<hr>
+<h2>5. Inventario</h2>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro y Admin.</p>
+</blockquote>
+<p>Lista todos los productos y servicios del club.</p>
+<h3>Tabla principal</h3>
+<p>Cada fila muestra:</p>
+<ul>
+<li><strong>Código</strong> (SKU del producto).</li>
+<li><strong>Nombre</strong>.</li>
+<li><strong>Categoría</strong>.</li>
+<li><strong>Tipo</strong>: Producto (físico, con stock) o Servicio (clases, alquileres, sin stock).</li>
+<li><strong>Stock</strong> total (suma de todas las ubicaciones).</li>
+<li><strong>Precio detal</strong>.</li>
+<li><strong>IVA</strong> aplicable.</li>
+<li><strong>Estado</strong>: 🟢 OK, 🟡 Stock bajo, 🔴 Sin stock, ⚪ Inactivo, — (no aplica).</li>
+</ul>
+<h3>Filtros</h3>
+<p>Buscar, Categoría (multi), Ubicación, Tipo, Estado de stock, Activo/Inactivo, Cantidad mín/máx + botón <strong>Limpiar filtros</strong>.</p>
+<p>La tabla muestra 10 productos por página con paginador.</p>
+<h3>Crear un ítem nuevo</h3>
+<ol>
+<li>Click en <strong>&quot;+ Nuevo ítem&quot;</strong>.</li>
+<li>Llena el formulario:<ul>
+<li><strong>Nombre</strong> (obligatorio).</li>
+<li><strong>Código (SKU)</strong> (opcional, recomendado, único si lo usas).</li>
+<li><strong>Tipo</strong>: Producto o Servicio. Si es Servicio, varios campos se ocultan automáticamente.</li>
+<li><strong>Categoría</strong>.</li>
+<li><strong>¿Se inventaría?</strong> (solo productos físicos): si es No, se vende pero no descuenta stock.</li>
+<li><strong>Stock mínimo</strong> (alerta).</li>
+<li><strong>Costo unitario</strong> (solo Maestro): para calcular valor del inventario.</li>
+<li><strong>Impuesto</strong> (informativo): default &quot;Sin impuesto&quot;.</li>
+<li><strong>Unidad de medida</strong>.</li>
+<li><strong>Marca, modelo, código de barras</strong> (opcionales, solo productos).</li>
+<li><strong>Estado</strong>: Activo o Inactivo.</li>
+<li><strong>Precios por lista</strong> (solo Maestro).</li>
+</ul>
+</li>
+<li>Click en <strong>Guardar</strong>.</li>
+</ol>
+<h3>Editar / eliminar</h3>
+<ul>
+<li>Desde la ficha del producto, botón <strong>Editar</strong> (Maestro y Admin).</li>
+<li><strong>Eliminar</strong> solo aparece para el Maestro. Si el producto tiene histórico, se marca como inactivo.</li>
+</ul>
+<hr>
+<h2>6. Detalle de un producto</h2>
+<p>Click en el nombre del producto → ficha con:</p>
+<ul>
+<li><strong>Encabezado</strong>: nombre, código, categoría, impuesto.</li>
+<li><strong>Tarjetas resumen</strong>: stock total, costo unitario, valor total en costo, precio Detal.</li>
+<li><strong>Análisis de costos</strong> (solo Maestro, solo productos inventariables): 4 cards calculadas a partir de las compras registradas:<ul>
+<li><strong>Costo promedio</strong>: ponderado por cantidad (todas las compras del producto).</li>
+<li><strong>Última compra</strong>: costo + cantidad + fecha de la compra más reciente.</li>
+<li><strong>Total comprado</strong>: unidades acumuladas y número de compras.</li>
+<li><strong>Valor total comprado</strong>: suma real de <code>cantidad × costo</code> de cada compra individual. Refleja cuánta plata se ha invertido en el producto.</li>
+</ul>
+</li>
+<li><strong>Stock por ubicación</strong>: tabla con cada lugar físico y su cantidad.</li>
+<li><strong>Precios por tarifa</strong>: todos los precios efectivos del producto en cada tarifa, con indicador del origen (Manual, Auto o Precio base).</li>
+<li><strong>Histórico de ventas mensuales</strong>: cantidad y monto vendido cada mes (datos de Alegra). Los totales con asterisco (*) son estimados con el precio actual cuando el reporte original no traía monto.</li>
+<li><strong>Historial de ajustes</strong>: cada conteo físico, merma o corrección registrada.</li>
+</ul>
+<h3>Ajuste de inventario</h3>
+<p>Esta es la herramienta que se usa cuando:</p>
+<ul>
+<li>Haces un <strong>conteo físico</strong>.</li>
+<li>Detectas una <strong>merma</strong> (vencido, dañado).</li>
+<li>Registras una <strong>rotura</strong>.</li>
+<li>Haces una <strong>corrección manual</strong> del stock.</li>
+<li>Cargas el <strong>inventario inicial</strong> por primera vez.</li>
+</ul>
+<p><strong>Cómo usarla:</strong></p>
+<ol>
+<li>En la ficha del producto, click <strong>&quot;Ajuste de inventario&quot;</strong>.</li>
+<li>Selecciona la <strong>ubicación</strong>.</li>
+<li>Escribe la <strong>cantidad nueva</strong> (lo que realmente hay).</li>
+<li>El sistema calcula la <strong>diferencia</strong> automáticamente.</li>
+<li>Escoge el <strong>motivo</strong>: conteo físico / merma / rotura / corrección / ingreso inicial / otro.</li>
+<li>Agrega <strong>notas</strong> si quieres.</li>
+<li>Click <strong>Registrar ajuste</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Regla:</strong> la cantidad total del producto siempre es la suma de las cantidades en cada ubicación. Si cambias una ubicación, el total se recalcula solo.</p>
+</blockquote>
+<hr>
+<h2>7. Transacciones</h2>
+<p>Es el módulo del día a día.</p>
+<h3>Tipos de transacción</h3>
+<ul>
+<li><strong>Venta</strong>: sale stock de una ubicación. Precio = lo que paga el cliente.</li>
+<li><strong>Compra</strong> (Maestro y Admin): entra stock a una ubicación. Precio = costo unitario al proveedor.</li>
+<li><strong>Traslado</strong>: mueve stock entre dos ubicaciones del club. No es ingreso ni egreso.</li>
+</ul>
+<h3>Lista de transacciones</h3>
+<p>Tabla con filtros por:</p>
+<ul>
+<li><strong>Tipo</strong> (todas / ventas / compras / traslados — recepción no ve compras).</li>
+<li><strong>Fecha desde / hasta</strong>.</li>
+<li><strong>Categoría</strong> (multi).</li>
+<li><strong>Producto</strong> (multi).</li>
+<li>Botón <strong>Limpiar filtros</strong>.</li>
+</ul>
+<p>Cada fila: fecha y hora exactas, tipo, <strong>quién registró</strong>, ítems, total, notas, botones de acciones (visibles según permisos). 10 transacciones por página.</p>
+<h3>Registrar una venta</h3>
+<ol>
+<li>Click <strong>&quot;+ Nueva transacción&quot;</strong>.</li>
+<li>Botón <strong>Venta</strong> seleccionado por defecto.</li>
+<li>Buscador de productos (con autoenfoque).</li>
+<li>Click en el producto → se agrega como línea.</li>
+<li>Por cada línea ajusta:<ul>
+<li><strong>Ubicación de origen</strong> (al lado del nombre se ve cuánto hay disponible).</li>
+<li><strong>Cantidad</strong>.</li>
+<li><strong>Precio venta</strong>: se autocompleta con el precio Detal, puedes modificarlo si aplica un descuento o un precio especial (ej. Equipo Prime).</li>
+</ul>
+</li>
+<li>Repite para más productos. <strong>Puedes agregar el mismo producto dos veces si vendes desde ubicaciones distintas</strong> (ej. 3 cervezas de Nevera + 2 de Vitrina).</li>
+<li>Agrega <strong>Notas</strong> (mesa, cliente, factura, etc.).</li>
+<li>Click <strong>Registrar venta</strong>.</li>
+</ol>
+<p><strong>Validación automática:</strong> si no hay suficiente stock en la ubicación elegida, el sistema avisa en rojo y no deja registrar.</p>
+<blockquote>
+<p>El costo del producto al momento de la venta se guarda automáticamente en la transacción (no te lo pide la UI). Esto permite que los reportes de margen sean exactos aunque después cambie el costo en el catálogo.</p>
+</blockquote>
+<h3>Registrar una compra</h3>
+<p>Igual flujo, eligiendo el botón <strong>&quot;Compra / Ingreso&quot;</strong>. Aparece un solo campo <strong>&quot;Costo unitario&quot;</strong> (lo que pagaste al proveedor) y la ubicación es de <strong>destino</strong>.</p>
+<h3>Registrar un traslado</h3>
+<p>Eliges <strong>&quot;Traslado&quot;</strong>, agregas el producto, y para cada línea seleccionas <strong>dos ubicaciones</strong>: origen y destino. El campo <strong>&quot;Costo unitario&quot;</strong> se prellena con el costo actual del producto y es editable (sirve solo de referencia para conocer el valor del stock que se mueve). Validaciones: origen ≠ destino, stock suficiente en origen.</p>
+<h3>Editar precios de una transacción ya guardada</h3>
+<p>Al editar una transacción, el <strong>Precio venta</strong> (o <strong>Costo unitario</strong> en compras y traslados) aparece <strong>con el valor que tenía cuando se guardó la transacción</strong> (no con el valor actual del catálogo). Si lo modificas, se reemplaza; si no lo tocas, queda igual.</p>
+<p>En ventas, el costo de adquisición no se muestra en la UI pero queda guardado como snapshot histórico del momento de la venta.</p>
+<h3>Editar y eliminar</h3>
+<ul>
+<li>Click <strong>Editar</strong> → abre el diálogo con los datos cargados.</li>
+<li>Cambia lo que necesites y guarda.</li>
+<li>Si la nueva versión falla por algún motivo, el sistema <strong>automáticamente restaura la transacción original</strong> sin que pierdas datos.</li>
+<li>Click <strong>Eliminar</strong> → confirmación → el stock se revierte automáticamente y queda registro del ajuste de reversa en cada producto.</li>
+</ul>
+<h3>Limitaciones al registrar, editar o eliminar transacciones</h3>
+<p>El sistema tiene reglas que <strong>protegen la integridad del inventario</strong>. Son intencionales — si te topas con un aviso, no es un error sino una protección:</p>
+<ol>
+<li><strong>No puedes vender ni trasladar más de lo que hay en stock.</strong> Si intentas sacar más unidades de las disponibles en la ubicación de origen, el sistema lo bloquea con un aviso.</li>
+<li><strong>En un traslado, origen y destino deben ser distintos.</strong></li>
+<li><strong>Los servicios (y productos no inventariables) no manejan stock.</strong> Solo admiten ventas, no compras ni traslados.</li>
+<li><strong>No puedes eliminar ni cambiar la cantidad de una transacción si eso dejaría el stock en negativo.</strong> Caso típico: una compra antigua cuyas unidades <strong>ya se vendieron o trasladaron</strong>. El sistema no puede &quot;devolver&quot; un stock que ya no existe, así que bloquea la operación con un mensaje que lo explica.<ul>
+<li>💡 <strong>Sí puedes</strong> editar el <strong>precio, el costo, la fecha o las notas</strong> de esa misma transacción sin problema, porque eso no toca el stock.</li>
+<li>Si necesitas corregir la cantidad de una compra antigua, primero registra una compra que reponga el faltante.</li>
+</ul>
+</li>
+<li><strong>En un ajuste de inventario, la cantidad nueva no puede ser negativa</strong> (el stock mínimo posible es 0).</li>
+<li><strong>Permisos por rol</strong> (ver tabla en la sección 2):<ul>
+<li><strong>Recepción</strong> solo puede editar o eliminar <strong>sus propias</strong> ventas/traslados <strong>del día actual</strong>.</li>
+<li><strong>Admin</strong> puede editar/eliminar cualquier transacción <strong>excepto</strong> las creadas por un Maestro.</li>
+<li><strong>Maestro</strong> puede editar/eliminar todo.</li>
+</ul>
+</li>
+</ol>
+<hr>
+<h2>8. Carga masiva CSV</h2>
+<p>Útil para cargar varias transacciones de un golpe (ej. el resumen de ventas del fin de semana).</p>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro y Admin (todas). Recepción solo ventas y traslados (no compras).</p>
+</blockquote>
+<h3>Flujo</h3>
+<ol>
+<li>Entra a <strong>Transacciones → &quot;⬆ Carga masiva CSV&quot;</strong>.</li>
+<li>Descarga la plantilla CSV. <strong>La plantilla viene pre-llenada</strong> con una fila por cada producto activo del catálogo y por cada tipo de transacción permitido para tu rol:<ul>
+<li><strong>Recepción</strong>: una fila de <strong>venta</strong> + una de <strong>traslado</strong> por cada producto inventariable (los servicios solo traen fila de venta).</li>
+<li><strong>Admin/Maestro</strong>: además añade una fila de <strong>compra</strong> por cada producto inventariable.</li>
+</ul>
+</li>
+<li>Abre el archivo en Excel. Cada fila tiene el <strong>nombre del producto</strong> visible para que lo identifiques fácil (no necesitas saberte los códigos). <strong>Solo escribe la cantidad</strong> en los productos que se movieron; las filas que dejes en 0 se ignoran al importar (no son error).</li>
+<li>Si lo necesitas también puedes ajustar fecha, ubicación, valor o notas.</li>
+<li>Arrastra el archivo de vuelta al sistema o selecciónalo.</li>
+</ol>
+<blockquote>
+<p>La plantilla descargada trae <strong>solo los encabezados y las filas de productos</strong> (sin instrucciones dentro del archivo). Estas instrucciones de llenado están aquí en la web y en la propia pantalla de carga masiva.</p>
+</blockquote>
+<h3>Columnas</h3>
+<table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>cantidad</code></td>
+<td><strong>Lo único que debes llenar.</strong> Entero positivo. <strong>0 o vacío = fila ignorada</strong>.</td>
+</tr>
+<tr>
+<td><code>valor_unitario</code></td>
+<td>Ya viene pre-llenado. En venta = precio al cliente; en compra/traslado = costo unitario. Edítalo solo si fue distinto.</td>
+</tr>
+<tr>
+<td><code>nombre_producto</code></td>
+<td>Solo referencia visual para identificar el producto. <strong>No se usa</strong> para guardar (el mapeo es por código). No hace falta tocarla.</td>
+</tr>
+<tr>
+<td><code>codigo_producto</code></td>
+<td>El código (SKU) con el que el sistema identifica el producto. No lo cambies.</td>
+</tr>
+<tr>
+<td><code>tipo</code></td>
+<td><code>venta</code>, <code>compra</code> o <code>traslado</code> (ya viene puesto en cada fila).</td>
+</tr>
+<tr>
+<td><code>fecha</code></td>
+<td>Viene con la fecha de hoy. Acepta <code>DD/MM/AAAA</code>, <code>DD-MM-AAAA</code> o <code>AAAA-MM-DD</code>. Opcional con hora: <code>DD/MM/AAAA HH:MM</code>.</td>
+</tr>
+<tr>
+<td><code>ubicacion</code></td>
+<td>Origen para venta/traslado, destino para compra.</td>
+</tr>
+<tr>
+<td><code>ubicacion_destino</code></td>
+<td><strong>Solo para traslados</strong>: a dónde llega el stock.</td>
+</tr>
+<tr>
+<td><code>notas</code></td>
+<td>Opcional: cliente, mesa, factura, etc.</td>
+</tr>
+<tr>
+<td><code>ticket</code></td>
+<td>Opcional: agrupa varias filas en una sola transacción.</td>
+</tr>
+</tbody></table>
+<h3>Preview con validación</h3>
+<ul>
+<li><strong>Filas verdes</strong>: válidas, listas para importar.</li>
+<li><strong>Filas rojas</strong>: con errores específicos (código no existe, stock insuficiente, ubicación errada, etc.).</li>
+<li><strong>Filas ignoradas</strong>: las que dejaste con cantidad 0 (no se cuentan ni como válidas ni como error).</li>
+</ul>
+<p><strong>Importación parcial:</strong> ahora aunque haya filas con error, se importan las válidas y se reportan las inválidas en el resumen. Ya no hace falta corregir el CSV para importar el resto.</p>
+<p>Cuando confirmas, las transacciones aparecen marcadas con un badge <strong>CSV</strong> en la lista.</p>
+<hr>
+<h2>9. Ubicaciones</h2>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro y Admin.</p>
+</blockquote>
+<p>Lugares físicos donde se guarda el inventario.</p>
+<p><strong>Ubicaciones precargadas:</strong> Bodega Principal, Nevera Barra, Nevera Cajero, Barra Cajero, Vitrina, Oficina, Otro.</p>
+<p><strong>Crear / editar / eliminar:</strong></p>
+<ul>
+<li><strong>+ Nueva ubicación</strong>: nombre (único), tipo (bodega/nevera/barra/etc.), descripción, <strong>orden</strong> (número que define en qué posición aparece en los dropdowns), estado.</li>
+<li><strong>Eliminar</strong>: si tiene stock o transacciones, se marca como inactiva.</li>
+</ul>
+<blockquote>
+<p><strong>Tip:</strong> el campo &quot;Orden&quot; se usa para acomodar el dropdown de ubicaciones cuando registras una venta. Las que más se usan deberían tener orden bajo (1, 2, 3...).</p>
+</blockquote>
+<h3>Ver el contenido de una ubicación</h3>
+<p>Click en el nombre de cualquier ubicación (o en su botón <strong>&quot;Ver&quot;</strong>) para abrir su ficha. Ahí encontrás:</p>
+<ul>
+<li>3 KPIs: productos distintos con stock, unidades totales y valor estimado al costo actual.</li>
+<li>Tabla con los productos que el sistema cree que hay en esa ubicación en este momento, ordenados por cantidad descendente. Click en el nombre del producto te lleva a su ficha (donde puedes hacer un ajuste si el conteo físico no cuadra).</li>
+</ul>
+<hr>
+<h2>10. Categorías</h2>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro.</p>
+</blockquote>
+<p>Grupos de productos/servicios.</p>
+<p><strong>16 categorías precargadas</strong> desde el catálogo de Alegra (Bebidas con alcohol, Cafetería, Implementos para pádel, Clases y paquetes Prime Padel, etc.).</p>
+<p>CRUD igual a ubicaciones. Soft-delete si la categoría tiene productos asociados.</p>
+<hr>
+<h2>11. Tarifas</h2>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro.</p>
+</blockquote>
+<p>Permite que un mismo producto tenga <strong>precios distintos según el canal o destinatario</strong>. Cada tarifa puede tener un <strong>descuento predeterminado</strong> que se aplica automáticamente sobre el precio Detal.</p>
+<h3>¿Qué son?</h3>
+<p>Imagina la siguiente tabla:</p>
+<table>
+<thead>
+<tr>
+<th>Producto</th>
+<th align="center">Detal (público)</th>
+<th align="center">Staff Prime (−20%)</th>
+<th align="center">Profesor Kevin (precio fijo)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Botella agua</td>
+<td align="center">$4.000</td>
+<td align="center">$3.200 <em>(auto)</em></td>
+<td align="center">$4.000</td>
+</tr>
+<tr>
+<td>Clase 1h</td>
+<td align="center">$80.000</td>
+<td align="center">$64.000 <em>(auto)</em></td>
+<td align="center">$70.000 <em>(manual)</em></td>
+</tr>
+</tbody></table>
+<p>Cada columna es una <strong>tarifa</strong>. En cada producto se puede o bien dejar que el precio se calcule automáticamente según el descuento de la tarifa, o configurar un precio manual que anule el cálculo.</p>
+<p><strong>Tarifas precargadas:</strong></p>
+<ul>
+<li><strong>Detal</strong> (default — la que se usa por defecto en cada venta).</li>
+<li>Equipo Prime / Staff Prime.</li>
+<li>Kevin García, Bryan Perafán (profesores).</li>
+<li>Alterno 1 al 8 (reservados para nuevos canales).</li>
+</ul>
+<h3>Cómo gestionar</h3>
+<ul>
+<li><strong>Crear</strong>: + Nueva tarifa → nombre + código interno (ej. <code>STAFF_PRIME</code>) + descuento % + orden + estado.</li>
+<li><strong>Editar</strong>: cambiar nombre, código, descuento %, orden o desactivar. Si cambias el descuento %, todos los productos sin precio manual se ajustan automáticamente.</li>
+<li><strong>Eliminar</strong>: si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico). <strong>Detal no se puede borrar</strong>.</li>
+</ul>
+<h3>Cómo se usa</h3>
+<ol>
+<li><strong>Maestro</strong>: en la ficha del producto → sección &quot;Precios por tarifa&quot; → ves el precio efectivo (manual o automático) por cada tarifa. Si quieres anular el cálculo automático, escribes un valor en el campo.</li>
+<li><strong>Cajero</strong>: cuando registra una venta, el precio se autocompleta con Detal. Si está vendiendo a un Staff, modifica manualmente el precio según corresponda.</li>
+</ol>
+<blockquote>
+<p>Si no manejas precios diferenciados, ignora esta función — todo se vende a precio Detal por defecto.</p>
+</blockquote>
+<hr>
+<h2>12. Dashboard</h2>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro.</p>
+</blockquote>
+<p>La pantalla de inteligencia del negocio. <strong>Tres pestañas:</strong></p>
+<h3>KPIs siempre visibles (arriba)</h3>
+<p>Productos activos, ubicaciones, stock total, valor del inventario, alertas, variación vs mes anterior.</p>
+<h3>Pestaña &quot;Ventas y consumo&quot;</h3>
+<ul>
+<li><strong>Filtros</strong>: categoría (multi), Mes (atajo a un mes específico), Fecha desde, Fecha hasta. El filtro Mes y el rango de fechas son excluyentes — al usar uno se limpia el otro.</li>
+<li><strong>Ventas última semana</strong> (monto + número de transacciones por día, últimos 7 días — solo transacciones reales del sistema).</li>
+<li><strong>Consumo por mes</strong> (gráfica de barras, monto).</li>
+<li><strong>Top productos</strong> (paginado, ordenable por monto o cantidad).</li>
+<li><strong>Consumo por categoría</strong> (torta, con leyenda colapsable).</li>
+<li><strong>Ventas por día de la semana</strong> (cuando hay transacciones reales).</li>
+<li><strong>Top 5 productos por día</strong> (gráfica apilada).</li>
+<li><strong>Tabla paginada con TODAS las cantidades vendidas</strong>.</li>
+<li><strong>Utilidades brutas: costos vs ingresos</strong> (gráfica top 10 con KPIs de margen + tabla completa). Para responder &quot;¿qué tan rentable es cada producto?&quot;. Solo cuenta ventas reales del sistema (no el histórico de Alegra).</li>
+</ul>
+<p>Cada gráfica trae una descripción corta debajo del título para que sepas qué te está mostrando.</p>
+<h3>Pestaña &quot;Inventario&quot;</h3>
+<ul>
+<li><strong>Stock por ubicación</strong>: gráfica + tarjetas con cantidad y valor en costo de cada ubicación.</li>
+<li><strong>Productos por categoría</strong>: cuántos SKUs tiene cada categoría.</li>
+<li><strong>Días estimados de stock</strong> (predictivo): cuántos días faltan para que se acabe cada producto según la velocidad de venta histórica. Sugerencias 🔴 comprar ya, 🟡 programar compra, 🟢 OK. Usa todo el histórico disponible para tener un promedio estable.</li>
+</ul>
+<h3>Pestaña &quot;Alertas&quot;</h3>
+<ul>
+<li>Tabla paginada de productos con stock bajo o agotado.</li>
+<li>Cada fila: código, nombre, categoría, estado, stock total, mínimo, <strong>chips por ubicación</strong> (rojo si esa ubicación está en 0, amarillo si tiene ≤2). Si hay muchas ubicaciones, &quot;+N más&quot; expande/colapsa.</li>
+<li>Click en el nombre del producto → ficha del producto.</li>
+</ul>
+<hr>
+<h2>13. Usuarios</h2>
+<blockquote>
+<p>👤 <strong>Acceso:</strong> Maestro.</p>
+</blockquote>
+<p>Gestiona las cuentas del personal del club.</p>
+<p><strong>Tabla:</strong> usuario, nombre, rol, estado, fecha de creación, último ingreso.</p>
+<h3>Crear usuario</h3>
+<ol>
+<li><ul>
+<li>Nuevo usuario.</li>
+</ul>
+</li>
+<li>Llena: nombre completo (descripción), usuario (3-30 caracteres, sin mayúsculas ni espacios), rol, contraseña (opcional).</li>
+<li>Guardar → modal con las credenciales. <strong>Cópialas y compártelas</strong> — no se vuelven a mostrar.</li>
+</ol>
+<h3>Otras acciones</h3>
+<ul>
+<li><strong>Editar</strong>: cambiar nombre, usuario o contraseña.</li>
+<li><strong>Reset pw</strong>: genera una nueva contraseña aleatoria.</li>
+<li><strong>Cambiar rol</strong>: con el dropdown directo en la fila.</li>
+<li><strong>Desactivar / Reactivar</strong>: el usuario desactivado no puede ingresar pero su historial se conserva.</li>
+</ul>
+<blockquote>
+<p>No puedes desactivarte a ti mismo ni cambiarte el rol.</p>
+</blockquote>
+<hr>
+<h2>14. Preguntas frecuentes</h2>
+<p><strong>¿Qué pasa con los servicios (clases, alquileres, torneos)?</strong><br>No tienen stock. Se venden con su precio y suman al total, pero no afectan el inventario.</p>
+<p><strong>¿Y los productos &quot;no inventariables&quot;?</strong><br>Productos físicos que decides no trackear (ej. promos genéricas). Se comportan como servicios.</p>
+<p><strong>¿Por qué algunos productos aparecen como inactivos?</strong><br>Corresponden a ítems del histórico (clases con profesores que ya no están, paquetes descontinuados). Se preservan para que las estadísticas sigan siendo coherentes.</p>
+<p><strong>Si me equivoco al registrar una venta, ¿se puede corregir?</strong><br>Sí. Click en <strong>Editar</strong> o <strong>Eliminar</strong> desde la lista de Transacciones (con permisos). El sistema revierte automáticamente el stock al eliminar.</p>
+<p><strong>¿Cómo hago el conteo físico del fin de mes?</strong><br>Producto por producto: ficha → &quot;Ajuste de inventario&quot; → ubicación → cantidad real → motivo &quot;Conteo físico&quot; → guarda.</p>
+<p><strong>¿Cómo cambio el precio de un producto?</strong><br>Maestro: ficha del producto → Editar → sección &quot;Precios por lista&quot;.</p>
+<p><strong>¿Qué pasa si cambio el precio de un producto?</strong><br>Las transacciones ya registradas guardan su precio original (no se afectan). El histórico mensual estimado sí se recalcula. Las nuevas ventas usan el precio actualizado por defecto.</p>
+<p><strong>¿Qué hago si un producto nuevo llega al club?</strong><br>Inventario → &quot;+ Nuevo ítem&quot; → llena los datos. Luego en su ficha → &quot;Ajuste de inventario&quot; → motivo &quot;Ingreso inicial&quot; → registras cuántos llegaron y a qué ubicación.</p>
+<p><strong>¿Qué pasa si olvido mi contraseña?</strong><br>Pídele al Maestro que entre a <code>/usuarios</code>, busque tu fila, y le dé click a <strong>Reset pw</strong>.</p>
+<p><strong>¿Cómo veo qué hizo cada empleado?</strong><br>La lista de Transacciones muestra el usuario que registró cada operación con fecha y hora exacta. Filtra por fechas para ver lo de un día puntual.</p>
+<p><strong>¿Puedo ver el sistema en el celular?</strong><br>Sí. El nav se compacta a un menú hamburguesa (☰) y las tablas tienen scroll horizontal.</p>
+<hr>
+<p><em>Última actualización: 25 de abril de 2026.</em></p>
+
+
+  <div class="doc-footer">
+    <span>Prime Padel — ERP de Inventario</span>
+    <span>Documento generado el 27 de mayo de 2026</span>
+  </div>
+</body>
+</html>

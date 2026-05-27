@@ -24,6 +24,9 @@ tsconfig.tsbuildinfo
 # HTMLs y PDFs generados desde markdown (artefactos)
 docs/*.html
 docs/*.pdf
+# Excepción: los manuales ahora se mantienen como HTML (fuente de verdad), se trackean.
+!docs/manual-usuario.html
+!docs/manual-maestro.html
 
 # CSVs de prueba locales
 CSV prueba/

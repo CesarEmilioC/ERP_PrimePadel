@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual del Maestro — ERP Prime Padel — Prime Padel</title>
+  <style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --text: #e5e5e5;
+    --muted: #a3a3a3;
+    --orange: #FF8C42;
+    --yellow: #F5C518;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.7;
+    padding: 48px 64px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  h1 { font-size: 2rem; color: #fff; margin-bottom: 8px; border-bottom: 2px solid var(--orange); padding-bottom: 10px; margin-top: 32px; }
+  h2 { font-size: 1.25rem; color: var(--yellow); margin-top: 32px; margin-bottom: 10px; }
+  h3 { font-size: 1rem; color: var(--orange); margin-top: 20px; margin-bottom: 6px; }
+
+  p { margin-bottom: 12px; color: var(--text); }
+
+  a { color: var(--orange); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  ul, ol { padding-left: 20px; margin-bottom: 12px; }
+  li { margin-bottom: 4px; }
+  li ul, li ol { margin-top: 4px; margin-bottom: 4px; }
+
+  strong { color: #fff; font-weight: 600; }
+  em { color: var(--muted); font-style: italic; }
+
+  code {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Consolas', 'Fira Code', monospace;
+    font-size: 12px;
+    color: var(--orange);
+  }
+
+  pre {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
+
+  blockquote {
+    border-left: 3px solid var(--orange);
+    padding: 8px 16px;
+    margin: 16px 0;
+    background: var(--surface);
+    border-radius: 0 6px 6px 0;
+    color: var(--muted);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  th {
+    background: var(--surface);
+    color: var(--yellow);
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    font-weight: 600;
+  }
+  td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:hover td { background: #1a1a1a; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+  /* Header con logo y datos del documento */
+  .doc-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .doc-logo { color: #fff; font-size: 1.4rem; font-weight: 700; }
+  .doc-logo span { color: var(--orange); }
+  .doc-meta { text-align: right; font-size: 12px; color: var(--muted); line-height: 1.8; }
+
+  /* Pie de página */
+  .doc-footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* Print */
+  @media print {
+    body { background: #fff; color: #111; padding: 24px 32px; }
+    :root {
+      --bg: #fff;
+      --surface: #f5f5f5;
+      --border: #ddd;
+      --text: #111;
+      --muted: #555;
+      --orange: #cc6d1e;
+      --yellow: #b8930a;
+    }
+    a { color: var(--orange); }
+    h1 { color: #111; }
+    h2 { color: #333; }
+    h3 { color: #555; }
+    strong { color: #111; }
+    pre, code { border: 1px solid #ddd; }
+    @page { margin: 20mm 18mm; }
+  }
+</style>
+</head>
+<body>
+  <div class="doc-header">
+    <div class="doc-logo">Prime <span>Padel</span></div>
+    <div class="doc-meta">
+      Cesar Emilio Castaño Marin<br>
+      cesarxemiliox@gmail.com · +52 812 346 6691<br>
+      Cali, Colombia<br>
+      27 de mayo de 2026
+    </div>
+  </div>
+
+  <h1>Manual del Maestro — ERP Prime Padel</h1>
+<p><strong>Extensión del manual de usuario</strong> para el rol <strong>Maestro</strong>, que tiene acceso total al sistema y es responsable de la configuración inicial, gestión del personal, mantenimiento del catálogo y administración general.</p>
+<blockquote>
+<p>Este documento asume que ya leíste el <a href="./manual-usuario.html">Manual de usuario</a> general. Aquí solo cubrimos lo que es <strong>exclusivo del rol Maestro</strong> o requiere más contexto.</p>
+</blockquote>
+<hr>
+<h2>Índice</h2>
+<ol>
+<li><a href="#1-responsabilidades-del-maestro">Responsabilidades del Maestro</a></li>
+<li><a href="#2-cuentas-iniciales-del-sistema">Cuentas iniciales del sistema</a></li>
+<li><a href="#3-gesti%C3%B3n-de-usuarios">Gestión de usuarios</a></li>
+<li><a href="#4-configuraci%C3%B3n-del-cat%C3%A1logo">Configuración del catálogo</a></li>
+<li><a href="#5-gesti%C3%B3n-de-listas-de-precios">Gestión de listas de precios</a></li>
+<li><a href="#6-carga-del-inventario-inicial-f%C3%ADsico">Carga del inventario inicial físico</a></li>
+<li><a href="#7-interpretaci%C3%B3n-del-dashboard">Interpretación del Dashboard</a></li>
+<li><a href="#8-manejo-de-errores-y-correcciones">Manejo de errores y correcciones</a></li>
+<li><a href="#9-mantenimiento-y-rutinas-mensuales">Mantenimiento y rutinas mensuales</a></li>
+<li><a href="#10-soporte-t%C3%A9cnico-y-respaldos">Soporte técnico y respaldos</a></li>
+</ol>
+<hr>
+<h2>1. Responsabilidades del Maestro</h2>
+<p>El Maestro es el <strong>administrador supremo</strong> del sistema. Sus responsabilidades:</p>
+<ul>
+<li><strong>Configuración inicial</strong>: cargar el inventario físico, definir precios y costos, gestionar categorías y ubicaciones.</li>
+<li><strong>Gestión del personal</strong>: crear cuentas, asignar roles, restablecer contraseñas, desactivar empleados que dejan el club.</li>
+<li><strong>Análisis financiero</strong>: revisar el Dashboard, identificar tendencias, anticipar compras necesarias.</li>
+<li><strong>Auditoría y correcciones</strong>: revisar transacciones de otros usuarios, corregir errores en cualquier fecha, gestionar mermas y conteos.</li>
+<li><strong>Mantenimiento del catálogo</strong>: agregar productos nuevos, ajustar precios cuando cambien, desactivar productos descontinuados.</li>
+</ul>
+<p><strong>Hay 2 cuentas Maestro creadas:</strong></p>
+<ul>
+<li><code>CesarC</code> (cuenta del proveedor del software, para soporte técnico)</li>
+<li><code>maestro</code> (cuenta principal del club, para los dueños/gerencia)</li>
+</ul>
+<p>Ambas tienen los mismos permisos. Recomendado: usar <code>maestro</code> para operación diaria del club, y dejar <code>CesarC</code> para cuando necesites soporte del proveedor.</p>
+<hr>
+<h2>2. Cuentas iniciales del sistema</h2>
+<p>Al entregarse el sistema, ya están creadas las siguientes cuentas:</p>
+<table>
+<thead>
+<tr>
+<th>Usuario</th>
+<th>Contraseña inicial</th>
+<th>Rol</th>
+<th>Para quién</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>CesarC</code></td>
+<td><code>CesarPP2026</code></td>
+<td>Maestro</td>
+<td>Proveedor del software (soporte)</td>
+</tr>
+<tr>
+<td><code>maestro</code></td>
+<td><code>MaestroPP2026</code></td>
+<td>Maestro</td>
+<td>Dueños / gerencia del club</td>
+</tr>
+<tr>
+<td><code>admin</code></td>
+<td><code>AdminPP2026</code></td>
+<td>Admin</td>
+<td>Administrador general del club</td>
+</tr>
+<tr>
+<td><code>recepcion1</code></td>
+<td><code>RecepcionPP1</code></td>
+<td>Recepción</td>
+<td>Personal de caja, turno mañana</td>
+</tr>
+<tr>
+<td><code>recepcion2</code></td>
+<td><code>RecepcionPP2</code></td>
+<td>Recepción</td>
+<td>Personal de caja, turno tarde</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>CRÍTICO:</strong> En el primer ingreso, <strong>cambia las contraseñas iniciales</strong> desde la pantalla <strong>Usuarios → Editar → Nueva contraseña</strong>. Las cuentas que entregamos tienen contraseñas predecibles solo para facilitar el primer acceso.</p>
+</blockquote>
+<hr>
+<h2>3. Gestión de usuarios</h2>
+<h3>Convenciones de nombres</h3>
+<ul>
+<li><strong>Usuarios</strong>: solo minúsculas, sin espacios, sin acentos. Ejemplos válidos: <code>juan</code>, <code>recepcion3</code>, <code>bryan_p</code>, <code>maria.lopez</code>.</li>
+<li><strong>Nombre completo</strong>: lo que aparecerá en la lista de transacciones. Pon descripciones claras: &quot;Juan Pérez (caja noche)&quot; o &quot;Recepción turno tarde&quot;.</li>
+<li><strong>Roles</strong>: usa el más restrictivo posible. La mayoría del personal debería ser Recepción. Solo deberían ser Admin las personas que gestionan el inventario y compras al proveedor.</li>
+</ul>
+<h3>Cuándo usar cada acción</h3>
+<ul>
+<li><strong>Crear</strong>: cuando llega personal nuevo. Pídele al usuario una contraseña que recuerde, o usa la generada automáticamente y compártela.</li>
+<li><strong>Editar</strong>: cambiar nombre o usuario (rara vez), o ayudar al usuario a cambiar su contraseña.</li>
+<li><strong>Reset pw</strong>: cuando el usuario olvidó su contraseña. Genera una aleatoria, se la compartes por WhatsApp.</li>
+<li><strong>Cambiar rol</strong>: si alguien fue ascendido (recepción → admin) o cambió de turno.</li>
+<li><strong>Desactivar</strong>: cuando un empleado deja el club. <strong>No lo elimines</strong> — su historial de transacciones se conserva. Si vuelve, simplemente lo reactivas.</li>
+</ul>
+<h3>¿Qué pasa si elimino un usuario?</h3>
+<p><strong>No hay opción de eliminar — solo desactivar</strong>. Esto es a propósito: si eliminamos al usuario también se eliminarían todas sus transacciones de la auditoría, y eso rompería el histórico contable. Desactivar conserva los datos pero impide el ingreso.</p>
+<hr>
+<h2>4. Configuración del catálogo</h2>
+<h3>Categorías</h3>
+<blockquote>
+<p>16 categorías precargadas desde el catálogo de Alegra.</p>
+</blockquote>
+<p><strong>Cuándo crear una categoría nueva</strong>: si tienes una nueva línea de productos que no encaja en las existentes (ej. &quot;Suplementos deportivos&quot;).</p>
+<p><strong>Cuándo desactivar</strong>: si dejas de manejar un tipo de producto. Los productos asociados se quedan con la categoría inactiva — no afecta su funcionamiento, solo no aparece como opción para nuevos productos.</p>
+<blockquote>
+<p><strong>Tip:</strong> evita crear demasiadas categorías. Una categoría útil debería tener al menos 3-5 productos. Si tienes muchas categorías de 1 producto, considera consolidarlas.</p>
+</blockquote>
+<h3>Ubicaciones</h3>
+<blockquote>
+<p>7 ubicaciones precargadas: Bodega Principal, Nevera Barra, Nevera Cajero, Barra Cajero, Vitrina, Oficina, Otro.</p>
+</blockquote>
+<p><strong>Cuándo crear una ubicación nueva</strong>: si abres un nuevo punto físico de almacenamiento (ej. &quot;Nevera Vóley&quot; si abren el área de vóley playa).</p>
+<p><strong>Orden recomendado</strong> (campo &quot;Orden en listas&quot;):</p>
+<ul>
+<li>1: Barra Cajero (la más usada para ventas)</li>
+<li>2: Nevera Barra</li>
+<li>3: Vitrina</li>
+<li>4: Nevera Cajero</li>
+<li>10: Bodega Principal</li>
+<li>20: Oficina</li>
+<li>30: Otro</li>
+</ul>
+<p>Esto define el orden en que aparecen los selectores de ubicación cuando recepción hace una venta.</p>
+<h3>Productos</h3>
+<p><strong>Datos críticos a configurar para cada producto al inicio:</strong></p>
+<ol>
+<li><strong>Costo unitario</strong>: lo que pagas al proveedor por unidad. Necesario para que el Dashboard calcule el &quot;valor del inventario en costo&quot; y los reportes financieros funcionen.</li>
+<li><strong>Precio Detal</strong>: lo que cobras al público. El sistema lo autocompleta en cada venta.</li>
+<li><strong>Stock mínimo (alerta)</strong>: el sistema generará alerta cuando el stock total caiga a este valor. Calibralo según la velocidad de venta:<ul>
+<li>Productos de alta rotación (cervezas, agua): 12-24 unidades de mínimo.</li>
+<li>Productos de baja rotación (bolas de pádel especiales): 2-3 unidades.</li>
+</ul>
+</li>
+<li><strong>Impuesto</strong>: por defecto &quot;Sin impuesto&quot;. Solo cambia si el producto requiere mostrar IVA específico para algún reporte interno.</li>
+</ol>
+<blockquote>
+<p>Los Admin pueden crear/editar productos pero <strong>no pueden tocar el costo ni los precios</strong>. Esos quedan reservados para ti como Maestro porque son sensibles para finanzas.</p>
+</blockquote>
+<hr>
+<h2>5. Gestión de tarifas</h2>
+<h3>Concepto</h3>
+<p>Una <strong>tarifa</strong> (antes llamada &quot;lista de precios&quot;) es un canal de venta con su propio precio. Permite cobrar el mismo producto distinto según a quién se le venda.</p>
+<p>Cada tarifa tiene un <strong>descuento predeterminado en %</strong> que se aplica al precio Detal. Esto significa:</p>
+<pre><code>precio efectivo de un producto en la tarifa X = precio Detal × (1 − descuento%)
+</code></pre>
+<p>Si un producto tiene un precio fijo configurado para esa tarifa, ese precio <strong>anula</strong> el cálculo automático.</p>
+<h3>Tarifas precargadas</h3>
+<table>
+<thead>
+<tr>
+<th>Código</th>
+<th>Nombre</th>
+<th>Descuento sugerido</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>DETAL</code></td>
+<td>Detal (default)</td>
+<td>0% (base)</td>
+<td>Precio público al cliente final</td>
+</tr>
+<tr>
+<td><code>EQUIPO_PRIME</code></td>
+<td>Equipo Prime</td>
+<td>~15-20%</td>
+<td>Miembros del equipo del club</td>
+</tr>
+<tr>
+<td><code>KEVIN_GARCIA</code></td>
+<td>Kevin García</td>
+<td>(configurable)</td>
+<td>Profesor externo</td>
+</tr>
+<tr>
+<td><code>BRYAN_PERAFAN</code></td>
+<td>Bryan Perafán</td>
+<td>(configurable)</td>
+<td>Profesor externo</td>
+</tr>
+<tr>
+<td><code>ALTERNO_1</code> ... <code>ALTERNO_8</code></td>
+<td>Alternos 1-8</td>
+<td>—</td>
+<td>Reservados para nuevos canales</td>
+</tr>
+</tbody></table>
+<h3>Caso de uso completo — Crear una tarifa para el staff de Prime Padel</h3>
+<p>Imaginemos que quieres darle a tu staff (cajeros, profesores internos, etc.) un 20% de descuento sobre todos los productos.</p>
+<p><strong>Paso 1 — Crear la tarifa</strong></p>
+<ol>
+<li>Entra al menú <strong>Tarifas</strong> (arriba en el nav).</li>
+<li>Click en <strong>&quot;+ Nueva tarifa&quot;</strong>.</li>
+<li>Llena el formulario:<ul>
+<li><strong>Nombre:</strong> <code>Staff Prime Padel</code></li>
+<li><strong>Código (interno):</strong> <code>STAFF_PRIME</code> (mayúsculas y guion bajo)</li>
+<li><strong>Descuento predeterminado:</strong> <code>20</code> (significa 20%)</li>
+<li><strong>Orden:</strong> déjalo como viene (sirve para ordenar la lista)</li>
+<li><strong>Estado:</strong> Activa</li>
+</ul>
+</li>
+<li>Click <strong>Crear</strong>.</li>
+</ol>
+<p>A partir de ese momento, <strong>todos los productos del catálogo automáticamente tienen un precio Staff Prime Padel = Detal × 0.8</strong> (sin necesidad de configurar cada producto uno por uno).</p>
+<p><strong>Paso 2 — (Opcional) Ajustar el precio puntual de algún producto</strong></p>
+<p>Si para un producto específico el descuento debe ser distinto (ej. una cerveza importada no entra en la promoción), vas a la ficha del producto:</p>
+<ol>
+<li><strong>Inventario</strong> → busca el producto → click en su nombre.</li>
+<li>Click <strong>Editar</strong>.</li>
+<li>Baja hasta la sección <strong>Precios por tarifa</strong>.</li>
+<li>En la fila de &quot;Staff Prime Padel&quot; verás:<ul>
+<li>El placeholder del campo dice <code>auto: $8.000</code> (por ejemplo) — eso es el cálculo automático.</li>
+<li>Si escribes un valor manualmente (ej. $9.000), ese precio anula el automático.</li>
+<li>Para volver al cálculo automático, vacía el campo (déjalo en 0 o en blanco).</li>
+</ul>
+</li>
+</ol>
+<p><strong>Paso 3 — (Opcional) Cambiar el descuento global más adelante</strong></p>
+<p>Si en el futuro decides que el descuento Staff sube al 25%, ve a <strong>Tarifas → Editar → cambia &quot;Descuento predeterminado&quot; a 25 → Guardar</strong>. Automáticamente todos los productos que usan el cálculo automático ajustan su precio. Los productos con precio manual NO se ven afectados (siguen con su precio fijo).</p>
+<h3>Cómo ver los precios efectivos de un producto</h3>
+<p>Entra a la ficha del producto (<strong>Inventario → click en el nombre</strong>). En la sección <strong>&quot;Precios por tarifa&quot;</strong> aparece una tabla con:</p>
+<ul>
+<li><strong>Tarifa</strong>: nombre + descuento si tiene.</li>
+<li><strong>Precio</strong>: el precio efectivo (manual o calculado).</li>
+<li><strong>Origen</strong>: <code>Precio base</code> (Detal), <code>Manual</code> (override puntual) o <code>Auto (Detal − X%)</code> (cálculo automático).</li>
+</ul>
+<h3>Otros casos comunes</h3>
+<p><strong>Llega un profesor nuevo (ej. &quot;Pedro López&quot;)</strong></p>
+<ul>
+<li>Vas a <code>/tarifas</code> → editas una tarifa Alterno: nombre → <code>Pedro López</code>, código → <code>PEDRO_LOPEZ</code>, descuento → el que aplique.</li>
+<li>Si Pedro tiene un precio especial para clases puntuales, vas a la ficha de esos productos y configura el precio manual.</li>
+</ul>
+<p><strong>Un profesor ya no trabaja en el club</strong></p>
+<ul>
+<li>Vas a <code>/tarifas</code> → &quot;Editar&quot; en su tarifa → cambias estado a <strong>Inactiva</strong>.</li>
+<li>O click &quot;Eliminar&quot;: si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico de ventas).</li>
+</ul>
+<h3>¿Cuándo NO usar tarifas distintas?</h3>
+<p>Si todos tus productos se venden a un solo precio público, ignora esta función. Solo usa Detal con descuento 0% y olvídate de las demás. Es opcional para casos especiales.</p>
+<hr>
+<h2>6. Carga del inventario inicial físico</h2>
+<p>Esta es la <strong>acción más importante para que el sistema empiece a operar correctamente</strong>. Antes de hacerla, todos los productos están en stock 0.</p>
+<h3>Pasos</h3>
+<ol>
+<li><strong>Hace conteo físico</strong> del club. Recomendado: dos personas, una cuenta y la otra anota.</li>
+<li><strong>Llena una hoja</strong> con: producto, ubicación, cantidad real.</li>
+<li><strong>Inicia sesión como Maestro o Admin</strong>.</li>
+<li>Producto por producto:<ul>
+<li>Entra a la ficha del producto en <code>/inventario</code>.</li>
+<li>Click <strong>&quot;Ajuste de inventario&quot;</strong>.</li>
+<li>Selecciona la <strong>ubicación</strong> donde está el producto.</li>
+<li>Escribe la <strong>cantidad real</strong>.</li>
+<li>Motivo: <strong>&quot;Ingreso inicial (carga del inventario)&quot;</strong>.</li>
+<li>Notas: &quot;Conteo del [fecha], realizado por [nombres]&quot;.</li>
+<li>Guarda.</li>
+</ul>
+</li>
+<li>Si el producto está en varias ubicaciones, repite el paso 4 por cada una.</li>
+</ol>
+<h3>Atajo: muchos productos a la vez</h3>
+<p>Si tienes 100+ productos, hacer un ajuste por cada uno es lento. <strong>Alternativa</strong>:</p>
+<ul>
+<li>Pídele al proveedor del software que haga la carga vía CSV directo en BD (más rápido).</li>
+<li>O usa la carga masiva CSV de transacciones para registrar una &quot;compra&quot; inicial por cada ubicación. Esto carga el stock y queda como histórico.</li>
+</ul>
+<h3>Después de la carga</h3>
+<ul>
+<li>Verifica en <code>/dashboard → pestaña Inventario</code> que el stock por ubicación se ve correctamente.</li>
+<li>Verifica que la pestaña Alertas muestre solo los productos que realmente están bajos.</li>
+<li>A partir de aquí, el día a día es: registrar ventas/compras/traslados → el stock se mantiene actualizado automáticamente.</li>
+</ul>
+<hr>
+<h2>7. Interpretación del Dashboard</h2>
+<h3>KPIs (siempre arriba)</h3>
+<ul>
+<li><strong>Productos activos</strong>: cuántos productos hay en el catálogo. Útil para saber el tamaño del catálogo.</li>
+<li><strong>Stock total</strong>: suma de unidades físicas. Si es muy alto y no se vende, hay sobre-inventario.</li>
+<li><strong>Valor inventario (costo)</strong>: cuánto plata tienes &quot;guardada&quot; en stock. Si los productos no rotan, este valor es plata muerta.</li>
+<li><strong>Alertas de stock</strong>: productos en o bajo el mínimo. Atender lo antes posible para no quedarte sin venta.</li>
+<li><strong>Variación vs mes anterior</strong>: si es +%, las ventas están subiendo; si es -%, bajaron.</li>
+</ul>
+<h3>Pestaña &quot;Ventas y consumo&quot;</h3>
+<p><strong>Filtra siempre por el rango de meses que te interese.</strong> Por defecto muestra todo el histórico.</p>
+<ul>
+<li><strong>Ventas última semana</strong>: monto y número de transacciones por día (últimos 7 días). Cifras reales del sistema, no histórico de Alegra.</li>
+<li><strong>Consumo por mes</strong>: visión general de tendencia.</li>
+<li><strong>Top productos</strong>: cuáles son los productos estrella. Útil para saber qué stockear más y qué productos podrías negociar mejor con el proveedor.</li>
+<li><strong>Por categoría</strong>: qué tipo de productos genera más ingresos.</li>
+<li><strong>Días de la semana</strong>: identifica los días de mayor venta. Sirve para programar personal y compras.</li>
+<li><strong>Utilidades brutas (costos vs ingresos)</strong>: gráfica top 10 con barras verde (ingresos) y rojo (costos) por producto/servicio. KPIs arriba con totales y margen %. Filtro Todos / Solo productos / Solo servicios. Útil para responder &quot;¿cuáles son mis productos más rentables?&quot; — el margen % te dice cuánto ganas por cada peso de venta. Solo cuenta ventas reales del sistema (no el histórico de Alegra, porque ahí no hay costo por venta).</li>
+</ul>
+<h3>Pestaña &quot;Inventario&quot;</h3>
+<ul>
+<li><strong>Stock por ubicación</strong>: detecta si hay desbalance (ej. mucho stock en Bodega y poco en Vitrina → mover).</li>
+<li><strong>SKUs por categoría</strong>: salud del catálogo.</li>
+<li><strong>Días estimados de stock</strong>: 🔴 productos a punto de agotarse. Calculado dividiendo el stock actual entre la velocidad promedio de venta de <strong>todo el histórico</strong> (independiente de los filtros del tab Ventas, para tener un promedio estable). <strong>Revisa esta sección semanalmente</strong> para evitar quiebres de stock.</li>
+</ul>
+<blockquote>
+<p>Cada gráfica del dashboard ahora trae una descripción corta debajo del título para que sepas qué te está mostrando.</p>
+</blockquote>
+<h3>Pestaña &quot;Alertas&quot;</h3>
+<p><strong>Tu lista de TO-DO de compras.</strong> Productos a comprar, ordenados por urgencia. Click en cada uno te lleva a la ficha donde puedes registrar la compra cuando llegue.</p>
+<hr>
+<h2>8. Manejo de errores y correcciones</h2>
+<h3>Una transacción se registró mal</h3>
+<ul>
+<li>Si fue <strong>hoy y por ti o un admin</strong>: ese mismo usuario puede editarla o eliminarla.</li>
+<li>Si fue <strong>otro día o por otro Maestro</strong>: solo el Maestro puede modificarla. Ten cuidado: editar transacciones viejas afecta la historia.</li>
+</ul>
+<h3>Inventario no cuadra con la realidad</h3>
+<p>Hacer un <strong>conteo físico</strong> y luego un <strong>ajuste de inventario</strong> con motivo &quot;Conteo físico&quot;. Esto NO altera transacciones pasadas, solo deja registro de la diferencia.</p>
+<h3>Producto se venció o rompió</h3>
+<p>Ajuste de inventario con motivo <strong>&quot;Merma&quot;</strong> o <strong>&quot;Rotura&quot;</strong> y notas explicativas. Queda en el historial del producto para auditoría.</p>
+<h3>Cambié el precio y los reportes viejos cambiaron</h3>
+<p>Es normal: los <strong>totales estimados</strong> del histórico de Alegra (los marcados con asterisco *) se calculan con el precio actual. Las transacciones reales registradas en el sistema mantienen su precio original.</p>
+<h3>Costo guardado en cada venta (margen automático)</h3>
+<p>Al registrar una <strong>venta</strong> solo se te pide el <strong>Precio venta</strong> (lo que paga el cliente). El sistema <strong>guarda automáticamente</strong> el costo del producto en ese momento (tomándolo del catálogo) sin que tengas que pensarlo. Esto sirve para:</p>
+<ul>
+<li>Calcular <strong>margen real</strong> en el reporte CSV &quot;Resumen por ítem&quot;.</li>
+<li>Preservar el <strong>costo histórico</strong> de cada venta aunque después cambies el costo del producto en el catálogo.</li>
+</ul>
+<p>En <strong>compra</strong> y <strong>traslado</strong> solo se pide un campo (Costo unitario), igual que antes.</p>
+<blockquote>
+<p>Si necesitas corregir el costo guardado en una venta pasada (por ejemplo, porque sabes que en esa venta puntual el costo fue distinto), pídeselo al proveedor del software — se puede ajustar directamente en la BD.</p>
+</blockquote>
+<h3>Un usuario está bloqueado / no puede entrar</h3>
+<p>Pasos:</p>
+<ol>
+<li>Verifica que su cuenta esté activa en <code>/usuarios</code>.</li>
+<li>Si no recuerda contraseña, &quot;Reset pw&quot; para generar una nueva.</li>
+<li>Si el problema persiste, verifica que esté escribiendo el usuario correcto (sin acentos).</li>
+</ol>
+<h3>Limitaciones del sistema (reglas de protección)</h3>
+<p>Estas reglas son <strong>intencionales</strong>: protegen que el inventario nunca quede en un estado imposible. Cuando aparezca uno de estos avisos, no es un bug.</p>
+<p><strong>En transacciones:</strong></p>
+<ol>
+<li><strong>No se puede vender ni trasladar más stock del que hay</strong> en la ubicación de origen. El sistema valida el stock disponible antes de guardar.</li>
+<li><strong>En un traslado, origen y destino deben ser distintos.</strong></li>
+<li><strong>Los servicios y productos no inventariables no manejan stock</strong>: solo admiten ventas, no compras ni traslados.</li>
+<li><strong>No se puede eliminar, ni cambiar la cantidad/ubicación de, una transacción si eso dejaría el stock de alguna ubicación en negativo.</strong> El caso más común: una <strong>compra antigua</strong> cuyas unidades ya se vendieron o trasladaron. El sistema no puede &quot;deshacer&quot; un ingreso de stock que ya fue consumido.<ul>
+<li><strong>Sí se permite</strong> editar el precio, costo, fecha o notas de esa transacción (eso no toca el stock — se hace con una edición &quot;ligera&quot; que actualiza solo esos campos).</li>
+<li>Para corregir la cantidad de una compra antigua, primero registra una compra que reponga el faltante, o usa un ajuste de inventario.</li>
+</ul>
+</li>
+<li><strong>Un ajuste de inventario no puede dejar la cantidad en negativo</strong> (mínimo 0).</li>
+</ol>
+<p><strong>En el catálogo (borrado seguro):</strong><br>6. <strong>Eliminar un producto con histórico</strong> de ventas o transacciones lo <strong>desactiva</strong> (no lo borra), para no perder la historia. Lo mismo aplica a <strong>categorías, ubicaciones y tarifas</strong> con datos asociados: se desactivan en vez de borrarse.<br>7. <strong>No se puede eliminar la tarifa Detal</strong> (es la base de cálculo de las demás).<br>8. <strong>Solo el Maestro puede editar costos y precios.</strong> El Admin gestiona inventario y operación pero no toca finanzas.</p>
+<p><strong>En permisos por rol:</strong><br>9. <strong>Recepción</strong> solo edita/elimina <strong>sus propias</strong> ventas y traslados <strong>del día actual</strong>, y no registra compras.<br>10. <strong>Admin</strong> edita/elimina cualquier transacción <strong>excepto</strong> las creadas por un Maestro.</p>
+<p><strong>En carga masiva CSV:</strong><br>11. Las filas con un <strong>código de producto inexistente</strong> (o datos inválidos) se marcan en rojo y <strong>se omiten</strong>; las filas válidas sí se importan (importación parcial).<br>12. <strong>Recepción</strong> no puede importar filas de compra por CSV.</p>
+<hr>
+<h2>9. Mantenimiento y rutinas mensuales</h2>
+<h3>Exportar transacciones a CSV</h3>
+<p>Para auditoría externa, contabilidad o análisis en Excel hay un botón <strong>&quot;⬇ Descargar CSV&quot;</strong> en la pantalla de <strong>Transacciones</strong> (visible solo para Admin y Maestro).</p>
+<p>Pasos:</p>
+<ol>
+<li>Entra a <strong>Transacciones</strong> → click en <strong>&quot;⬇ Descargar CSV&quot;</strong>.</li>
+<li>Elige el <strong>tipo de reporte</strong>:<ul>
+<li><strong>Resumen por ítem</strong> — agregado por producto. Máximo 2 filas por producto: una con el resumen de <strong>consumo</strong> (lo que se vendió) y otra con el resumen de <strong>compras</strong> (lo que entró por proveedor). Cada fila trae cantidad total, valor total, <strong>costo total</strong>, <strong>margen total y porcentual</strong> (solo en filas de venta), precio promedio, número de transacciones y rango de fechas. <strong>Los traslados se excluyen</strong> porque son movimientos internos, no consumo ni compra real.</li>
+<li><strong>Historial por transacción</strong> — una fila por <strong>cada</strong> transacción (incluyendo traslados) con resumen de productos y total. Útil para listado completo de operaciones.</li>
+</ul>
+</li>
+<li>Elige <strong>fecha inicial</strong> y <strong>fecha final</strong> (zona horaria Bogotá). Por defecto trae el mes actual.</li>
+<li>Click en <strong>Descargar</strong>. Se baja un archivo <code>.csv</code> que se abre directamente en Excel/Numbers/Google Sheets.</li>
+</ol>
+<blockquote>
+<p><strong>Límite:</strong> rango máximo de 2 años por descarga. Si necesitas más, hazlo en varias descargas.</p>
+<p><strong>Tip:</strong> el CSV trae acentos y ñ correctamente (UTF-8 con BOM). Si abres el archivo y ves caracteres raros, asegúrate de abrirlo con doble click — no copies/pegues el contenido.</p>
+</blockquote>
+<h3>Diariamente</h3>
+<ul>
+<li>Revisa la pestaña Alertas del Dashboard.</li>
+<li>Confirma que todas las ventas del día se registraron (preguntale a recepción si tienen anotaciones pendientes para subir por CSV).</li>
+</ul>
+<h3>Semanalmente</h3>
+<ul>
+<li>Revisa &quot;Días estimados de stock&quot; para programar compras.</li>
+<li>Revisa el reporte de transacciones por usuario (filtra por usuario y fecha) para detectar si algún empleado tiene comportamiento anómalo.</li>
+</ul>
+<h3>Mensualmente</h3>
+<ul>
+<li><strong>Cierre del mes</strong>:<ul>
+<li>Hacer conteo físico de los productos de mayor valor (bebidas alcohólicas, bolas de pádel).</li>
+<li>Hacer ajustes de inventario donde haya diferencia con motivo &quot;Conteo físico&quot;.</li>
+<li>Revisar el Dashboard del mes vs el anterior.</li>
+<li>Identificar productos sin movimiento (stock alto, ventas 0) para considerar descontinuarlos.</li>
+</ul>
+</li>
+</ul>
+<h3>Trimestralmente</h3>
+<ul>
+<li>Cambiar las contraseñas del personal por seguridad.</li>
+<li>Revisar la lista de usuarios y desactivar los que ya no trabajen.</li>
+<li>Revisar y actualizar costos unitarios si los proveedores cambiaron precios.</li>
+</ul>
+<hr>
+<h2>10. Soporte técnico y respaldos</h2>
+<h3>Respaldos</h3>
+<p>La base de datos está en <strong>Supabase</strong>, que hace respaldos automáticos diarios incluidos en el plan gratuito. No requieres hacer backup manual.</p>
+<h3>Hosting</h3>
+<p>El sistema está alojado en <strong>Vercel</strong> (gratis para el volumen actual). Si en el futuro el club crece mucho y se necesita un plan pago, el costo es de USD 20/mes.</p>
+<h3>Soporte</h3>
+<ul>
+<li><strong>Soporte correctivo</strong>: incluido por <strong>15 días calendario</strong> después de la entrega. Cualquier bug del desarrollo se corrige sin costo.</li>
+<li><strong>Después del periodo gratuito</strong>: los ajustes y nuevas funcionalidades se cotizan aparte.</li>
+<li><strong>Contacto del proveedor</strong>: César Emilio Castaño Marin — <a href="mailto:cesarxemiliox@gmail.com">cesarxemiliox@gmail.com</a> — +52 812 346 6691.</li>
+</ul>
+<h3>Cómo reportar un problema</h3>
+<ol>
+<li>Captura la pantalla con el error.</li>
+<li>Anota qué intentabas hacer (paso a paso).</li>
+<li>Indica desde qué cuenta lo intentaste.</li>
+<li>Envía el reporte al proveedor por WhatsApp o email.</li>
+</ol>
+<hr>
+<p><em>Última actualización: 25 de abril de 2026.</em></p>
+
+
+  <div class="doc-footer">
+    <span>Prime Padel — ERP de Inventario</span>
+    <span>Documento generado el 27 de mayo de 2026</span>
+  </div>
+</body>
+</html>
