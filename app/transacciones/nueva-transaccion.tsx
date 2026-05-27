@@ -194,10 +194,14 @@ export function NuevaTransaccion({
         ubicacion_origen_id: tipo === "compra" ? null : i.ubicacion_origen_id,
         ubicacion_destino_id: tipo === "venta" ? null : i.ubicacion_destino_id,
         cantidad: Number(i.cantidad),
-        precio_unitario: Number(i.precio_unitario),
-        // Venta: costo es snapshot del catálogo al crear, o el valor guardado
-        // al editar (no se pide en la UI). Compra/Traslado: costo = precio.
-        costo_unitario: tipo === "venta" ? Number(i.costo_unitario) : Number(i.precio_unitario),
+        // Traslado: solo mueve cantidades, sin valor monetario (precio y costo = 0).
+        // Venta: precio = lo que paga el cliente; costo = snapshot del catálogo.
+        // Compra: costo = precio (lo que se pagó al proveedor).
+        precio_unitario: tipo === "traslado" ? 0 : Number(i.precio_unitario),
+        costo_unitario:
+          tipo === "traslado" ? 0
+          : tipo === "venta" ? Number(i.costo_unitario)
+          : Number(i.precio_unitario),
         lista_precio_id: i.lista_precio_id,
       })),
     };
@@ -313,12 +317,10 @@ export function NuevaTransaccion({
             {/* Header */}
             {tipo === "traslado" ? (
               <div className="grid grid-cols-12 gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs uppercase tracking-wide text-muted-foreground">
-                <div className="col-span-2">Producto</div>
-                <div className="col-span-2">Origen</div>
-                <div className="col-span-2">Destino</div>
+                <div className="col-span-3">Producto</div>
+                <div className="col-span-3">Origen</div>
+                <div className="col-span-3">Destino</div>
                 <div className="col-span-2 text-right">Cant.</div>
-                <div className="col-span-2 text-right">Costo unitario</div>
-                <div className="col-span-1 text-right">Subtotal</div>
                 <div className="col-span-1"></div>
               </div>
             ) : (
@@ -347,14 +349,14 @@ export function NuevaTransaccion({
 
               return (
                 <div key={i} className="grid grid-cols-12 items-center gap-2 border-b border-border px-3 py-2 text-sm">
-                  <div className={isTraslado ? "col-span-2 truncate" : "col-span-3 truncate"}>
+                  <div className="col-span-3 truncate">
                     <span className="block text-white">{p?.nombre}</span>
                     {p?.codigo ? <span className="block text-xs text-muted-foreground">{p.codigo}</span> : null}
                   </div>
 
                   {isTraslado ? (
                     <>
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <Select value={ubiSelOrig ?? ""} onChange={(e) => updateItem(i, { ubicacion_origen_id: e.target.value })}>
                           {ubicaciones.map((u) => (
                             <option key={u.id} value={u.id}>
@@ -363,7 +365,7 @@ export function NuevaTransaccion({
                           ))}
                         </Select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-3">
                         <Select value={ubiSelDest ?? ""} onChange={(e) => updateItem(i, { ubicacion_destino_id: e.target.value })}>
                           {ubicaciones.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
                         </Select>
@@ -389,20 +391,25 @@ export function NuevaTransaccion({
                     <NumericInput value={it.cantidad} onChange={(n) => updateItem(i, { cantidad: n })} min={1} />
                   </div>
 
-                  <div className="col-span-2">
-                    {/*
-                      Venta: solo se edita precio_unitario; costo_unitario queda como snapshot
-                        (al crear viene del catálogo; al editar se preserva del valor en BD).
-                      Compra/Traslado: el costo coincide con el precio, se actualizan juntos.
-                    */}
-                    <NumericInput
-                      value={it.precio_unitario}
-                      onChange={(n) => updateItem(i, isVenta ? { precio_unitario: n } : { precio_unitario: n, costo_unitario: n })}
-                      min={0}
-                    />
-                  </div>
+                  {/* Traslado: solo mueve cantidades, no pide costo ni muestra subtotal. */}
+                  {isTraslado ? null : (
+                    <>
+                      <div className="col-span-2">
+                        {/*
+                          Venta: solo se edita precio_unitario; costo_unitario queda como snapshot
+                            (al crear viene del catálogo; al editar se preserva del valor en BD).
+                          Compra: el costo coincide con el precio, se actualizan juntos.
+                        */}
+                        <NumericInput
+                          value={it.precio_unitario}
+                          onChange={(n) => updateItem(i, isVenta ? { precio_unitario: n } : { precio_unitario: n, costo_unitario: n })}
+                          min={0}
+                        />
+                      </div>
+                      <div className="col-span-1 text-right font-mono text-white">{formatCOP(it.cantidad * it.precio_unitario)}</div>
+                    </>
+                  )}
 
-                  <div className="col-span-1 text-right font-mono text-white">{formatCOP(it.cantidad * it.precio_unitario)}</div>
                   <div className="col-span-1 text-right">
                     <button onClick={() => removeItem(i)} className="text-xs text-muted-foreground hover:text-red-400">✕</button>
                   </div>
@@ -425,7 +432,7 @@ export function NuevaTransaccion({
               <p className="text-sm text-muted-foreground">{items.length} línea(s)</p>
               <p className="text-base font-bold text-white sm:text-lg">
                 {tipo === "traslado"
-                  ? `Costo movido (ref.): ${formatCOP(total)}`
+                  ? `${formatInt(items.reduce((a, it) => a + (it.cantidad || 0), 0))} unidad(es) a mover`
                   : `Total ${tipo === "compra" ? "compra (costo)" : "venta"}: ${formatCOP(total)}`}
               </p>
             </div>

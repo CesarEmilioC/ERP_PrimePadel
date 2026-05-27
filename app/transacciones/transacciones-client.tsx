@@ -191,6 +191,10 @@ export function TransaccionesClient({
               <span className="text-xs text-muted-foreground">
                 {" "}— {it.ubicacion_origen_nombre} → {it.ubicacion_destino_nombre}
               </span>
+            ) : t.tipo === "venta" && it.ubicacion_origen_nombre ? (
+              <span className="text-xs text-muted-foreground">{" "}— desde {it.ubicacion_origen_nombre}</span>
+            ) : t.tipo === "compra" && it.ubicacion_destino_nombre ? (
+              <span className="text-xs text-muted-foreground">{" "}— a {it.ubicacion_destino_nombre}</span>
             ) : null}
           </div>
         ))}
