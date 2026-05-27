@@ -125,21 +125,65 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
 
           <Card>
             <p className="text-sm font-medium text-white">2. Llena el archivo</p>
-            <div className="mt-3 space-y-2 text-xs text-muted-foreground">
-              <p><strong className="text-white">Columnas:</strong> fecha, tipo, codigo_producto, ubicacion, ubicacion_destino, cantidad, precio_unitario, notas, ticket.</p>
-              <p><strong className="text-white">cantidad = 0</strong> → la fila se ignora (no toques las que no aplican).</p>
-              <p><strong className="text-white">fecha</strong> acepta <code className="text-brand-orange">DD/MM/AAAA</code>, <code className="text-brand-orange">DD-MM-AAAA</code> o <code className="text-brand-orange">AAAA-MM-DD</code>. Opcionalmente con hora: <code className="text-brand-orange">DD/MM/AAAA HH:MM</code>.</p>
-              <p><strong className="text-white">tipo</strong> = <code className="text-brand-orange">venta</code>, <code className="text-brand-orange">compra</code> o <code className="text-brand-orange">traslado</code>.</p>
-              <p><strong className="text-white">codigo_producto</strong> debe existir en el catálogo (revisa en <Link href="/inventario" className="text-brand-orange hover:underline">Inventario</Link>).</p>
-              <p><strong className="text-white">ubicacion</strong>: origen para venta/traslado, destino para compra.</p>
-              <p><strong className="text-white">ubicacion_destino</strong>: solo se usa en filas de tipo traslado.</p>
-              <p><strong className="text-white">ticket</strong> (opcional) agrupa varias filas en una sola transacción.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              La plantilla ya trae una fila por cada producto. <strong className="text-white">Lo único que tienes que hacer es escribir la cantidad</strong> en los productos que se movieron. Las demás déjalas en 0.
+            </p>
+
+            <div className="mt-3 overflow-x-auto rounded border border-border">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left">Columna</th>
+                    <th className="px-2 py-1.5 text-left">¿Qué va aquí?</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-brand-orange">cantidad</td>
+                    <td className="px-2 py-1.5 text-muted-foreground"><strong className="text-white">Lo único que debes llenar.</strong> Entero positivo. Si la dejas en 0 (o vacía), esa fila se ignora.</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-brand-orange">valor_unitario</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">Ya viene pre-llenado. En <strong className="text-white">venta</strong> = precio al cliente; en <strong className="text-white">compra/traslado</strong> = costo unitario. Edítalo solo si fue distinto.</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">nombre_producto</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">Solo referencia para que identifiques el producto. <strong className="text-white">No se usa</strong> para guardar (el mapeo es por código). No hace falta tocarla.</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">codigo_producto</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">El código (SKU) con el que el sistema identifica el producto. <strong className="text-white">No lo cambies.</strong></td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">tipo</td>
+                    <td className="px-2 py-1.5 text-muted-foreground"><code className="text-brand-orange">venta</code>, <code className="text-brand-orange">compra</code> o <code className="text-brand-orange">traslado</code> (ya viene puesto en cada fila).</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">fecha</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">Viene con la fecha de hoy. Acepta <code className="text-brand-orange">DD/MM/AAAA</code> o <code className="text-brand-orange">AAAA-MM-DD</code> (opcional con hora <code className="text-brand-orange">HH:MM</code>).</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">ubicacion</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">De dónde sale (venta/traslado) o a dónde llega (compra). Viene con una sugerencia; cámbiala si aplica.</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">ubicacion_destino</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">Solo en filas de <strong className="text-white">traslado</strong>: a dónde llega el stock.</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-muted-foreground">notas / ticket</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">Opcionales. <code className="text-brand-orange">ticket</code> agrupa varias filas en una sola transacción (ej. una venta con varios productos al mismo cliente).</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div className="mt-3 rounded border border-brand-orange/40 bg-brand-orange/5 p-3 text-xs">
-              <p className="font-semibold text-brand-orange">⚠ Importante — sobre <code>precio_unitario</code>:</p>
-              <ul className="mt-1 space-y-1 text-muted-foreground">
-                <li>• En filas con <code className="text-brand-orange">tipo = venta</code> → escribe el <strong className="text-white">precio de venta al cliente</strong>.</li>
-                <li>• En filas con <code className="text-brand-orange">tipo = compra</code> o <code className="text-brand-orange">traslado</code> → escribe el <strong className="text-white">costo unitario</strong> del producto.</li>
+
+            <div className="mt-3 rounded border border-brand-orange/40 bg-brand-orange/5 p-3 text-xs text-muted-foreground">
+              <p className="font-semibold text-brand-orange">Recomendaciones</p>
+              <ul className="mt-1 space-y-1">
+                <li>• No borres ni reordenes los encabezados (la primera fila).</li>
+                <li>• Puedes borrar las filas que no usarás, o simplemente dejarlas en cantidad 0.</li>
+                <li>• Si agregas un producto con un código que no existe en el catálogo, esa fila se marcará con error — pero las filas válidas se importan igual.</li>
               </ul>
             </div>
           </Card>

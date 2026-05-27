@@ -254,21 +254,24 @@ En ventas, el costo de adquisición no se muestra en la UI pero queda guardado c
 2. Descarga la plantilla CSV. **La plantilla viene pre-llenada** con una fila por cada producto activo del catálogo y por cada tipo de transacción permitido para tu rol:
     - **Recepción**: una fila de **venta** + una de **traslado** por cada producto inventariable (los servicios solo traen fila de venta).
     - **Admin/Maestro**: además añade una fila de **compra** por cada producto inventariable.
-3. Abre el archivo en Excel y **solo modifica las cantidades** de los productos que se movieron. Las filas que dejas con cantidad 0 se ignoran al importar (no son error).
-4. Si lo necesitas también puedes ajustar fecha, ubicación, precio o notas.
+3. Abre el archivo en Excel. Cada fila tiene el **nombre del producto** visible para que lo identifiques fácil (no necesitas saberte los códigos). **Solo escribe la cantidad** en los productos que se movieron; las filas que dejes en 0 se ignoran al importar (no son error).
+4. Si lo necesitas también puedes ajustar fecha, ubicación, valor o notas.
 5. Arrastra el archivo de vuelta al sistema o selecciónalo.
+
+> La plantilla descargada trae **solo los encabezados y las filas de productos** (sin instrucciones dentro del archivo). Estas instrucciones de llenado están aquí en la web y en la propia pantalla de carga masiva.
 
 ### Columnas
 
 | Columna | Para qué |
 |---------|----------|
-| `fecha` | `DD/MM/AAAA`, `DD-MM-AAAA` o `AAAA-MM-DD`. Opcional con hora: `DD/MM/AAAA HH:MM`. |
-| `tipo` | `venta`, `compra` o `traslado`. |
-| `codigo_producto` | El SKU exacto del producto (ya viene pre-llenado en la plantilla). |
+| `cantidad` | **Lo único que debes llenar.** Entero positivo. **0 o vacío = fila ignorada**. |
+| `valor_unitario` | Ya viene pre-llenado. En venta = precio al cliente; en compra/traslado = costo unitario. Edítalo solo si fue distinto. |
+| `nombre_producto` | Solo referencia visual para identificar el producto. **No se usa** para guardar (el mapeo es por código). No hace falta tocarla. |
+| `codigo_producto` | El código (SKU) con el que el sistema identifica el producto. No lo cambies. |
+| `tipo` | `venta`, `compra` o `traslado` (ya viene puesto en cada fila). |
+| `fecha` | Viene con la fecha de hoy. Acepta `DD/MM/AAAA`, `DD-MM-AAAA` o `AAAA-MM-DD`. Opcional con hora: `DD/MM/AAAA HH:MM`. |
 | `ubicacion` | Origen para venta/traslado, destino para compra. |
 | `ubicacion_destino` | **Solo para traslados**: a dónde llega el stock. |
-| `cantidad` | Entero positivo. **0 o vacío = fila ignorada**. |
-| `precio_unitario` | En venta: precio al cliente. En compra/traslado: costo unitario. |
 | `notas` | Opcional: cliente, mesa, factura, etc. |
 | `ticket` | Opcional: agrupa varias filas en una sola transacción. |
 

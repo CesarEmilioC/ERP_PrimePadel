@@ -215,21 +215,23 @@ La **plantilla** se genera dinámicamente en el server con una fila por (product
 
 El usuario solo modifica las **cantidades** de los productos que efectivamente se movieron. Las filas con cantidad 0 (las que dejó sin tocar) se ignoran al importar.
 
-Formato:
+Formato (la plantilla descargada trae solo encabezados + filas de productos, sin comentarios):
 
 ```csv
-fecha,tipo,codigo_producto,ubicacion,ubicacion_destino,cantidad,precio_unitario,notas,ticket
-20/04/2026,venta,CERV-001,Barra,,2,8000,,T-001
-20/04/2026,compra,CERV-001,Bodega Principal,,24,5500,Pedido proveedor,
-20/04/2026,traslado,CERV-001,Bodega Principal,Nevera Barra,12,5500,,
+fecha,tipo,codigo_producto,nombre_producto,ubicacion,ubicacion_destino,cantidad,valor_unitario,notas,ticket
+20/04/2026,venta,CERV-001,Cerveza Corona,Barra,,2,8000,,T-001
+20/04/2026,compra,CERV-001,Cerveza Corona,Bodega Principal,,24,5500,Pedido proveedor,
+20/04/2026,traslado,CERV-001,Cerveza Corona,Bodega Principal,Nevera Barra,12,5500,,
 ```
 
 - `fecha`: `DD/MM/AAAA` o `AAAA-MM-DD`.
 - `tipo`: `venta`, `compra` o `traslado`.
+- `nombre_producto`: solo referencia visual; el mapeo se hace por `codigo_producto`. Se ignora al importar.
+- `valor_unitario`: en venta = precio al cliente; en compra/traslado = costo unitario. (El parser acepta `precio_unitario` como alias por compatibilidad.)
 - `ubicacion`: origen para venta/traslado, destino para compra.
 - `ubicacion_destino`: solo aplica en traslado.
 - `cantidad = 0` o vacía → fila ignorada.
-- `costo_unitario` se backfillea automáticamente: en compras y traslados coincide con `precio_unitario`; en ventas se usa el costo actual del producto en el catálogo.
+- `costo_unitario` se backfillea automáticamente: en compras y traslados coincide con `valor_unitario`; en ventas se usa el costo actual del producto en el catálogo.
 - **Importación parcial**: si hay filas con error, las filas válidas se importan igual y las inválidas se reportan en el resumen (no bloquean a las buenas).
 
 ## Descarga de transacciones a CSV

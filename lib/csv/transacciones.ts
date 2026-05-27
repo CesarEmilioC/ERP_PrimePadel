@@ -55,10 +55,11 @@ export const CSV_HEADERS = [
   "fecha",
   "tipo",
   "codigo_producto",
+  "nombre_producto",   // solo referencia visual para el operario; el mapeo se hace por codigo_producto
   "ubicacion",
   "ubicacion_destino",
   "cantidad",
-  "precio_unitario",
+  "valor_unitario",    // venta → precio al cliente; compra/traslado → costo unitario
   "notas",
   "ticket",
 ] as const;
@@ -106,32 +107,14 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
   const { venta, bodega, trasladoOrigen, trasladoDestino } = ubicacionesSugeridas(catalogo.ubicaciones);
   const fecha = fechaHoyDDMMAAAA();
 
+  // Solo encabezados + filas de productos (las instrucciones viven en la webapp).
   const lineas: string[] = [];
   lineas.push(CSV_HEADERS.join(","));
-  lineas.push("# ---------------------------------------------------------------------------");
-  lineas.push("# PLANTILLA — TRANSACCIONES MASIVAS (PRIME PADEL ERP)");
-  lineas.push("# ---------------------------------------------------------------------------");
-  lineas.push("# Cómo funciona:");
-  lineas.push("#  - Esta plantilla viene con una fila por cada producto y tipo de transacción.");
-  lineas.push('#  - Modifica solo las CANTIDADES de los productos que efectivamente se movieron.');
-  lineas.push("#  - Las filas que dejes con cantidad = 0 se IGNORAN al importar.");
-  lineas.push("#  - Puedes editar también fecha, ubicación, precio o notas si lo necesitas.");
-  lineas.push("#");
-  lineas.push("# Columnas:");
-  lineas.push("#  fecha:             DD/MM/AAAA o AAAA-MM-DD (con o sin hora HH:MM)");
-  lineas.push("#  tipo:              venta | compra | traslado");
-  lineas.push("#  codigo_producto:   código (SKU) tal como aparece en Inventario");
-  lineas.push("#  ubicacion:         origen para venta/traslado, destino para compra");
-  lineas.push("#  ubicacion_destino: SOLO para traslado (a dónde llega el stock)");
-  lineas.push("#  cantidad:          entero positivo (0 = ignora la fila)");
-  lineas.push("#  precio_unitario:   venta → precio al cliente. compra/traslado → costo unitario.");
-  lineas.push("#  notas (opcional):  texto libre (cliente, mesa, número de factura, etc.)");
-  lineas.push("#  ticket (opcional): código que agrupa varias filas en UNA sola transacción.");
-  lineas.push("# ---------------------------------------------------------------------------");
 
   for (const p of productos) {
     const codigo = p.codigo ?? "";
     if (!codigo) continue; // sin código no se puede referenciar
+    const nombre = p.nombre ?? "";
 
     // Venta: todos los productos activos (servicios incluidos).
     if (venta) {
@@ -139,6 +122,7 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
         fecha,
         "venta",
         codigo,
+        nombre,
         venta.nombre,
         "",
         0,
@@ -156,6 +140,7 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
         fecha,
         "traslado",
         codigo,
+        nombre,
         trasladoOrigen.nombre,
         trasladoDestino.nombre,
         0,
@@ -170,6 +155,7 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
         fecha,
         "compra",
         codigo,
+        nombre,
         bodega.nombre,
         "",
         0,
@@ -269,7 +255,9 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
     const ubiStr = normalize(raw.ubicacion);
     const ubiDestStr = normalize(raw.ubicacion_destino);
     const cantStr = normalize(raw.cantidad);
-    const precioStr = normalize(raw.precio_unitario);
+    // valor_unitario es el nombre nuevo; precio_unitario se acepta por compatibilidad
+    // con plantillas viejas. La columna nombre_producto es solo visual y se ignora.
+    const precioStr = normalize(raw.valor_unitario ?? raw.precio_unitario);
     const notasStr = normalize(raw.notas);
     const ticketStr = normalize(raw.ticket);
 
@@ -322,7 +310,7 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
 
     const precio = Number((precioStr || "0").replace(/[,$ ]/g, ""));
     if (!Number.isFinite(precio) || precio < 0) {
-      errors.push(`Precio inválido ("${precioStr}")`);
+      errors.push(`Valor unitario inválido ("${precioStr}")`);
     }
 
     // Validación de stock para ventas y traslados — acumula las filas previas.
