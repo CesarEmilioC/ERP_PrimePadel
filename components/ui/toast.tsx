@@ -24,9 +24,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <div
             key={t.id}
             className={cn(
-              "pointer-events-auto rounded-md border px-4 py-3 text-sm shadow-lg",
-              t.tone === "success" && "border-green-600/40 bg-green-600/10 text-green-300",
-              t.tone === "error" && "border-red-600/40 bg-red-600/10 text-red-300",
+              "pointer-events-auto rounded-md border px-4 py-3 text-sm shadow-xl",
+              t.tone === "success" && "border-green-600 bg-green-950 text-green-200",
+              t.tone === "error" && "border-red-600 bg-red-950 text-red-200",
               t.tone === "info" && "border-border bg-card text-white",
             )}
           >

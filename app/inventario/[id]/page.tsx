@@ -63,6 +63,12 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
   const cantidadTotalCompras = comprasOrdenadas.reduce((s, r) => s + r.cantidad, 0);
   const costoPromedioCompra = cantidadTotalCompras > 0 ? valorTotalCompras / cantidadTotalCompras : 0;
   const ultimaCompra = comprasOrdenadas.at(-1) ?? null;
+
+  // Ventas (sistema) para "valor total vendido".
+  const ventas = historialTx.filter((t) => t.tipo === "venta" && t.cantidad > 0);
+  const valorTotalVendido = ventas.reduce((s, r) => s + r.subtotal, 0);
+  const cantidadTotalVendida = ventas.reduce((s, r) => s + r.cantidad, 0);
+
   const analisisCostos = {
     numCompras: comprasOrdenadas.length,
     cantidadTotalCompras,
@@ -71,6 +77,9 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
     ultimaCompraFecha: ultimaCompra?.fecha ?? null,
     ultimaCompraCosto: ultimaCompra?.costo_unitario ?? null,
     ultimaCompraCantidad: ultimaCompra?.cantidad ?? null,
+    valorTotalVendido,
+    cantidadTotalVendida,
+    numVentas: ventas.length,
   };
 
   const ubicacionesConStock = (stock ?? [])
@@ -87,18 +96,46 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
     }))
     .sort((a, b) => a.orden - b.orden);
 
-  // Si el histórico no tiene total monetario (xlsx sin columnas de plata), estimar con precio detal.
+  // Histórico mensual = Alegra (importado) + ventas reales registradas en el ERP.
+  // Si el histórico de Alegra no trae total (solo cantidad), se estima con precio detal.
   const precioDetal = preciosOrdenados.find((p) => p.codigo === "DETAL")?.precio ?? 0;
-  const historialEstimado = (historial ?? []).map((h: any) => {
-    const totalReal = Number(h.total);
+  const mensualMap = new Map<string, { anio: number; mes: number; cantidad_vendida: number; total: number; total_estimado: boolean }>();
+
+  for (const h of (historial ?? []) as any[]) {
+    const anio = Number(h.anio);
+    const mes = Number(h.mes);
     const cantidad = Number(h.cantidad_vendida);
-    return {
-      ...h,
+    const totalReal = Number(h.total);
+    mensualMap.set(`${anio}-${mes}`, {
+      anio, mes,
       cantidad_vendida: cantidad,
       total: totalReal > 0 ? totalReal : cantidad * precioDetal,
       total_estimado: totalReal === 0 && cantidad > 0,
-    };
-  });
+    });
+  }
+
+  // Sumar las ventas registradas en el sistema (zona Bogotá), mes a mes.
+  for (const v of ventas) {
+    const dBogota = new Date(new Date(v.fecha).getTime() - 5 * 60 * 60 * 1000);
+    const anio = dBogota.getUTCFullYear();
+    const mes = dBogota.getUTCMonth() + 1;
+    const key = `${anio}-${mes}`;
+    const cur = mensualMap.get(key) ?? { anio, mes, cantidad_vendida: 0, total: 0, total_estimado: false };
+    cur.cantidad_vendida += v.cantidad;
+    cur.total += v.subtotal;
+    mensualMap.set(key, cur);
+  }
+
+  const historialEstimado = [...mensualMap.values()].sort(
+    (a, b) => b.anio * 12 + b.mes - (a.anio * 12 + a.mes),
+  );
+
+  // Historial de ajustes: excluir las reversas automáticas de transacciones
+  // (esas tienen notas que empiezan con "Reversa"). Solo quedan los ajustes
+  // manuales reales (conteo físico, merma, rotura, corrección, ingreso inicial).
+  const ajustesManuales = ((ajustes ?? []) as any[]).filter(
+    (a) => !(typeof a.notas === "string" && a.notas.trim().toLowerCase().startsWith("reversa")),
+  );
 
   return (
     <DetalleClient
@@ -107,7 +144,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       ubicacionesDisponibles={ubicaciones.filter((u) => u.activa).map((u) => ({ id: u.id, nombre: u.nombre, tipo: u.tipo }))}
       precios={preciosOrdenados}
       historialMensual={historialEstimado}
-      ajustes={(ajustes ?? []) as any}
+      ajustes={ajustesManuales as any}
       categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}
       impuestos={impuestos.map((i) => ({ id: i.id, nombre: i.nombre, porcentaje: Number(i.porcentaje) }))}
       listasPrecios={listasPrecios.map((l) => ({ id: l.id, codigo: l.codigo, nombre: l.nombre, es_default: l.es_default, descuento_porcentaje: Number(l.descuento_porcentaje ?? 0) }))}

@@ -47,6 +47,9 @@ export type DetalleProps = {
     ultimaCompraFecha: string | null;
     ultimaCompraCosto: number | null;
     ultimaCompraCantidad: number | null;
+    valorTotalVendido: number;
+    cantidadTotalVendida: number;
+    numVentas: number;
   };
   historialTransacciones: HistoricoTx[];
   isMaestro: boolean;
@@ -117,8 +120,8 @@ export function DetalleClient(props: DetalleProps) {
         </div>
       </div>
 
-      {/* KPIs principales: basados en COMPRAS reales, no en el catálogo. */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* KPIs principales: basados en COMPRAS/VENTAS reales, no en el catálogo. */}
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Stock total</p>
           <p className="mt-1 text-3xl font-bold text-white">{producto.es_inventariable ? formatInt(cantidadTotal) : "—"}</p>
@@ -196,6 +199,25 @@ export function DetalleClient(props: DetalleProps) {
             <>
               <p className="mt-1 text-3xl font-bold text-muted-foreground">—</p>
               <p className="mt-1 text-xs text-muted-foreground">no aplica</p>
+            </>
+          )}
+        </Card>
+
+        <Card>
+          <p className="text-xs uppercase text-muted-foreground">Valor vendido</p>
+          {analisisCostos.numVentas > 0 ? (
+            <>
+              <p className="mt-1 text-3xl font-bold text-green-300">
+                {formatCOP(Math.round(analisisCostos.valorTotalVendido))}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {formatInt(analisisCostos.cantidadTotalVendida)} uds vendidas en el sistema
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-3xl font-bold text-muted-foreground">—</p>
+              <p className="mt-1 text-xs text-muted-foreground">sin ventas registradas</p>
             </>
           )}
         </Card>
@@ -367,15 +389,12 @@ export function DetalleClient(props: DetalleProps) {
             Histórico de ventas (mensual)
             <span className="ml-2 text-sm font-normal text-muted-foreground">({historialMensual.length})</span>
           </h2>
-          {historialMensual.some((h) => h.total_estimado) ? (
-            <p className="mb-2 text-xs text-muted-foreground">
-              Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte original solo traía cantidad. Datos importados desde Alegra (no incluye transacciones registradas en este sistema, que están arriba).
-            </p>
-          ) : (
-            <p className="mb-2 text-xs text-muted-foreground">
-              Agregados mensuales importados desde Alegra. Para el detalle día a día revisa el histórico de transacciones arriba.
-            </p>
-          )}
+          <p className="mb-2 text-xs text-muted-foreground">
+            Combina el histórico importado de Alegra con las ventas registradas en este sistema, mes a mes hasta el mes actual.
+            {historialMensual.some((h) => h.total_estimado) ? (
+              <> Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte de Alegra solo traía cantidad.</>
+            ) : null}
+          </p>
           <Table>
             <THead><TR><TH>Período</TH><TH className="text-right">Cantidad</TH><TH className="text-right">Total</TH></TR></THead>
             <TBody>

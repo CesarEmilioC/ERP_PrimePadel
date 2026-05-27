@@ -27,7 +27,7 @@ export default async function UbicacionDetallePage({ params }: { params: Promise
     .eq("ubicacion_id", id);
 
   const items = ((stockRows ?? []) as any[])
-    .filter((r) => r.productos != null)
+    .filter((r) => r.productos != null && Number(r.cantidad ?? 0) > 0) // solo productos presentes
     .map((r) => {
       const p = r.productos;
       const cantidad = Number(r.cantidad ?? 0);
