@@ -240,6 +240,22 @@ En ventas, el costo de adquisición no se muestra en la UI pero queda guardado c
 - Si la nueva versión falla por algún motivo, el sistema **automáticamente restaura la transacción original** sin que pierdas datos.
 - Click **Eliminar** → confirmación → el stock se revierte automáticamente y queda registro del ajuste de reversa en cada producto.
 
+### Limitaciones al registrar, editar o eliminar transacciones
+
+El sistema tiene reglas que **protegen la integridad del inventario**. Son intencionales — si te topas con un aviso, no es un error sino una protección:
+
+1. **No puedes vender ni trasladar más de lo que hay en stock.** Si intentas sacar más unidades de las disponibles en la ubicación de origen, el sistema lo bloquea con un aviso.
+2. **En un traslado, origen y destino deben ser distintos.**
+3. **Los servicios (y productos no inventariables) no manejan stock.** Solo admiten ventas, no compras ni traslados.
+4. **No puedes eliminar ni cambiar la cantidad de una transacción si eso dejaría el stock en negativo.** Caso típico: una compra antigua cuyas unidades **ya se vendieron o trasladaron**. El sistema no puede "devolver" un stock que ya no existe, así que bloquea la operación con un mensaje que lo explica.
+   - 💡 **Sí puedes** editar el **precio, el costo, la fecha o las notas** de esa misma transacción sin problema, porque eso no toca el stock.
+   - Si necesitas corregir la cantidad de una compra antigua, primero registra una compra que reponga el faltante.
+5. **En un ajuste de inventario, la cantidad nueva no puede ser negativa** (el stock mínimo posible es 0).
+6. **Permisos por rol** (ver tabla en la sección 2):
+   - **Recepción** solo puede editar o eliminar **sus propias** ventas/traslados **del día actual**.
+   - **Admin** puede editar/eliminar cualquier transacción **excepto** las creadas por un Maestro.
+   - **Maestro** puede editar/eliminar todo.
+
 ---
 
 ## 8. Carga masiva CSV

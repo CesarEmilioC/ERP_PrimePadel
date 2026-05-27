@@ -271,3 +271,7 @@ Los cambios de schema viven en archivos numerados/descriptivos en [`supabase/`](
 4. `migration-tarifas-descuento.sql` — añade columna `descuento_porcentaje` a `listas_precios` (por defecto 0). Idempotente.
 
 Para futuras migraciones: crear un nuevo archivo `migration-<descripcion>.sql` en `supabase/`, idempotente (con `IF NOT EXISTS` o `IF EXISTS`), y mantener `schema.sql` actualizado para reflejar el modelo final.
+
+### Limpieza para entrega
+
+- `reset-operacion.sql` — **destructivo**. Borra todas las transacciones, ajustes y stock acumulado durante el desarrollo/pruebas, dejando el sistema en cero pero **conservando el catálogo** (productos, categorías, ubicaciones, tarifas, precios, usuarios). El histórico de Alegra (`ventas_historicas_mensuales`) se conserva por defecto; hay una línea opcional comentada para borrarlo también. Correr una sola vez justo antes de entregar al cliente, idealmente con un respaldo previo.

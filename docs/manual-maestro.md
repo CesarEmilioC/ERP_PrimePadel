@@ -307,6 +307,32 @@ Pasos:
 2. Si no recuerda contraseña, "Reset pw" para generar una nueva.
 3. Si el problema persiste, verifica que esté escribiendo el usuario correcto (sin acentos).
 
+### Limitaciones del sistema (reglas de protección)
+
+Estas reglas son **intencionales**: protegen que el inventario nunca quede en un estado imposible. Cuando aparezca uno de estos avisos, no es un bug.
+
+**En transacciones:**
+1. **No se puede vender ni trasladar más stock del que hay** en la ubicación de origen. El sistema valida el stock disponible antes de guardar.
+2. **En un traslado, origen y destino deben ser distintos.**
+3. **Los servicios y productos no inventariables no manejan stock**: solo admiten ventas, no compras ni traslados.
+4. **No se puede eliminar, ni cambiar la cantidad/ubicación de, una transacción si eso dejaría el stock de alguna ubicación en negativo.** El caso más común: una **compra antigua** cuyas unidades ya se vendieron o trasladaron. El sistema no puede "deshacer" un ingreso de stock que ya fue consumido.
+   - **Sí se permite** editar el precio, costo, fecha o notas de esa transacción (eso no toca el stock — se hace con una edición "ligera" que actualiza solo esos campos).
+   - Para corregir la cantidad de una compra antigua, primero registra una compra que reponga el faltante, o usa un ajuste de inventario.
+5. **Un ajuste de inventario no puede dejar la cantidad en negativo** (mínimo 0).
+
+**En el catálogo (borrado seguro):**
+6. **Eliminar un producto con histórico** de ventas o transacciones lo **desactiva** (no lo borra), para no perder la historia. Lo mismo aplica a **categorías, ubicaciones y tarifas** con datos asociados: se desactivan en vez de borrarse.
+7. **No se puede eliminar la tarifa Detal** (es la base de cálculo de las demás).
+8. **Solo el Maestro puede editar costos y precios.** El Admin gestiona inventario y operación pero no toca finanzas.
+
+**En permisos por rol:**
+9. **Recepción** solo edita/elimina **sus propias** ventas y traslados **del día actual**, y no registra compras.
+10. **Admin** edita/elimina cualquier transacción **excepto** las creadas por un Maestro.
+
+**En carga masiva CSV:**
+11. Las filas con un **código de producto inexistente** (o datos inválidos) se marcan en rojo y **se omiten**; las filas válidas sí se importan (importación parcial).
+12. **Recepción** no puede importar filas de compra por CSV.
+
 ---
 
 ## 9. Mantenimiento y rutinas mensuales
