@@ -158,6 +158,10 @@ export function DashboardClient({
 }) {
   const [tab, setTab] = React.useState<Tab>("ventas");
   const [fCats, setFCats] = React.useState<string[]>([]);
+  const [fProds, setFProds] = React.useState<string[]>([]); // filtro por nombre de producto (Ventas)
+  // Filtros del tab Inventario/Alertas (independientes).
+  const [fCatsInv, setFCatsInv] = React.useState<string[]>([]);
+  const [fProdInv, setFProdInv] = React.useState<string>("");
   // Filtros de fecha: el usuario puede elegir UN mes (shortcut) o un rango por
   // fechas. Si elige mes, las fechas se ignoran. Si elige fechas, el mes queda
   // en blanco. Esto evita reglas de prioridad confusas.
@@ -212,9 +216,18 @@ export function DashboardClient({
     if (d) setFMes("");
   }
 
+  // Productos disponibles (para el filtro multi del tab Ventas), por nombre.
+  const productosDisponibles = React.useMemo(() => {
+    const set = new Set<string>();
+    for (const h of historico) set.add(h.productos.nombre);
+    return [...set].sort((a, b) => a.localeCompare(b, "es"));
+  }, [historico]);
+
   const catNameSet = new Set(fCats.map((id) => categorias.find((c) => c.id === id)?.nombre).filter(Boolean) as string[]);
+  const prodSet = new Set(fProds);
   const filtered = historico.filter((h) => {
     if (catNameSet.size > 0 && !(h.productos.categorias?.nombre && catNameSet.has(h.productos.categorias.nombre))) return false;
+    if (prodSet.size > 0 && !prodSet.has(h.productos.nombre)) return false;
     if (!inRangoFecha(h.anio, h.mes)) return false;
     return true;
   });
@@ -385,7 +398,7 @@ export function DashboardClient({
       {/* Filtro común para ventas */}
       {tab === "ventas" ? (
         <Card>
-          <div className="grid gap-3 md:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">Categoría</p>
               <MultiSelect
@@ -393,6 +406,15 @@ export function DashboardClient({
                 value={fCats}
                 onChange={setFCats}
                 placeholder="Todas"
+              />
+            </div>
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Producto</p>
+              <MultiSelect
+                options={productosDisponibles.map((n) => ({ value: n, label: n }))}
+                value={fProds}
+                onChange={setFProds}
+                placeholder="Todos"
               />
             </div>
             <div>
@@ -412,7 +434,7 @@ export function DashboardClient({
             </div>
             <div className="flex items-end">
               <button
-                onClick={() => { setFCats([]); setFMes(""); setFFechaDesde(""); setFFechaHasta(""); }}
+                onClick={() => { setFCats([]); setFProds([]); setFMes(""); setFFechaDesde(""); setFFechaHasta(""); }}
                 className="h-10 w-full rounded-md border border-border px-3 text-sm text-muted-foreground hover:border-brand-orange hover:text-brand-orange"
               >
                 Limpiar filtros
@@ -420,7 +442,7 @@ export function DashboardClient({
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Tip: el filtro <span className="text-white">Mes</span> es un atajo para ver un mes específico. Si usas <span className="text-white">Fecha desde / hasta</span>, el rango aplica sobre los meses cubiertos (los datos del histórico son mensuales).
+            Estos filtros (categoría, producto, mes/fechas) aplican a las gráficas basadas en el histórico mensual: <span className="text-white">Consumo por mes, Top productos, Por categoría y la tabla de cantidades vendidas</span>. Las gráficas de <span className="text-white">Ventas última semana, Día de la semana, Top 5 por día y Utilidades</span> son resúmenes globales de las transacciones registradas y no se filtran.
           </p>
         </Card>
       ) : null}
@@ -569,7 +591,7 @@ export function DashboardClient({
             <Card>
               <h2 className="mb-3 text-lg font-semibold text-white">Top 5 productos por día de la semana (apilado)</h2>
               <p className="mb-2 text-xs text-muted-foreground">
-                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos.
+                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos. Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Alegra) y no se ve afectada por los filtros de arriba.
               </p>
               <div className="h-80">
                 <ResponsiveContainer>
@@ -645,7 +667,7 @@ export function DashboardClient({
                     <div>
                       <h2 className="text-lg font-semibold text-white">Utilidades brutas: costos vs ingresos</h2>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) acumulados de cada producto/servicio en las ventas registradas en el sistema. La utilidad bruta es la diferencia.
+                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) de cada producto/servicio en las ventas registradas en el sistema. El costo usa el <strong>costo promedio de compra</strong> del producto × unidades vendidas; la utilidad bruta es la diferencia. No incluye el histórico de Alegra ni se ve afectada por los filtros de arriba.
                       </p>
                     </div>
                     <Select value={filtroUtil} onChange={(e) => { setFiltroUtil(e.target.value as any); setPageUtil(0); }} className="max-w-[160px]">
@@ -870,61 +892,96 @@ export function DashboardClient({
               title="✓ Sin alertas de stock"
               description="Todos los productos están por encima del stock mínimo configurado."
             />
-          ) : (
-            <>
-              <div className="mb-3">
-                <h2 className="text-lg font-semibold text-white">
-                  Productos con stock bajo o agotado
-                  <span className="ml-2 text-sm font-normal text-muted-foreground">
-                    ({pageAlertas * PAGE_TOP + 1}–{Math.min((pageAlertas + 1) * PAGE_TOP, alertasDetalladas.length)} de {alertasDetalladas.length})
-                  </span>
-                </h2>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Haz clic en cualquiera para ir a su ficha y registrar una compra o ajuste.
-                </p>
-              </div>
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Producto</TH>
-                    <TH>Categoría</TH>
-                    <TH>Estado</TH>
-                    <TH className="text-right">Stock total</TH>
-                    <TH className="text-right">Mínimo</TH>
-                    <TH>Ubicaciones</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {alertasDetalladas.slice(pageAlertas * PAGE_TOP, (pageAlertas + 1) * PAGE_TOP).map((a) => (
-                    <TR key={a.producto_id}>
-                      <TD>
-                        <a href={`/inventario/${a.producto_id}`} className="text-white hover:text-brand-orange">
-                          {a.codigo ? <span className="mr-2 font-mono text-xs text-muted-foreground">{a.codigo}</span> : null}
-                          {a.nombre}
-                        </a>
-                      </TD>
-                      <TD className="text-xs text-muted-foreground">{a.categoria ?? "—"}</TD>
-                      <TD>
-                        {a.estado_stock === "sin_stock"
-                          ? <Badge tone="red">Sin stock</Badge>
-                          : <Badge tone="yellow">Bajo</Badge>}
-                      </TD>
-                      <TD className="text-right font-mono">{formatInt(a.cantidad_total)}</TD>
-                      <TD className="text-right font-mono text-muted-foreground">{formatInt(a.stock_minimo_alerta)}</TD>
-                      <TD>
-                        {a.ubicaciones.length === 0 ? (
-                          <span className="text-xs text-muted-foreground">sin asignación</span>
-                        ) : (
-                          <UbicacionesChips ubicaciones={a.ubicaciones} />
-                        )}
-                      </TD>
+          ) : (() => {
+            const catNamesInv = new Set(fCatsInv.map((id) => categorias.find((c) => c.id === id)?.nombre).filter(Boolean) as string[]);
+            const q = fProdInv.trim().toLowerCase();
+            const alertasFiltradas = alertasDetalladas.filter((a) => {
+              if (catNamesInv.size > 0 && !(a.categoria && catNamesInv.has(a.categoria))) return false;
+              if (q && !(`${a.codigo ?? ""} ${a.nombre}`.toLowerCase().includes(q))) return false;
+              return true;
+            });
+            const pageSafe = Math.min(pageAlertas, Math.max(0, Math.ceil(alertasFiltradas.length / PAGE_TOP) - 1));
+            return (
+              <>
+                <div className="mb-3">
+                  <h2 className="text-lg font-semibold text-white">
+                    Productos con stock bajo o agotado
+                    <span className="ml-2 text-sm font-normal text-muted-foreground">
+                      ({alertasFiltradas.length} de {alertasDetalladas.length})
+                    </span>
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Haz clic en el nombre o en "Ver" para ir a su ficha y registrar una compra o ajuste.
+                  </p>
+                </div>
+                <div className="mb-3 grid gap-3 md:grid-cols-3">
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">Categoría</p>
+                    <MultiSelect
+                      options={categorias.map((c) => ({ value: c.id, label: c.nombre }))}
+                      value={fCatsInv}
+                      onChange={(v) => { setFCatsInv(v); setPageAlertas(0); }}
+                      placeholder="Todas"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">Buscar producto</p>
+                    <Input value={fProdInv} onChange={(e) => { setFProdInv(e.target.value); setPageAlertas(0); }} placeholder="Código o nombre..." />
+                  </div>
+                </div>
+                <Table>
+                  <THead>
+                    <TR>
+                      <TH>Producto</TH>
+                      <TH>Categoría</TH>
+                      <TH>Estado</TH>
+                      <TH className="text-right">Stock total</TH>
+                      <TH className="text-right">Mínimo</TH>
+                      <TH>Ubicaciones</TH>
+                      <TH className="text-right">Ficha</TH>
                     </TR>
-                  ))}
-                </TBody>
-              </Table>
-              <Pager page={pageAlertas} total={alertasDetalladas.length} pageSize={PAGE_TOP} onChange={setPageAlertas} />
-            </>
-          )}
+                  </THead>
+                  <TBody>
+                    {alertasFiltradas.slice(pageSafe * PAGE_TOP, (pageSafe + 1) * PAGE_TOP).map((a) => (
+                      <TR key={a.producto_id}>
+                        <TD>
+                          <a href={`/inventario/${a.producto_id}`} className="text-white hover:text-brand-orange">
+                            {a.codigo ? <span className="mr-2 font-mono text-xs text-muted-foreground">{a.codigo}</span> : null}
+                            {a.nombre}
+                          </a>
+                        </TD>
+                        <TD className="text-xs text-muted-foreground">{a.categoria ?? "—"}</TD>
+                        <TD>
+                          {a.estado_stock === "sin_stock"
+                            ? <Badge tone="red">Sin stock</Badge>
+                            : <Badge tone="yellow">Bajo</Badge>}
+                        </TD>
+                        <TD className="text-right font-mono">{formatInt(a.cantidad_total)}</TD>
+                        <TD className="text-right font-mono text-muted-foreground">{formatInt(a.stock_minimo_alerta)}</TD>
+                        <TD>
+                          {a.ubicaciones.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">sin stock en ninguna ubicación</span>
+                          ) : (
+                            <UbicacionesChips ubicaciones={a.ubicaciones} />
+                          )}
+                        </TD>
+                        <TD className="text-right">
+                          <a href={`/inventario/${a.producto_id}`} className="text-sm text-brand-orange hover:opacity-80">Ver →</a>
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+                <Pagination
+                  page={pageSafe}
+                  totalPages={Math.ceil(alertasFiltradas.length / PAGE_TOP)}
+                  onChange={setPageAlertas}
+                  totalItems={alertasFiltradas.length}
+                  pageSize={PAGE_TOP}
+                />
+              </>
+            );
+          })()}
         </Card>
       ) : null}
 

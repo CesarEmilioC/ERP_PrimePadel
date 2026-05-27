@@ -131,14 +131,46 @@ export async function getVentasHistoricasPorMes() {
 }
 
 // Stock total por ubicación (suma de cantidad de todos los productos por ubicación).
+// Costo promedio de compra por producto (ponderado por cantidad). Cae al costo
+// del catálogo si el producto no tiene compras registradas. Se usa para valorar
+// inventario y calcular utilidades con un costo realista (no el snapshot por venta).
+export async function getCostoPromedioPorProducto(): Promise<Map<string, number>> {
+  const sb = sbAdmin();
+  const [{ data: compras }, { data: productos }] = await Promise.all([
+    sb.from("transaccion_items")
+      .select("producto_id, cantidad, costo_unitario, precio_unitario, transacciones!inner(tipo)")
+      .eq("transacciones.tipo", "compra"),
+    sb.from("productos").select("id, costo_unitario"),
+  ]);
+  const agg = new Map<string, { qty: number; val: number }>();
+  for (const it of (compras ?? []) as any[]) {
+    const pid = it.producto_id as string;
+    const cant = Number(it.cantidad);
+    const costo = Number(it.costo_unitario ?? 0) || Number(it.precio_unitario ?? 0);
+    if (cant <= 0 || costo <= 0) continue;
+    const cur = agg.get(pid) ?? { qty: 0, val: 0 };
+    cur.qty += cant;
+    cur.val += cant * costo;
+    agg.set(pid, cur);
+  }
+  const out = new Map<string, number>();
+  for (const p of (productos ?? []) as any[]) {
+    const a = agg.get(p.id);
+    out.set(p.id, a && a.qty > 0 ? a.val / a.qty : Number(p.costo_unitario ?? 0));
+  }
+  for (const [pid, a] of agg) {
+    if (!out.has(pid) && a.qty > 0) out.set(pid, a.val / a.qty);
+  }
+  return out;
+}
+
 export async function getStockPorUbicacion() {
   const sb = sbAdmin();
-  const [{ data: stock }, { data: ubicaciones }, { data: productos }] = await Promise.all([
+  const [{ data: stock }, { data: ubicaciones }, costoPorProd] = await Promise.all([
     sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
     sb.from("ubicaciones").select("id, nombre, tipo, activa").eq("activa", true),
-    sb.from("productos").select("id, costo_unitario").eq("activo", true).eq("es_inventariable", true),
+    getCostoPromedioPorProducto(),
   ]);
-  const costoPorProd = new Map((productos ?? []).map((p: any) => [p.id, Number(p.costo_unitario ?? 0)]));
   const acc = new Map<string, { ubicacion_id: string; cantidad: number; valor: number }>();
   for (const s of stock ?? []) {
     const cant = Number(s.cantidad);
@@ -192,6 +224,7 @@ export async function getAlertasDetalladas() {
 
   const porProd = new Map<string, { nombre: string; cantidad: number }[]>();
   for (const s of (stockUbi ?? []) as any[]) {
+    if (Number(s.cantidad) <= 0) continue; // solo ubicaciones donde sí hay producto
     const arr = porProd.get(s.producto_id) ?? [];
     arr.push({ nombre: s.ubicaciones?.nombre ?? "?", cantidad: Number(s.cantidad) });
     porProd.set(s.producto_id, arr);
@@ -333,17 +366,18 @@ export type UtilidadProducto = {
 
 export async function getUtilidadPorProducto(): Promise<UtilidadProducto[]> {
   const sb = sbAdmin();
-  const { data } = await sb
-    .from("transaccion_items")
-    .select("cantidad, precio_unitario, costo_unitario, producto_id, transacciones!inner(tipo), productos(codigo, nombre, tipo)")
-    .eq("transacciones.tipo", "venta");
+  const [{ data }, costoPromedio] = await Promise.all([
+    sb.from("transaccion_items")
+      .select("cantidad, precio_unitario, producto_id, transacciones!inner(tipo), productos(codigo, nombre, tipo)")
+      .eq("transacciones.tipo", "venta"),
+    getCostoPromedioPorProducto(),
+  ]);
 
   const acc = new Map<string, UtilidadProducto>();
   for (const it of (data ?? []) as any[]) {
     const pid = it.producto_id as string;
     const cant = Number(it.cantidad);
     const precio = Number(it.precio_unitario ?? 0);
-    const costo = Number(it.costo_unitario ?? 0);
     const cur = acc.get(pid) ?? {
       producto_id: pid,
       codigo: it.productos?.codigo ?? null,
@@ -357,10 +391,13 @@ export async function getUtilidadPorProducto(): Promise<UtilidadProducto[]> {
     };
     cur.cantidad_vendida += cant;
     cur.ingresos += cant * precio;
-    cur.costos += cant * costo;
+    acc.set(pid, cur);
+  }
+  // Costo = unidades vendidas × costo promedio de compra del producto.
+  for (const cur of acc.values()) {
+    cur.costos = cur.cantidad_vendida * (costoPromedio.get(cur.producto_id) ?? 0);
     cur.utilidad = cur.ingresos - cur.costos;
     cur.margen_pct = cur.ingresos > 0 ? Math.round((cur.utilidad / cur.ingresos) * 10000) / 100 : 0;
-    acc.set(pid, cur);
   }
   return [...acc.values()].sort((a, b) => b.utilidad - a.utilidad);
 }
