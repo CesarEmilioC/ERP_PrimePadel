@@ -84,7 +84,7 @@ export function TarifasClient({ tarifas }: { tarifas: Tarifa[] }) {
             La tarifa marcada como <strong>default</strong> es la que se autocompleta cuando se registra una venta (normalmente Detal, sin descuento).
           </p>
         </div>
-        <Button onClick={() => setCreando(true)}>+ Nueva tarifa</Button>
+        <Button className="shrink-0" onClick={() => setCreando(true)}>+ Nueva tarifa</Button>
       </div>
 
       {tarifas.length === 0 ? (

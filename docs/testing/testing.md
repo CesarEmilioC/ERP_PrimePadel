@@ -17,7 +17,38 @@ Plan de pruebas **completo** para correr antes de entregar al cliente. Marca cad
 > **Tips:**
 > - Usa una ventana normal y otra en **incógnito** para tener dos roles abiertos en paralelo.
 > - Si vas a probar con datos limpios, primero corre `supabase/reset-operacion.sql` (deja stock y transacciones en cero, conserva el catálogo).
-> - Antes de probar, asegúrate de haber ejecutado en Supabase, en orden: `schema.sql` (si aplica), `rls.sql`, `migration-costo-unitario.sql`, `migration-tarifas-descuento.sql`.
+> - Antes de probar, asegúrate de haber ejecutado en Supabase, en orden: `schema.sql` (si aplica), `rls.sql`, `migration-costo-unitario.sql`, `migration-tarifas-descuento.sql`, **`migration-tx-actualizado.sql`** (nueva — registra quién/cuándo editó una transacción).
+
+---
+
+## A. Ronda post-revisión — resolución de tus comentarios y qué re-probar
+
+Estos son los puntos que dejaste con `->`. Marca el check al re-probar.
+
+**Corregidos (✅):**
+- [ ] **Ficha de ubicación**: ya no muestra productos con cantidad 0.
+- [ ] **Toasts** (mensajes momentáneos): ahora con fondo sólido (sin transparencia).
+- [ ] **Ficha de producto**: nueva tarjeta **"Valor vendido"** junto a "Valor invertido".
+- [ ] **Traslado**: ya NO pide costo unitario ni muestra subtotal; solo mueve cantidades (el footer dice "N unidades a mover").
+- [ ] **Tabla de transacciones**: los ítems de **venta** muestran "— desde \<ubicación\>" y los de **compra** "— a \<ubicación\>" (como el traslado muestra origen → destino).
+- [ ] **Venta**: el precio es un **dropdown de tarifas** del producto (Detal, Staff, etc., con su precio) + opción **"Otro"** para valor personalizado.
+- [ ] **Última edición**: al editar una transacción, bajo la fecha aparece "editado \<fecha/hora\>" y bajo "Registró" aparece "editó: \<usuario\>". El creador original NO cambia.
+- [ ] **Botón "Nueva tarifa"**: ya no se desborda el texto.
+- [ ] **Histórico de ventas (mensual)** en la ficha del producto: ahora combina Alegra + ventas del sistema, mes a mes hasta el mes actual.
+- [ ] **Historial de ajustes**: ahora solo muestra ajustes manuales (conteo, merma, rotura, corrección, ingreso inicial). Ya NO aparecen las "reversa de transacción/traslado".
+- [ ] **Dashboard › Ventas**: nuevo filtro de **Producto** (multi).
+- [ ] **Dashboard › Utilidades**: el costo usa el **costo promedio de compra** × unidades vendidas.
+- [ ] **Dashboard › Inventario**: el "valor en costo" por ubicación usa el costo promedio (ya no sale "no configurado" si hay compras).
+- [ ] **Dashboard › Alertas**: filtros por categoría y por producto, botón **"Ver"** por fila, y la columna de ubicaciones solo muestra las que tienen stock > 0.
+- [ ] **Gráficas que no usan Alegra**: ahora lo indican en su descripción.
+
+**Respuestas / notas (💬):**
+- *"¿Qué significa la reversa de transacción/traslado con motivo corrección en el historial de ajustes?"* → Eran los ajustes automáticos que el sistema hacía al editar/eliminar transacciones. Tienes razón en que no pertenecen al historial de ajustes manuales: **los quité de esa vista**. El stock se sigue revirtiendo igual, pero ya no ensucia el historial.
+- *"Recepción ve el botón Traslado además de Venta"* → Correcto y esperado: recepción puede registrar ventas y traslados, pero **no** compras.
+
+**Pendiente / parcial (⚠️) — dime si lo quieres y lo hago:**
+- **Filtros que apliquen a TODAS las gráficas de Ventas**: hoy los filtros (categoría/producto/mes/fecha) aplican a las gráficas basadas en el histórico mensual (consumo por mes, top productos, por categoría, cantidades vendidas). Las gráficas de **Ventas última semana, Día de la semana, Top 5 por día y Utilidades** son resúmenes globales de las transacciones y **no** se filtran (lo aclara una nota en pantalla). Hacer que respondan a los filtros requiere recalcularlas en vivo desde las transacciones — es un cambio más grande; avísame si lo priorizamos.
+- **Filtros en el tab Inventario** (stock por ubicación / días estimados): no se agregaron (esas vistas son resúmenes globales). El tab **Alertas** sí tiene filtros.
 
 ---
 

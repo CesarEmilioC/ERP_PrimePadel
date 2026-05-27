@@ -32,7 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function 
       ref={ref}
       type={type}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-md font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
+        "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition disabled:cursor-not-allowed disabled:opacity-60",
         variants[variant],
         sizes[size],
         className,
