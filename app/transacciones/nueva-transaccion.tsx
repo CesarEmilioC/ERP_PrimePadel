@@ -20,6 +20,7 @@ type ProductoOpt = {
   precio_detal: number | null;
   costo_unitario: number;
   stock_por_ubicacion: Record<string, number>;
+  precios_tarifa?: { lista_precio_id: string; nombre: string; precio: number }[];
 };
 
 type LineItem = {
@@ -392,17 +393,63 @@ export function NuevaTransaccion({
                   </div>
 
                   {/* Traslado: solo mueve cantidades, no pide costo ni muestra subtotal. */}
-                  {isTraslado ? null : (
+                  {isTraslado ? null : isVenta ? (
                     <>
                       <div className="col-span-2">
                         {/*
-                          Venta: solo se edita precio_unitario; costo_unitario queda como snapshot
-                            (al crear viene del catálogo; al editar se preserva del valor en BD).
-                          Compra: el costo coincide con el precio, se actualizan juntos.
+                          Venta: el precio se elige de las tarifas del producto (Detal, Staff, etc.)
+                          o "Otro" para un valor personalizado. El costo queda como snapshot del catálogo.
                         */}
+                        {(() => {
+                          const tarifas = p?.precios_tarifa ?? [];
+                          const tarifaSel = tarifas.find(
+                            (t) => t.lista_precio_id === it.lista_precio_id && t.precio === it.precio_unitario,
+                          );
+                          const selValue = tarifaSel ? tarifaSel.lista_precio_id : "__otro__";
+                          return (
+                            <>
+                              <Select
+                                value={selValue}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  if (v === "__otro__") {
+                                    updateItem(i, { lista_precio_id: null });
+                                  } else {
+                                    const t = tarifas.find((x) => x.lista_precio_id === v);
+                                    if (t) updateItem(i, { lista_precio_id: v, precio_unitario: t.precio });
+                                  }
+                                }}
+                              >
+                                {tarifas.map((t) => (
+                                  <option key={t.lista_precio_id} value={t.lista_precio_id}>
+                                    {t.nombre} — {formatCOP(t.precio)}
+                                  </option>
+                                ))}
+                                <option value="__otro__">Otro (personalizado)…</option>
+                              </Select>
+                              {selValue === "__otro__" ? (
+                                <div className="mt-1">
+                                  <NumericInput
+                                    value={it.precio_unitario}
+                                    onChange={(n) => updateItem(i, { precio_unitario: n })}
+                                    min={0}
+                                    placeholder="Precio"
+                                  />
+                                </div>
+                              ) : null}
+                            </>
+                          );
+                        })()}
+                      </div>
+                      <div className="col-span-1 text-right font-mono text-white">{formatCOP(it.cantidad * it.precio_unitario)}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="col-span-2">
+                        {/* Compra: el costo coincide con el precio, se actualizan juntos. */}
                         <NumericInput
                           value={it.precio_unitario}
-                          onChange={(n) => updateItem(i, isVenta ? { precio_unitario: n } : { precio_unitario: n, costo_unitario: n })}
+                          onChange={(n) => updateItem(i, { precio_unitario: n, costo_unitario: n })}
                           min={0}
                         />
                       </div>

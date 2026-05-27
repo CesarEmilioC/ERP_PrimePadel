@@ -29,7 +29,7 @@ export default async function TransaccionesPage() {
     txsQueryFinal,
     sb.from("productos").select("id, codigo, nombre, tipo, es_inventariable, activo, costo_unitario").eq("activo", true).order("nombre", { ascending: true }),
     sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
-    sb.from("precios_producto").select("producto_id, precio, listas_precios(es_default)"),
+    sb.from("precios_producto").select("producto_id, lista_precio_id, precio, listas_precios(es_default)"),
     sb.from("perfiles").select("user_id, nombre, rol"),
     sb.auth.admin.listUsers({ perPage: 500 }),
     getUbicaciones(),
@@ -42,11 +42,35 @@ export default async function TransaccionesPage() {
     stockPorProd.get(s.producto_id)![s.ubicacion_id] = s.cantidad;
   }
 
+  // Precio Detal por producto + overrides manuales por (producto, tarifa).
   const precioPorProd = new Map<string, number>();
+  const overridePorProdTarifa = new Map<string, number>(); // `${prod}|${tarifa}` -> precio
   for (const p of precios ?? []) {
+    overridePorProdTarifa.set(`${p.producto_id}|${p.lista_precio_id}`, Number(p.precio));
     if ((p.listas_precios as any)?.es_default) {
       precioPorProd.set(p.producto_id, Number(p.precio));
     }
+  }
+
+  // Tarifas activas ordenadas (default primero).
+  const tarifasActivas = (listasPrecios as any[])
+    .filter((l) => l.activa)
+    .sort((a, b) => (b.es_default ? 1 : 0) - (a.es_default ? 1 : 0) || a.orden - b.orden);
+
+  function preciosTarifaDeProducto(prodId: string): { lista_precio_id: string; nombre: string; precio: number }[] {
+    const detal = precioPorProd.get(prodId) ?? 0;
+    const out: { lista_precio_id: string; nombre: string; precio: number }[] = [];
+    for (const t of tarifasActivas) {
+      const override = overridePorProdTarifa.get(`${prodId}|${t.id}`);
+      let precio: number | null = null;
+      if (override != null) precio = override;
+      else if (t.es_default) precio = detal > 0 ? detal : null;
+      else precio = detal > 0 ? Math.round(detal * (1 - Number(t.descuento_porcentaje ?? 0) / 100)) : null;
+      if (precio != null && precio > 0) {
+        out.push({ lista_precio_id: t.id, nombre: t.nombre, precio });
+      }
+    }
+    return out;
   }
 
   const productosOpt = (productos ?? []).map((p: any) => ({
@@ -58,6 +82,7 @@ export default async function TransaccionesPage() {
     precio_detal: precioPorProd.get(p.id) ?? null,
     costo_unitario: Number(p.costo_unitario ?? 0),
     stock_por_ubicacion: stockPorProd.get(p.id) ?? {},
+    precios_tarifa: preciosTarifaDeProducto(p.id),
   }));
 
   const ubiNombrePorId = new Map(ubicaciones.map((u) => [u.id, u.nombre]));
