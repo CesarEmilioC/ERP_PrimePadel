@@ -93,7 +93,7 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
 
   // -------------------- Camino A: edición ligera (sin tocar stock) --------------------
   if (!cambiaEstructura) {
-    return await editarSoloMetadata(id, parsed);
+    return await editarSoloMetadata(id, parsed, perfil.user_id);
   }
 
   // -------------------- Camino B: reverse + recreate --------------------
@@ -110,11 +110,13 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
   const { error: eDel } = await sbAdmin().from("transacciones").delete().eq("id", id);
   if (eDel) return { error: "No se pudo eliminar la transacción original: " + humanizarError(eDel.message) };
 
-  // 2. Crear nueva.
+  // 2. Crear nueva — preservando al CREADOR original (usuario_id) para que la
+  //    columna "Registró" no cambie. La edición se marca aparte (actualizado_*).
+  const creadorOriginal = original.usuario_id ?? perfil.user_id;
   const { data: newId, error: eIns } = await sbAdmin().rpc("registrar_transaccion", {
     p_tipo: parsed.tipo,
     p_fecha: parsed.fecha ?? snapshot.fecha,
-    p_usuario: perfil.user_id,
+    p_usuario: creadorOriginal,
     p_notas: parsed.notas ?? null,
     p_origen: parsed.origen,
     p_items: parsed.items,
@@ -137,6 +139,12 @@ export async function editarTransaccion(id: string, input: unknown): Promise<Act
     }
     return { error: "No se pudo guardar la edición: " + humanizarError(eIns.message) + " — Se restauró la versión original sin cambios." };
   }
+
+  // Marcar la edición (quién y cuándo) en la transacción recién recreada.
+  await sbAdmin()
+    .from("transacciones")
+    .update({ actualizado_en: new Date().toISOString(), actualizado_por: perfil.user_id })
+    .eq("id", newId as string);
 
   revalidatePath("/transacciones");
   revalidatePath("/inventario");
@@ -177,6 +185,7 @@ function detectarCambioEstructura(
 async function editarSoloMetadata(
   id: string,
   parsed: { fecha?: string; notas?: string | null; items: { producto_id: string; ubicacion_origen_id?: string | null; ubicacion_destino_id?: string | null; cantidad: number; precio_unitario: number; costo_unitario?: number; lista_precio_id?: string | null }[] },
+  editorId: string,
 ): Promise<ActionResult<{ newId: string }>> {
   const sb = sbAdmin();
 
@@ -225,10 +234,12 @@ async function editarSoloMetadata(
     if (eUpd) return { error: humanizarError(eUpd.message) };
   }
 
-  // 3. Actualiza header (fecha + notas + total).
+  // 3. Actualiza header (fecha + notas + total) + marca de edición.
   const headerPayload: Record<string, unknown> = {
     notas: parsed.notas ?? null,
     total: totalNuevo,
+    actualizado_en: new Date().toISOString(),
+    actualizado_por: editorId,
   };
   if (parsed.fecha) headerPayload.fecha = parsed.fecha;
   const { error: eHdr } = await sb.from("transacciones").update(headerPayload).eq("id", id);

@@ -42,6 +42,8 @@ type TransaccionLista = {
   usuario_nombre: string | null;
   usuario_username: string | null;
   usuario_rol: "maestro" | "admin" | "recepcion" | null;
+  actualizado_en: string | null;
+  actualizado_username: string | null;
   items: ItemListado[];
 };
 
@@ -316,7 +318,12 @@ export function TransaccionesClient({
                 const borrable = mounted && (esMaestro || editable);
                 return (
                   <TR key={t.id}>
-                    <TD className="whitespace-nowrap text-xs text-muted-foreground">{formatFechaHora(t.fecha)}</TD>
+                    <TD className="whitespace-nowrap text-xs text-muted-foreground">
+                      {formatFechaHora(t.fecha)}
+                      {t.actualizado_en ? (
+                        <span className="block text-[10px] text-yellow-300/80">editado {formatFechaHora(t.actualizado_en)}</span>
+                      ) : null}
+                    </TD>
                     <TD>{tipoBadge(t.tipo)}</TD>
                     <TD className="whitespace-nowrap">
                       {t.usuario_username ? (
@@ -329,6 +336,9 @@ export function TransaccionesClient({
                       )}
                       {t.origen === "csv" ? (
                         <span className="ml-2 rounded bg-blue-950/40 px-1.5 py-0.5 text-[10px] uppercase text-blue-300">CSV</span>
+                      ) : null}
+                      {t.actualizado_username ? (
+                        <span className="block text-[10px] text-muted-foreground">editó: <span className="font-mono">{t.actualizado_username}</span></span>
                       ) : null}
                     </TD>
                     <TD className="max-w-md">{renderItems(t)}</TD>

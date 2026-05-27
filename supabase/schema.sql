@@ -212,14 +212,17 @@ create trigger trg_perfiles_updated before update on perfiles
 -- ----------------------------------------------------------------------------
 
 create table transacciones (
-  id          uuid primary key default gen_random_uuid(),
-  tipo        text not null check (tipo in ('compra','venta','traslado')),
-  fecha       timestamptz not null default now(),
-  usuario_id  uuid references auth.users(id) on delete set null,
-  total       numeric(14,2) not null default 0 check (total >= 0),
-  notas       text,
-  origen      text not null default 'manual' check (origen in ('manual','csv','api','migracion')),
-  created_at  timestamptz not null default now()
+  id              uuid primary key default gen_random_uuid(),
+  tipo            text not null check (tipo in ('compra','venta','traslado')),
+  fecha           timestamptz not null default now(),
+  usuario_id      uuid references auth.users(id) on delete set null,  -- quién la registró
+  total           numeric(14,2) not null default 0 check (total >= 0),
+  notas           text,
+  origen          text not null default 'manual' check (origen in ('manual','csv','api','migracion')),
+  -- Última edición (si aplica): preserva usuario_id como creador original.
+  actualizado_en  timestamptz,
+  actualizado_por uuid references auth.users(id) on delete set null,
+  created_at      timestamptz not null default now()
 );
 create index idx_transacciones_fecha on transacciones(fecha desc);
 create index idx_transacciones_tipo on transacciones(tipo);
