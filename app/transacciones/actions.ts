@@ -7,6 +7,7 @@ import { exportCsvSchema } from "@/lib/validators/export-csv";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireProfile, requireAdmin } from "@/lib/auth";
 import { humanizarError } from "@/lib/errors";
+import { getCostoPromedioPorProducto } from "@/lib/queries";
 
 type ActionResult<T = unknown> =
   T extends object ? ({ ok: true } & T) | { error: string } : { ok: true } | { error: string };
@@ -21,13 +22,24 @@ export async function registrarTransaccion(input: unknown): Promise<ActionResult
   if (perfil.rol === "recepcion" && parsed.tipo === "compra") {
     return { error: "Tu rol no permite registrar compras. Pídele a un admin que la registre." };
   }
+  // En ventas, sobrescribir costo_unitario con el COSTO PROMEDIO DE COMPRA del
+  // producto al momento de la venta (snapshot real). Si el producto aún no
+  // tiene compras registradas, queda en 0.
+  let items = parsed.items;
+  if (parsed.tipo === "venta") {
+    const costoProm = await getCostoPromedioPorProducto();
+    items = parsed.items.map((it) => ({
+      ...it,
+      costo_unitario: costoProm.get(it.producto_id) ?? 0,
+    }));
+  }
   const { data, error } = await sbAdmin().rpc("registrar_transaccion", {
     p_tipo: parsed.tipo,
     p_fecha: parsed.fecha ?? null,
     p_usuario: perfil.user_id,
     p_notas: parsed.notas ?? null,
     p_origen: parsed.origen,
-    p_items: parsed.items,
+    p_items: items,
   });
   if (error) return { error: humanizarError(error.message) };
   revalidatePath("/transacciones");
@@ -282,6 +294,10 @@ export async function exportarTransaccionesCSV(
 
   if (error) return { error: error.message };
 
+  // Fallback: si una venta antigua quedó con costo_unitario = 0, usamos el
+  // costo promedio de compra del producto para no subestimar costos/margen.
+  const costoFallback = await getCostoPromedioPorProducto();
+
   const userIds = Array.from(
     new Set((txs ?? []).map((t: any) => t.usuario_id).filter(Boolean) as string[]),
   );
@@ -335,7 +351,9 @@ export async function exportarTransaccionesCSV(
         }
         b.cantidad_total += Number(it.cantidad);
         b.valor_total += Number(it.subtotal);
-        b.costo_total += Number(it.cantidad) * Number(it.costo_unitario ?? 0);
+        const costoEfectivo =
+          Number(it.costo_unitario ?? 0) || (costoFallback.get(it.producto_id) ?? 0);
+        b.costo_total += Number(it.cantidad) * costoEfectivo;
         b.transacciones.add(t.id);
         if (t.fecha < b.primera_fecha) b.primera_fecha = t.fecha;
         if (t.fecha > b.ultima_fecha) b.ultima_fecha = t.fecha;

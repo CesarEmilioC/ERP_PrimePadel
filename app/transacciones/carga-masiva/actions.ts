@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireProfile } from "@/lib/auth";
+import { getCostoPromedioPorProducto } from "@/lib/queries";
 import { buildPlantillaCSV, type Catalogo, type TransaccionAgrupada } from "@/lib/csv/transacciones";
 
 export type ImportResult = {
@@ -15,14 +16,9 @@ export async function importarTransacciones(grupos: TransaccionAgrupada[]): Prom
   const perfil = await requireProfile();
   const sb = sbAdmin();
 
-  // Pre-cargar costo actual de los productos involucrados (para snapshot en ventas).
-  const prodIds = Array.from(new Set(grupos.flatMap((g) => g.items.map((it) => it.producto_id))));
-  const { data: productosCosto } = prodIds.length
-    ? await sb.from("productos").select("id, costo_unitario").in("id", prodIds)
-    : { data: [] as { id: string; costo_unitario: number }[] };
-  const costoPorProd = new Map(
-    (productosCosto ?? []).map((p: any) => [p.id as string, Number(p.costo_unitario ?? 0)]),
-  );
+  // Costo promedio de compra por producto — para el snapshot de costo en ventas.
+  // Es lo más fiel al costo real al momento de la venta (no el costo de catálogo).
+  const costoPorProd = await getCostoPromedioPorProducto();
 
   let creadas = 0;
   const fallidas: { ticket: string | null; razon: string }[] = [];
