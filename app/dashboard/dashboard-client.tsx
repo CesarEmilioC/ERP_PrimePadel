@@ -216,6 +216,19 @@ export function DashboardClient({
     if (d) setFMes("");
   }
 
+  // Filtros que están activos ahora (para anotar en las gráficas que NO los aplican).
+  const filtrosActivosNombres = [
+    fCats.length > 0 ? "categoría" : null,
+    fProds.length > 0 ? "producto" : null,
+    fMes ? "mes" : null,
+    (fFechaDesde || fFechaHasta) ? "rango de fechas" : null,
+  ].filter((x): x is string => !!x);
+  const notaFiltrosNoAplican = filtrosActivosNombres.length > 0 ? (
+    <p className="mb-2 text-[11px] text-yellow-300/80">
+      ⓘ Los filtros activos ({filtrosActivosNombres.join(", ")}) no se aplican a este resumen.
+    </p>
+  ) : null;
+
   // Productos disponibles (para el filtro multi del tab Ventas), por nombre.
   const productosDisponibles = React.useMemo(() => {
     const set = new Set<string>();
@@ -442,7 +455,7 @@ export function DashboardClient({
             </div>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Estos filtros (categoría, producto, mes/fechas) aplican a las gráficas basadas en el histórico mensual: <span className="text-white">Consumo por mes, Top productos, Por categoría y la tabla de cantidades vendidas</span>. Las gráficas de <span className="text-white">Ventas última semana, Día de la semana, Top 5 por día y Utilidades</span> son resúmenes globales de las transacciones registradas y no se filtran.
+            Los filtros aplican a las gráficas basadas en el histórico mensual (Consumo por mes, Top productos, Por categoría, Cantidades vendidas). Las gráficas marcadas con ⓘ son resúmenes globales y no se ven afectadas.
           </p>
         </Card>
       ) : null}
@@ -451,12 +464,13 @@ export function DashboardClient({
       {tab === "ventas" ? (
         <>
           <Card>
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-1 flex items-center justify-between gap-2">
               <h2 className="text-lg font-semibold text-white">Ventas última semana</h2>
               <span className="text-xs text-muted-foreground">
                 Total: {formatCOP(ventasUltimaSemana.reduce((s, d) => s + d.monto, 0))} · {formatInt(ventasUltimaSemana.reduce((s, d) => s + d.transacciones, 0))} transacciones
               </span>
             </div>
+            {notaFiltrosNoAplican}
             <div className="h-64">
               <ResponsiveContainer>
                 <BarChart data={ventasUltimaSemana}>
@@ -565,9 +579,10 @@ export function DashboardClient({
           {/* Análisis por día de la semana */}
           <Card>
             <h2 className="text-lg font-semibold text-white">Ventas por día de la semana</h2>
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-1 text-xs text-muted-foreground">
               Total acumulado por día (lunes a domingo) de todas las ventas registradas en el sistema. Sirve para identificar los días pico y planear personal o compras.
             </p>
+            {notaFiltrosNoAplican}
             {hayTransaccionesReales ? (
               <div className="h-64">
                 <ResponsiveContainer>
@@ -589,10 +604,11 @@ export function DashboardClient({
 
           {hayTransaccionesReales && top5DiaSemana.length > 0 ? (
             <Card>
-              <h2 className="mb-3 text-lg font-semibold text-white">Top 5 productos por día de la semana (apilado)</h2>
-              <p className="mb-2 text-xs text-muted-foreground">
-                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos. Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Alegra) y no se ve afectada por los filtros de arriba.
+              <h2 className="mb-1 text-lg font-semibold text-white">Top 5 productos por día de la semana (apilado)</h2>
+              <p className="mb-1 text-xs text-muted-foreground">
+                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos. Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Alegra).
               </p>
+              {notaFiltrosNoAplican}
               <div className="h-80">
                 <ResponsiveContainer>
                   <BarChart data={diaSemanaStackedChart}>
@@ -663,12 +679,13 @@ export function DashboardClient({
             return (
               <>
                 <Card>
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h2 className="text-lg font-semibold text-white">Utilidades brutas: costos vs ingresos</h2>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) de cada producto/servicio en las ventas registradas en el sistema. El costo usa el <strong>costo promedio de compra</strong> del producto × unidades vendidas; la utilidad bruta es la diferencia. No incluye el histórico de Alegra ni se ve afectada por los filtros de arriba.
+                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) de cada producto/servicio en las ventas registradas en el sistema. El costo usa el <strong>costo promedio de compra</strong> del producto × unidades vendidas; la utilidad bruta es la diferencia. No incluye el histórico de Alegra.
                       </p>
+                      {notaFiltrosNoAplican}
                     </div>
                     <Select value={filtroUtil} onChange={(e) => { setFiltroUtil(e.target.value as any); setPageUtil(0); }} className="max-w-[160px]">
                       <option value="todos">Todos</option>
