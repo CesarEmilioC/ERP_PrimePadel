@@ -162,6 +162,7 @@ export function DashboardClient({
   // Filtros del tab Inventario/Alertas (independientes).
   const [fCatsInv, setFCatsInv] = React.useState<string[]>([]);
   const [fProdInv, setFProdInv] = React.useState<string>("");
+  const [fSoloConStockAlertas, setFSoloConStockAlertas] = React.useState<boolean>(false);
   // Filtros de fecha: el usuario puede elegir UN mes (shortcut) o un rango por
   // fechas. Si elige mes, las fechas se ignoran. Si elige fechas, el mes queda
   // en blanco. Esto evita reglas de prioridad confusas.
@@ -926,6 +927,7 @@ export function DashboardClient({
             const alertasFiltradas = alertasDetalladas.filter((a) => {
               if (catNamesInv.size > 0 && !(a.categoria && catNamesInv.has(a.categoria))) return false;
               if (q && !(`${a.codigo ?? ""} ${a.nombre}`.toLowerCase().includes(q))) return false;
+              if (fSoloConStockAlertas && a.cantidad_total <= 0) return false;
               return true;
             });
             const pageSafe = Math.min(pageAlertas, Math.max(0, Math.ceil(alertasFiltradas.length / PAGE_TOP) - 1));
@@ -955,6 +957,17 @@ export function DashboardClient({
                   <div>
                     <p className="mb-1 text-xs font-medium text-muted-foreground">Buscar producto</p>
                     <Input value={fProdInv} onChange={(e) => { setFProdInv(e.target.value); setPageAlertas(0); }} placeholder="Código o nombre..." />
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-border px-3 text-sm text-white hover:border-brand-orange">
+                      <input
+                        type="checkbox"
+                        checked={fSoloConStockAlertas}
+                        onChange={(e) => { setFSoloConStockAlertas(e.target.checked); setPageAlertas(0); }}
+                        className="h-4 w-4 accent-brand-orange"
+                      />
+                      Solo con stock &gt; 0
+                    </label>
                   </div>
                 </div>
                 <Table>

@@ -45,7 +45,7 @@ export function InventarioClient({
   const [fUbis, setFUbis] = React.useState<string[]>([]);
   const [fTipo, setFTipo] = React.useState<"todos" | "producto" | "servicio">("todos");
   const [fEstado, setFEstado] = React.useState<"todos" | "solo_activos" | "solo_inactivos">("solo_activos");
-  const [fStock, setFStock] = React.useState<"todos" | "stock_bajo" | "sin_stock" | "con_stock">("todos");
+  const [fStock, setFStock] = React.useState<"todos" | "stock_bajo" | "sin_stock" | "con_stock" | "stock_positivo">("todos");
   const [min, setMin] = React.useState("");
   const [max, setMax] = React.useState("");
   const [creating, setCreating] = React.useState(false);
@@ -73,6 +73,8 @@ export function InventarioClient({
         if (fStock === "stock_bajo" && r.estado_stock !== "stock_bajo") return false;
         if (fStock === "sin_stock" && r.estado_stock !== "sin_stock") return false;
         if (fStock === "con_stock" && r.estado_stock !== "ok") return false;
+        // "stock_positivo" = cualquier cantidad > 0 (ok + stock_bajo, excluye sin_stock).
+        if (fStock === "stock_positivo" && r.cantidad_total <= 0) return false;
       }
       const minN = min === "" ? null : Number(min);
       const maxN = max === "" ? null : Number(max);
@@ -131,7 +133,8 @@ export function InventarioClient({
           <Field label="Estado de stock">
             <Select value={fStock} onChange={(e) => setFStock(e.target.value as typeof fStock)}>
               <option value="todos">Todos</option>
-              <option value="con_stock">Con stock</option>
+              <option value="stock_positivo">Con stock &gt; 0 (cualquier cantidad)</option>
+              <option value="con_stock">Solo OK (encima del mínimo)</option>
               <option value="stock_bajo">Stock bajo</option>
               <option value="sin_stock">Sin stock</option>
             </Select>
