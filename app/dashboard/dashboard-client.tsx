@@ -371,7 +371,7 @@ export function DashboardClient({
         </Card>
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Valor inventario (costo)</p>
-          <p className="mt-1 truncate text-xl font-bold tabular-nums text-white">{formatCOP(stats.valorInventario)}</p>
+          <p title={formatCOP(stats.valorInventario)} className="mt-1 truncate text-xl font-bold tabular-nums text-white">{formatCOP(stats.valorInventario)}</p>
         </Card>
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Alertas de stock</p>
@@ -696,11 +696,11 @@ export function DashboardClient({
                   <div className="mb-3 grid gap-3 md:grid-cols-3">
                     <div className="rounded border border-border bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">Ingresos totales</p>
-                      <p className="mt-1 truncate text-xl font-bold tabular-nums text-green-300">{formatCOP(totalIngresos)}</p>
+                      <p title={formatCOP(totalIngresos)} className="mt-1 truncate text-xl font-bold tabular-nums text-green-300">{formatCOP(totalIngresos)}</p>
                     </div>
                     <div className="rounded border border-border bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">Costos totales</p>
-                      <p className="mt-1 truncate text-xl font-bold tabular-nums text-red-300">{formatCOP(totalCostos)}</p>
+                      <p title={formatCOP(totalCostos)} className="mt-1 truncate text-xl font-bold tabular-nums text-red-300">{formatCOP(totalCostos)}</p>
                     </div>
                     <div className="rounded border border-border bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">Utilidad bruta</p>
@@ -792,7 +792,7 @@ export function DashboardClient({
         <>
           <Card>
             <h2 className="text-lg font-semibold text-white">Stock por ubicación</h2>
-            <p className="mb-3 text-xs text-muted-foreground">
+            <p className="mb-2 text-xs text-muted-foreground">
               Suma de unidades del inventario en cada ubicación. Si hay desbalance (mucho en una y poco en otra), considera registrar un traslado.
             </p>
             {stockPorUbicacion.length === 0 || stockPorUbicacion.every((u) => u.cantidad === 0) ? (
@@ -813,21 +813,32 @@ export function DashboardClient({
               </div>
             )}
             {stockPorUbicacion.length > 0 ? (
-              <div className="mt-4 grid gap-2 md:grid-cols-3">
+              <>
+                <div className="mb-2 mt-4 rounded border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+                  <p className="mb-1 font-semibold text-white">¿Qué es el "valor en inventario estimado"?</p>
+                  <p>
+                    Por cada ubicación, el sistema suma <code className="text-brand-orange">cantidad × costo promedio de compra</code> de cada producto que hay ahí. El <strong className="text-white">costo promedio de compra</strong> es el promedio ponderado de todas las compras registradas de ese producto.
+                  </p>
+                  <p className="mt-1">
+                    Es lo más cercano a "cuánta plata, en costo, hay almacenada en esta ubicación ahora mismo". Si un producto aún no tiene compras registradas, su aporte al valor es 0 y la tarjeta lo indica con "aún sin costo de compra registrado".
+                  </p>
+                </div>
+                <div className="grid gap-2 md:grid-cols-3">
                 {stockPorUbicacion.map((u) => (
                   <div key={u.ubicacion_id} className="rounded border border-border bg-muted/20 px-3 py-2">
                     <p className="text-xs uppercase text-muted-foreground">{u.nombre}</p>
                     <p className="mt-1 font-mono text-lg text-white">{formatInt(u.cantidad)} <span className="text-xs text-muted-foreground">uds</span></p>
                     <p className="text-xs text-muted-foreground">
                       {u.valor > 0
-                        ? <span title="Suma de cantidad × costo promedio de compra de cada producto">{formatCOP(u.valor)} <span className="text-[10px]">valor en inventario estimado</span></span>
+                        ? <span title={`${formatCOP(u.valor)} — suma de cantidad × costo promedio de compra de cada producto en esta ubicación`}>{formatCOP(u.valor)} <span className="text-[10px]">valor en inventario estimado</span></span>
                         : u.cantidad > 0
                         ? <span title="Registra al menos una compra para que el sistema conozca el costo de estos productos">aún sin costo de compra registrado</span>
                         : "—"}
                     </p>
                   </div>
                 ))}
-              </div>
+                </div>
+              </>
             ) : null}
           </Card>
 

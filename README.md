@@ -231,7 +231,7 @@ fecha,tipo,codigo_producto,nombre_producto,ubicacion,ubicacion_destino,cantidad,
 - `ubicacion`: origen para venta/traslado, destino para compra.
 - `ubicacion_destino`: solo aplica en traslado.
 - `cantidad = 0` o vacía → fila ignorada.
-- `costo_unitario` se backfillea automáticamente: en compras y traslados coincide con `valor_unitario`; en ventas se usa el costo actual del producto en el catálogo.
+- `costo_unitario` se backfillea automáticamente: en compras coincide con `valor_unitario`; en traslados queda en 0 (los traslados no manejan valor); en ventas se usa el **costo promedio ponderado de compras** del producto al momento de la importación (no el costo del catálogo).
 - **Importación parcial**: si hay filas con error, las filas válidas se importan igual y las inválidas se reportan en el resumen (no bloquean a las buenas).
 
 ## Descarga de transacciones a CSV
@@ -241,7 +241,7 @@ Botón en `/transacciones` (solo admin/maestro). Dos modos:
 - **Resumen por ítem** — agregado por (producto, tipo). Máx 2 filas por producto: una `venta` (consumo) y una `compra`. Trae cantidad total, valor total, costo total, **margen total y porcentual** (solo en ventas), precio promedio, número de transacciones y rango de fechas. Los traslados se excluyen.
 - **Historial por transacción** — una fila por transacción, incluyendo traslados. Útil para listado completo de operaciones.
 
-Validaciones: rango ≤ 2 años, fechas válidas, fecha inicial ≤ final. Salida en UTF-8 con BOM (Excel en Windows abre acentos correctamente).
+Validaciones: rango ≤ 1 año, fechas válidas, fecha inicial ≤ final. Salida en UTF-8 con BOM (Excel en Windows abre acentos correctamente). En el modo "Resumen por ítem", si una venta antigua quedó con `costo_unitario = 0` en BD, el reporte cae al costo promedio actual del producto para que el margen no salga sesgado.
 
 ## Tarifas y precios diferenciados
 

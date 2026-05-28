@@ -81,7 +81,7 @@ export default async function UbicacionDetallePage({ params }: { params: Promise
         </Card>
         <Card>
           <p className="text-xs uppercase text-muted-foreground">Valor en inventario estimado</p>
-          <p className="mt-1 truncate text-2xl font-bold tabular-nums text-brand-orange">{formatCOP(valorTotal)}</p>
+          <p title={formatCOP(valorTotal)} className="mt-1 truncate text-2xl font-bold tabular-nums text-brand-orange">{formatCOP(valorTotal)}</p>
           <p className="mt-1 text-xs text-muted-foreground">cantidad × costo promedio de compra</p>
         </Card>
       </div>

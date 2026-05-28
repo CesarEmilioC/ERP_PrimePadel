@@ -24,10 +24,11 @@ Plan de pruebas **completo** para correr antes de entregar al cliente. Marca cad
 ## A2. Ronda 3 — resolución de tus últimos comentarios
 
 **Corregidos en esta ronda (✅):**
-- [ ] **Sin decimales en COP**: `formatCOP` ahora muestra los pesos sin las dos cifras decimales en TODA la webapp (toasts, tarjetas, tablas, gráficas, CSV).
-- [ ] **Overflow de tarjetas**: las tarjetas grandes (Valor vendido, Valor invertido, KPIs del dashboard, valor en ubicación) ahora truncan con `…` si un número es muy grande, en vez de salirse del borde.
-- [ ] **CSV import a las 00:01**: las transacciones importadas por CSV (que no traen hora) quedan a las **00:01 AM** del día indicado, así aparecen primero al ordenar por fecha. Antes quedaban a las 12:00.
-- [ ] **Export CSV — rango máximo 1 año**: cambiado de 2 a 1 año (Manual del Maestro actualizado).
+- [x] **Sin decimales en COP**: `formatCOP` ahora muestra los pesos sin las dos cifras decimales en TODA la webapp (toasts, tarjetas, tablas, gráficas, CSV).
+- [x] **Overflow de tarjetas**: las tarjetas grandes (Valor vendido, Valor invertido, KPIs del dashboard, valor en ubicación) ahora truncan con `…` si un número es muy grande, en vez de salirse del borde.
+-> Y cómo podría ver el número si ya es muy grande?
+- [x] **CSV import a las 00:01**: las transacciones importadas por CSV (que no traen hora) quedan a las **00:01 AM** del día indicado, así aparecen primero al ordenar por fecha. Antes quedaban a las 12:00.
+- [x] **Export CSV — rango máximo 1 año**: cambiado de 2 a 1 año (Manual del Maestro actualizado).
 - [ ] **Dashboard › Inventario** tarjetas por ubicación: ya no dicen "X en costo" sino **"X valor en inventario estimado"** (calculado como cantidad × costo promedio de compra). Si la ubicación tiene unidades pero el producto no tiene compras registradas todavía, muestra "aún sin costo de compra registrado".
 - [ ] **Ficha de ubicación**: el KPI "Valor estimado (costo)" ahora se llama **"Valor en inventario estimado"** y usa el costo promedio de compra del producto × cantidad por ubicación (ya no sale 0 cuando el catálogo no tiene costo).
 - [ ] **CSV plantilla — instrucciones**: la fila de la columna `ubicacion` lista ahora los **nombres exactos** de las ubicaciones activas (sacados de la BD).

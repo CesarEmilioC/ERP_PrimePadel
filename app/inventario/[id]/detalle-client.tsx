@@ -134,7 +134,7 @@ export function DetalleClient(props: DetalleProps) {
           <p className="text-xs uppercase text-muted-foreground">Costo promedio</p>
           {analisisCostos.numCompras > 0 ? (
             <>
-              <p className="mt-1 truncate text-2xl font-bold tabular-nums text-white">
+              <p title={formatCOP(Math.round(analisisCostos.costoPromedioCompra))} className="mt-1 truncate text-2xl font-bold tabular-nums text-white">
                 {formatCOP(Math.round(analisisCostos.costoPromedioCompra))}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -143,7 +143,7 @@ export function DetalleClient(props: DetalleProps) {
             </>
           ) : (
             <>
-              <p className="mt-1 truncate text-2xl font-bold tabular-nums text-muted-foreground">
+              <p title={formatCOP(Number(producto.costo_unitario ?? 0))} className="mt-1 truncate text-2xl font-bold tabular-nums text-muted-foreground">
                 {formatCOP(Number(producto.costo_unitario ?? 0))}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -157,7 +157,7 @@ export function DetalleClient(props: DetalleProps) {
           <p className="text-xs uppercase text-muted-foreground">Última compra</p>
           {analisisCostos.ultimaCompraCosto != null ? (
             <>
-              <p className="mt-1 truncate text-2xl font-bold tabular-nums text-white">
+              <p title={formatCOP(analisisCostos.ultimaCompraCosto)} className="mt-1 truncate text-2xl font-bold tabular-nums text-white">
                 {formatCOP(analisisCostos.ultimaCompraCosto)}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -179,7 +179,7 @@ export function DetalleClient(props: DetalleProps) {
           <p className="text-xs uppercase text-muted-foreground">Valor invertido</p>
           {analisisCostos.numCompras > 0 ? (
             <>
-              <p className="mt-1 truncate text-2xl font-bold tabular-nums text-brand-orange">
+              <p title={formatCOP(Math.round(analisisCostos.valorTotalCompras))} className="mt-1 truncate text-2xl font-bold tabular-nums text-brand-orange">
                 {formatCOP(Math.round(analisisCostos.valorTotalCompras))}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -188,7 +188,7 @@ export function DetalleClient(props: DetalleProps) {
             </>
           ) : producto.es_inventariable ? (
             <>
-              <p className="mt-1 truncate text-2xl font-bold tabular-nums text-muted-foreground">
+              <p title={formatCOP(Math.round(valorInventarioActual))} className="mt-1 truncate text-2xl font-bold tabular-nums text-muted-foreground">
                 {formatCOP(Math.round(valorInventarioActual))}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -207,7 +207,7 @@ export function DetalleClient(props: DetalleProps) {
           <p className="text-xs uppercase text-muted-foreground">Valor vendido</p>
           {analisisCostos.numVentas > 0 ? (
             <>
-              <p className="mt-1 truncate text-2xl font-bold tabular-nums text-green-300">
+              <p title={formatCOP(Math.round(analisisCostos.valorTotalVendido))} className="mt-1 truncate text-2xl font-bold tabular-nums text-green-300">
                 {formatCOP(Math.round(analisisCostos.valorTotalVendido))}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">

@@ -199,7 +199,12 @@ function parseFechaISO(raw: string): string | null {
 
   if (!yyyy || !mm || !dd) return null;
 
-  const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${hora.length === 5 ? hora + ":00" : hora}`;
+  // La hora del CSV se interpreta SIEMPRE como zona Bogotá (UTC-5, sin DST),
+  // sin importar desde dónde se sube el archivo. Así un CSV con "01/05/2026"
+  // queda exactamente a las 00:01 del 1 de mayo en Cali, incluso si el
+  // navegador del usuario está en otro huso horario.
+  const horaCompleta = hora.length === 5 ? hora + ":00" : hora;
+  const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${horaCompleta}-05:00`;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return null;
   return d.toISOString();

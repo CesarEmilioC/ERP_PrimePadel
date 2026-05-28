@@ -67,7 +67,7 @@ Fuente sugerida: Inter o Geist.
 - `stock_por_ubicacion` — (producto_id, ubicacion_id, cantidad) PK compuesta. **Fuente de verdad**: cantidad total = SUM.
 - `v_stock_total` (vista) — cantidad_total, valor_total_costo, estado_stock (`ok` | `stock_bajo` | `sin_stock`).
 - `transacciones` — id, tipo (`compra` | `venta` | `traslado`), fecha, usuario_id, total, notas, origen (`manual` | `csv` | `api` | `migracion`).
-- `transaccion_items` — transaccion_id, producto_id, **ubicacion_origen_id** (venta/traslado), **ubicacion_destino_id** (compra/traslado), cantidad, precio_unitario, **costo_unitario** (snapshot al momento de la transacción; en compra/traslado coincide con precio_unitario, en venta puede diferir → margen), subtotal, lista_precio_id.
+- `transaccion_items` — transaccion_id, producto_id, **ubicacion_origen_id** (venta/traslado), **ubicacion_destino_id** (compra/traslado), cantidad, precio_unitario, **costo_unitario** (snapshot al momento de la transacción; en compra coincide con precio_unitario, en venta se guarda el **costo promedio ponderado de compras** del producto al momento de vender, en traslado queda en 0), subtotal, lista_precio_id.
 - `ajustes_inventario` — auditoría de ajustes manuales de stock (conteo físico, mermas, roturas, correcciones, ingreso inicial).
 - `ventas_historicas_mensuales` — (producto_id, anio, mes) PK. Agregados mensuales importados del reporte de Alegra. El dashboard une esta tabla con `transacciones` para cubrir histórico + operación diaria.
 - `perfiles` — vinculado a `auth.users`; rol (`maestro` | `admin` | `recepcion`), activo. Jerarquía: `recepcion` (1) < `admin` (2) < `maestro` (3); ver `lib/auth.ts` para los helpers `requireProfile`, `requireAdmin`, `requireMaestro`.
