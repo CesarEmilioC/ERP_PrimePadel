@@ -472,7 +472,7 @@
 <h3>Cambié el precio y los reportes viejos cambiaron</h3>
 <p>Es normal: los <strong>totales estimados</strong> del histórico de Alegra (los marcados con asterisco *) se calculan con el precio actual. Las transacciones reales registradas en el sistema mantienen su precio original.</p>
 <h3>Costo guardado en cada venta (margen automático)</h3>
-<p>Al registrar una <strong>venta</strong> solo se te pide el <strong>Precio venta</strong> (lo que paga el cliente). El sistema <strong>guarda automáticamente</strong> el costo del producto en ese momento (tomándolo del catálogo) sin que tengas que pensarlo. Esto sirve para:</p>
+<p>Al registrar una <strong>venta</strong> solo se te pide el <strong>Precio venta</strong> (lo que paga el cliente). El sistema <strong>guarda automáticamente</strong> el costo del producto al momento de la venta, calculado como el <strong>costo promedio ponderado de todas las compras del producto</strong> registradas hasta ese instante. No tienes que pensarlo. Esto sirve para:</p>
 <ul>
 <li>Calcular <strong>margen real</strong> en el reporte CSV &quot;Resumen por ítem&quot;.</li>
 <li>Preservar el <strong>costo histórico</strong> de cada venta aunque después cambies el costo del producto en el catálogo.</li>
@@ -521,7 +521,7 @@
 <li>Click en <strong>Descargar</strong>. Se baja un archivo <code>.csv</code> que se abre directamente en Excel/Numbers/Google Sheets.</li>
 </ol>
 <blockquote>
-<p><strong>Límite:</strong> rango máximo de 2 años por descarga. Si necesitas más, hazlo en varias descargas.</p>
+<p><strong>Límite:</strong> rango máximo de 1 año por descarga. Si necesitas más, hazlo en varias descargas.</p>
 <p><strong>Tip:</strong> el CSV trae acentos y ñ correctamente (UTF-8 con BOM). Si abres el archivo y ves caracteres raros, asegúrate de abrirlo con doble click — no copies/pegues el contenido.</p>
 </blockquote>
 <h3>Diariamente</h3>

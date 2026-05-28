@@ -452,7 +452,7 @@
 </ol>
 <p><strong>Validación automática:</strong> si no hay suficiente stock en la ubicación elegida, el sistema avisa en rojo y no deja registrar.</p>
 <blockquote>
-<p>El costo del producto al momento de la venta se guarda automáticamente en la transacción (no te lo pide la UI). Esto permite que los reportes de margen sean exactos aunque después cambie el costo en el catálogo.</p>
+<p>El costo del producto al momento de la venta se guarda automáticamente en la transacción (no te lo pide la UI). Se calcula como el <strong>costo promedio ponderado</strong> de todas las compras del producto registradas hasta ese instante. Esto permite que los reportes de margen sean exactos aunque después cambie el costo en el catálogo.</p>
 </blockquote>
 <h3>Registrar una compra</h3>
 <p>Igual flujo, eligiendo el botón <strong>&quot;Compra / Ingreso&quot;</strong>. Aparece un solo campo <strong>&quot;Costo unitario&quot;</strong> (lo que pagaste al proveedor) y la ubicación es de <strong>destino</strong>.</p>

@@ -21,6 +21,32 @@ Plan de pruebas **completo** para correr antes de entregar al cliente. Marca cad
 
 ---
 
+## A2. Ronda 3 — resolución de tus últimos comentarios
+
+**Corregidos en esta ronda (✅):**
+- [ ] **Sin decimales en COP**: `formatCOP` ahora muestra los pesos sin las dos cifras decimales en TODA la webapp (toasts, tarjetas, tablas, gráficas, CSV).
+- [ ] **Overflow de tarjetas**: las tarjetas grandes (Valor vendido, Valor invertido, KPIs del dashboard, valor en ubicación) ahora truncan con `…` si un número es muy grande, en vez de salirse del borde.
+- [ ] **CSV import a las 00:01**: las transacciones importadas por CSV (que no traen hora) quedan a las **00:01 AM** del día indicado, así aparecen primero al ordenar por fecha. Antes quedaban a las 12:00.
+- [ ] **Export CSV — rango máximo 1 año**: cambiado de 2 a 1 año (Manual del Maestro actualizado).
+- [ ] **Dashboard › Inventario** tarjetas por ubicación: ya no dicen "X en costo" sino **"X valor en inventario estimado"** (calculado como cantidad × costo promedio de compra). Si la ubicación tiene unidades pero el producto no tiene compras registradas todavía, muestra "aún sin costo de compra registrado".
+- [ ] **Ficha de ubicación**: el KPI "Valor estimado (costo)" ahora se llama **"Valor en inventario estimado"** y usa el costo promedio de compra del producto × cantidad por ubicación (ya no sale 0 cuando el catálogo no tiene costo).
+- [ ] **CSV plantilla — instrucciones**: la fila de la columna `ubicacion` lista ahora los **nombres exactos** de las ubicaciones activas (sacados de la BD).
+- [ ] **Costo unitario en ventas = costo promedio del momento**: al registrar una venta (manual o por CSV), el `costo_unitario` del item se guarda automáticamente como el **costo promedio ponderado de compras** del producto en ese momento (no como el costo del catálogo que muchas veces estaba en 0).
+- [ ] **CSV export — fallback de costo**: para ventas viejas que ya quedaron en BD con `costo_unitario = 0`, el reporte "Resumen por ítem" cae al costo promedio actual del producto, así el margen siempre sale realista.
+- [ ] **Dashboard — nota por gráfica**: cuando hay filtros activos, las gráficas que no los pueden aplicar (Ventas última semana, Día de la semana, Top 5 por día, Utilidades) muestran un aviso amarillo discreto: "ⓘ Los filtros activos (…) no se aplican a este resumen".
+
+**Respuestas / decisiones (💬):**
+- *"¿Cuál es la necesidad de guardar el costo unitario en las ventas? Veo muchas con 0."* → Sí es útil: permite calcular **margen real por venta** en el reporte CSV "Resumen por ítem" y conservar el costo histórico aunque después cambie el catálogo. **Solución implementada arriba**: ahora se guarda el costo promedio ponderado del producto al momento de la venta (no el catálogo). Para las ventas viejas que quedaron en 0, el reporte de margen ya tiene fallback que usa el costo promedio actual.
+- *"¿La plantilla de carga masiva podría ser xlsx con dropdowns en lugar de CSV?"* → **Sí es técnicamente posible** (el proyecto ya tiene la dependencia `xlsx`). Implicaría:
+  - Generar un `.xlsx` real con una hoja de datos + una hoja oculta con la lista de ubicaciones, y aplicar **data validation** en la columna `ubicacion` y `ubicacion_destino` apuntando a esa lista. También se puede agregar dropdown para `tipo` (venta/compra/traslado).
+  - El parseo al subir tendría que aceptar xlsx (no solo CSV) — ya hay `xlsx` en el proyecto para leerlo.
+  - **Recomendación**: lo dejo como mejora post-entrega. El CSV actual ya funciona y la lista de ubicaciones está visible en las instrucciones de la pantalla. Si quieres priorizar el xlsx después de la entrega, son ~2-3 h de trabajo.
+
+**Aún pendiente / a confirmar (⚠️):**
+- Los filtros del tab Ventas **no recalculan** las gráficas server-aggregated (última semana, día de semana, top 5, utilidades). Estas ahora avisan claramente cuando hay filtros activos. Hacer que respondan a filtros = pasar a re-aggregación en cliente con la data cruda de transacciones (no es trivial, ~3-5 h). **Avísame si lo quieres antes de la entrega o queda para una segunda fase.**
+
+---
+
 ## A. Ronda post-revisión — resolución de tus comentarios y qué re-probar
 
 Estos son los puntos que dejaste con `->`. Marca el check al re-probar.
