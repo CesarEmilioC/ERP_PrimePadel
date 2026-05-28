@@ -129,8 +129,8 @@ Schema completo en [`supabase/schema.sql`](supabase/schema.sql). Resumen:
 ### Dashboard (solo Maestro)
 Tres pestañas: Ventas / Inventario / Alertas. Filtros del tab Ventas: categoría (multi), Mes (atajo) o Fecha desde / hasta (excluyentes).
 
-- **Ventas:** ventas última semana (transacciones reales), consumo por mes, top productos, por categoría, por día de la semana.
-- **Inventario:** stock por ubicación, SKUs por categoría, **días estimados de stock** (predictivo, sobre todo el histórico). Ver también la **vista detallada de cada ubicación** en `/ubicaciones/<id>` que lista los productos presentes y sus cantidades.
+- **Ventas:** ventas última semana (transacciones reales), consumo por mes, top productos, por categoría, por día de la semana. Las gráficas mensuales (consumo por mes, top productos, por categoría, cantidades vendidas) **combinan** el histórico migrado de Alegra con las ventas registradas en este sistema, así la tendencia no se corta al terminar Alegra.
+- **Inventario:** stock por ubicación, SKUs por categoría, **días estimados de stock** (predictivo, usa el histórico combinado Alegra + sistema para tener un promedio estable). Ver también la **vista detallada de cada ubicación** en `/ubicaciones/<id>` que lista los productos presentes y sus cantidades.
 - **Utilidades:** gráfica de costos vs ingresos por producto/servicio, utilidad bruta total y margen %, tabla paginada con margen por producto.
 - **Alertas:** productos por acabarse en nevera, en bodegas, sin movimiento.
 - **KPIs (siempre visibles):** productos activos, ubicaciones, stock total, valor del inventario, alertas activas.

@@ -529,7 +529,7 @@ export function DashboardClient({
                 </Select>
               </div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Ranking de productos más vendidos en el rango filtrado. Cambia el selector para ordenar por monto facturado o por cantidad de unidades.
+                Ranking de productos más vendidos en el rango filtrado. Combina el histórico de Alegra con las ventas registradas en este sistema. Cambia el selector para ordenar por monto facturado o por cantidad de unidades.
               </p>
               <div className="h-72">
                 <ResponsiveContainer>
@@ -561,7 +561,7 @@ export function DashboardClient({
                 </div>
               </div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Distribución del consumo entre las categorías del catálogo. Útil para ver qué tipo de productos genera más ingresos.
+                Distribución del consumo entre las categorías del catálogo. Combina el histórico de Alegra con las ventas registradas en este sistema. Útil para ver qué tipo de productos genera más ingresos.
               </p>
               <div className="h-72">
                 <ResponsiveContainer>
@@ -635,7 +635,7 @@ export function DashboardClient({
               </span>
             </h2>
             <p className="mb-3 text-xs text-muted-foreground">
-              Tabla completa con todos los productos vendidos en el rango filtrado. Útil para exportar a Excel o revisar productos puntuales.
+              Tabla completa con todos los productos vendidos en el rango filtrado. Combina el histórico de Alegra con las ventas registradas en este sistema. Útil para exportar a Excel o revisar productos puntuales.
             </p>
             <Table>
               <THead>
@@ -871,7 +871,7 @@ export function DashboardClient({
             <Card>
               <h2 className="mb-3 text-lg font-semibold text-white">Días estimados de stock</h2>
               <p className="mb-2 text-xs text-muted-foreground">
-                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria del histórico filtrado. Útil para anticipar compras.
+                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria. Combina el histórico de Alegra con las ventas registradas en este sistema. Útil para anticipar compras.
               </p>
               <Table>
                 <THead>

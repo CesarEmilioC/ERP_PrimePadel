@@ -247,6 +247,56 @@ export async function getAlertasDetalladas() {
   }));
 }
 
+// Ventas registradas EN ESTE SISTEMA agregadas por (producto, año, mes) en
+// zona Bogotá. Devuelve filas con la MISMA forma que getVentasHistoricasPorMes
+// para poder concatenar las dos fuentes y que las gráficas del dashboard
+// reflejen tanto el histórico migrado de Alegra como las ventas actuales.
+export async function getVentasSistemaPorMes() {
+  const sb = sbAdmin();
+  const { data } = await sb
+    .from("transaccion_items")
+    .select(
+      "cantidad, subtotal, producto_id, " +
+      "transacciones!inner(fecha, tipo), " +
+      "productos!inner(nombre, codigo, tipo, es_inventariable, categorias(nombre))",
+    )
+    .eq("transacciones.tipo", "venta");
+
+  type Row = {
+    anio: number; mes: number; cantidad_vendida: number; total: number;
+    productos: { nombre: string; codigo: string | null; tipo: "producto" | "servicio"; es_inventariable: boolean; categorias: { nombre: string } | null };
+  };
+  const acc = new Map<string, Row>();
+  for (const it of (data ?? []) as any[]) {
+    const fecha = it.transacciones?.fecha;
+    if (!fecha) continue;
+    // Convertir a fecha local Bogotá (UTC-5, sin DST).
+    const fBogota = new Date(new Date(fecha).getTime() - 5 * 60 * 60 * 1000);
+    const anio = fBogota.getUTCFullYear();
+    const mes = fBogota.getUTCMonth() + 1;
+    const key = `${it.producto_id}|${anio}-${mes}`;
+    const cur = acc.get(key);
+    if (cur) {
+      cur.cantidad_vendida += Number(it.cantidad);
+      cur.total += Number(it.subtotal);
+    } else {
+      acc.set(key, {
+        anio, mes,
+        cantidad_vendida: Number(it.cantidad),
+        total: Number(it.subtotal),
+        productos: {
+          nombre: it.productos?.nombre ?? "—",
+          codigo: it.productos?.codigo ?? null,
+          tipo: (it.productos?.tipo as "producto" | "servicio") ?? "producto",
+          es_inventariable: !!it.productos?.es_inventariable,
+          categorias: it.productos?.categorias ?? null,
+        },
+      });
+    }
+  }
+  return [...acc.values()];
+}
+
 // Top productos por día de la semana (basado en transacciones tipo venta).
 export async function getTopPorDiaSemana() {
   const sb = sbAdmin();

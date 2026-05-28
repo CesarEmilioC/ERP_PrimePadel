@@ -2,6 +2,7 @@ import { sbAdmin } from "@/lib/supabase/admin-server";
 import {
   getCategorias,
   getVentasHistoricasPorMes,
+  getVentasSistemaPorMes,
   getStockPorUbicacion,
   getStockTotalPorProducto,
   getSkusPorCategoria,
@@ -27,6 +28,7 @@ export default async function DashboardPage() {
     { data: stockTotales },
     { count: nAlertas },
     historico,
+    ventasSistemaMes,
     categorias,
     stockPorUbi,
     skusPorCategoria,
@@ -42,6 +44,7 @@ export default async function DashboardPage() {
     sb.from("v_stock_total").select("cantidad_total, valor_total_costo, estado_stock"),
     sb.from("v_stock_total").select("*", { head: true, count: "exact" }).in("estado_stock", ["stock_bajo", "sin_stock"]),
     getVentasHistoricasPorMes(),
+    getVentasSistemaPorMes(),
     getCategorias(),
     getStockPorUbicacion(),
     getSkusPorCategoria(),
@@ -66,13 +69,19 @@ export default async function DashboardPage() {
         valorInventario: valorInv,
         nAlertas: nAlertas ?? 0,
       }}
-      historico={(historico as any[]).map((h) => ({
-        anio: h.anio,
-        mes: h.mes,
-        cantidad_vendida: Number(h.cantidad_vendida),
-        total: Number(h.total),
-        productos: h.productos,
-      }))}
+      historico={[
+        // Histórico migrado de Alegra (sep 2025 – abr 2026 aprox).
+        ...(historico as any[]).map((h) => ({
+          anio: h.anio,
+          mes: h.mes,
+          cantidad_vendida: Number(h.cantidad_vendida),
+          total: Number(h.total),
+          productos: h.productos,
+        })),
+        // Ventas registradas en este sistema, agregadas por (producto, año, mes Bogotá).
+        // Las gráficas que agrupan por mes/producto/categoría suman ambas fuentes.
+        ...ventasSistemaMes,
+      ]}
       categorias={categorias.map((c) => ({ id: c.id, nombre: c.nombre }))}
       stockPorUbicacion={stockPorUbi}
       skusPorCategoria={skusPorCategoria}

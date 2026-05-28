@@ -29,11 +29,11 @@ Plan de pruebas **completo** para correr antes de entregar al cliente. Marca cad
 -> Y cómo podría ver el número si ya es muy grande?
 - [x] **CSV import a las 00:01**: las transacciones importadas por CSV (que no traen hora) quedan a las **00:01 AM** del día indicado, así aparecen primero al ordenar por fecha. Antes quedaban a las 12:00.
 - [x] **Export CSV — rango máximo 1 año**: cambiado de 2 a 1 año (Manual del Maestro actualizado).
-- [ ] **Dashboard › Inventario** tarjetas por ubicación: ya no dicen "X en costo" sino **"X valor en inventario estimado"** (calculado como cantidad × costo promedio de compra). Si la ubicación tiene unidades pero el producto no tiene compras registradas todavía, muestra "aún sin costo de compra registrado".
-- [ ] **Ficha de ubicación**: el KPI "Valor estimado (costo)" ahora se llama **"Valor en inventario estimado"** y usa el costo promedio de compra del producto × cantidad por ubicación (ya no sale 0 cuando el catálogo no tiene costo).
-- [ ] **CSV plantilla — instrucciones**: la fila de la columna `ubicacion` lista ahora los **nombres exactos** de las ubicaciones activas (sacados de la BD).
-- [ ] **Costo unitario en ventas = costo promedio del momento**: al registrar una venta (manual o por CSV), el `costo_unitario` del item se guarda automáticamente como el **costo promedio ponderado de compras** del producto en ese momento (no como el costo del catálogo que muchas veces estaba en 0).
-- [ ] **CSV export — fallback de costo**: para ventas viejas que ya quedaron en BD con `costo_unitario = 0`, el reporte "Resumen por ítem" cae al costo promedio actual del producto, así el margen siempre sale realista.
+- [x] **Dashboard › Inventario** tarjetas por ubicación: ya no dicen "X en costo" sino **"X valor en inventario estimado"** (calculado como cantidad × costo promedio de compra). Si la ubicación tiene unidades pero el producto no tiene compras registradas todavía, muestra "aún sin costo de compra registrado".
+- [x] **Ficha de ubicación**: el KPI "Valor estimado (costo)" ahora se llama **"Valor en inventario estimado"** y usa el costo promedio de compra del producto × cantidad por ubicación (ya no sale 0 cuando el catálogo no tiene costo).
+- [x] **CSV plantilla — instrucciones**: la fila de la columna `ubicacion` lista ahora los **nombres exactos** de las ubicaciones activas (sacados de la BD).
+- [x] **Costo unitario en ventas = costo promedio del momento**: al registrar una venta (manual o por CSV), el `costo_unitario` del item se guarda automáticamente como el **costo promedio ponderado de compras** del producto en ese momento (no como el costo del catálogo que muchas veces estaba en 0).
+- [x] **CSV export — fallback de costo**: para ventas viejas que ya quedaron en BD con `costo_unitario = 0`, el reporte "Resumen por ítem" cae al costo promedio actual del producto, así el margen siempre sale realista.
 - [ ] **Dashboard — nota por gráfica**: cuando hay filtros activos, las gráficas que no los pueden aplicar (Ventas última semana, Día de la semana, Top 5 por día, Utilidades) muestran un aviso amarillo discreto: "ⓘ Los filtros activos (…) no se aplican a este resumen".
 
 **Respuestas / decisiones (💬):**
