@@ -5,16 +5,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// COP sin decimales — el peso colombiano no usa fracciones en la práctica.
 const cop = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
 });
 
 export function formatCOP(value: number | null | undefined): string {
-  if (value == null || Number.isNaN(value)) return "$ 0,00";
-  return cop.format(value);
+  if (value == null || Number.isNaN(value)) return "$ 0";
+  return cop.format(Math.round(value));
 }
 
 const intNum = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });

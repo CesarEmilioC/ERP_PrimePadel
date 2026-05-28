@@ -26,21 +26,26 @@ Plan de pruebas **completo** para correr antes de entregar al cliente. Marca cad
 Estos son los puntos que dejaste con `->`. Marca el check al re-probar.
 
 **Corregidos (✅):**
-- [ ] **Ficha de ubicación**: ya no muestra productos con cantidad 0.
-- [ ] **Toasts** (mensajes momentáneos): ahora con fondo sólido (sin transparencia).
-- [ ] **Ficha de producto**: nueva tarjeta **"Valor vendido"** junto a "Valor invertido".
-- [ ] **Traslado**: ya NO pide costo unitario ni muestra subtotal; solo mueve cantidades (el footer dice "N unidades a mover").
-- [ ] **Tabla de transacciones**: los ítems de **venta** muestran "— desde \<ubicación\>" y los de **compra** "— a \<ubicación\>" (como el traslado muestra origen → destino).
-- [ ] **Venta**: el precio es un **dropdown de tarifas** del producto (Detal, Staff, etc., con su precio) + opción **"Otro"** para valor personalizado.
-- [ ] **Última edición**: al editar una transacción, bajo la fecha aparece "editado \<fecha/hora\>" y bajo "Registró" aparece "editó: \<usuario\>". El creador original NO cambia.
-- [ ] **Botón "Nueva tarifa"**: ya no se desborda el texto.
-- [ ] **Histórico de ventas (mensual)** en la ficha del producto: ahora combina Alegra + ventas del sistema, mes a mes hasta el mes actual.
-- [ ] **Historial de ajustes**: ahora solo muestra ajustes manuales (conteo, merma, rotura, corrección, ingreso inicial). Ya NO aparecen las "reversa de transacción/traslado".
-- [ ] **Dashboard › Ventas**: nuevo filtro de **Producto** (multi).
-- [ ] **Dashboard › Utilidades**: el costo usa el **costo promedio de compra** × unidades vendidas.
-- [ ] **Dashboard › Inventario**: el "valor en costo" por ubicación usa el costo promedio (ya no sale "no configurado" si hay compras).
-- [ ] **Dashboard › Alertas**: filtros por categoría y por producto, botón **"Ver"** por fila, y la columna de ubicaciones solo muestra las que tienen stock > 0.
-- [ ] **Gráficas que no usan Alegra**: ahora lo indican en su descripción.
+- [x] **Ficha de ubicación**: ya no muestra productos con cantidad 0.
+- [x] **Toasts** (mensajes momentáneos): ahora con fondo sólido (sin transparencia).
+- [x] **Ficha de producto**: nueva tarjeta **"Valor vendido"** junto a "Valor invertido".
+-> Quiero quitar las dos cifras decimales de los valores. También necesito que tengas cuidado con que los contenidos de los badges no se salgan de ellos. Así los valores sean númeross muy grandes, no se pueden salir del margen del badge.
+- [x] **Traslado**: ya NO pide costo unitario ni muestra subtotal; solo mueve cantidades (el footer dice "N unidades a mover").
+- [x] **Tabla de transacciones**: los ítems de **venta** muestran "— desde \<ubicación\>" y los de **compra** "— a \<ubicación\>" (como el traslado muestra origen → destino).
+- [x] **Venta**: el precio es un **dropdown de tarifas** del producto (Detal, Staff, etc., con su precio) + opción **"Otro"** para valor personalizado.
+-> Recuerda quitar las dos cifras decimales en toda la webapp por favor.
+- [x] **Última edición**: al editar una transacción, bajo la fecha aparece "editado \<fecha/hora\>" y bajo "Registró" aparece "editó: \<usuario\>". El creador original NO cambia.
+- [x] **Botón "Nueva tarifa"**: ya no se desborda el texto.
+- [x] **Histórico de ventas (mensual)** en la ficha del producto: ahora combina Alegra + ventas del sistema, mes a mes hasta el mes actual.
+- [x] **Historial de ajustes**: ahora solo muestra ajustes manuales (conteo, merma, rotura, corrección, ingreso inicial). Ya NO aparecen las "reversa de transacción/traslado".
+- [x] **Dashboard › Ventas**: nuevo filtro de **Producto** (multi).
+-> Recuerda que los filtros deben afectar a todas las gráficas de la página. Si alguna no se afecta por algún filtro, que la gráfica tenga un pequeño mensaje que indique que el filtro seleccionado no es aplicable a esa gráfica. Pero por ejemplo, la de consumo por mes sí debe filtrarse normal.
+- [x] **Dashboard › Utilidades**: el costo usa el **costo promedio de compra** × unidades vendidas.
+- [x] **Dashboard › Inventario**: el "valor en costo" por ubicación usa el costo promedio (ya no sale "no configurado" si hay compras).
+-> Cambiemos el nombre a "valor en inventario estimado". Este valor lo estas calculando con los costos promedio * la cantidad comprada de cada producto en cada ubicación correcto? Así debe de sacarse este valor.
+-> Este valor debe poderse ver en "Valor estimado" en la vista de una ubicación, en este momento salen en 0, pero debe ser calculado como te indico y aparecer aquí también.
+- [x] **Dashboard › Alertas**: filtros por categoría y por producto, botón **"Ver"** por fila, y la columna de ubicaciones solo muestra las que tienen stock > 0.
+- [x] **Gráficas que no usan Alegra**: ahora lo indican en su descripción.
 
 **Respuestas / notas (💬):**
 - *"¿Qué significa la reversa de transacción/traslado con motivo corrección en el historial de ajustes?"* → Eran los ajustes automáticos que el sistema hacía al editar/eliminar transacciones. Tienes razón en que no pertenecen al historial de ajustes manuales: **los quité de esa vista**. El stock se sigue revirtiendo igual, pero ya no ensucia el historial.
@@ -105,7 +110,7 @@ Para probar bien necesitas algo de stock. Hazlo en este orden:
 ### 2.3 Editar/eliminar (restricciones de recepción)
 - [x] Editar su propia venta **de hoy** → permite. Cambiar cantidad y guardar → "Transacción actualizada".
 - [x] Eliminar su propia venta de hoy → confirma → desaparece y el stock se revierte.
-- [ ] Login `recepcion2`: NO ve botones Editar/Eliminar en las ventas de `recepcion1`.
+- [x] Login `recepcion2`: NO ve botones Editar/Eliminar en las ventas de `recepcion1`.
 
 ### 2.4 Filtros de la lista
 - [x] Filtros por categoría (multi) y producto (multi) funcionan.
@@ -225,25 +230,28 @@ Para probar bien necesitas algo de stock. Hazlo en este orden:
 ## 5. Carga masiva CSV
 
 ### 5.1 Plantilla
-- [ ] Como `admin`/`maestro`: "⬇ Descargar plantilla CSV" → baja `plantilla-transacciones-<fecha>.csv`.
-- [ ] El archivo trae **solo encabezados + una fila por producto** (sin líneas de instrucciones `#`).
-- [ ] Cada fila muestra `nombre_producto` (referencia) y la columna `valor_unitario` pre-llenada.
-- [ ] Como `recepcion1`: la plantilla trae filas de venta y traslado, **no** de compra.
+- [x] Como `admin`/`maestro`: "⬇ Descargar plantilla CSV" → baja `plantilla-transacciones-<fecha>.csv`.
+- [x] El archivo trae **solo encabezados + una fila por producto** (sin líneas de instrucciones `#`).
+- [x] Cada fila muestra `nombre_producto` (referencia) y la columna `valor_unitario` pre-llenada.
+- [x] Como `recepcion1`: la plantilla trae filas de venta y traslado, **no** de compra.
+-> Me gustaría que en la tabla de instrucciones, el texto de exlicación de ubicacion, tuviese la lista de ubicaciones (exacta) que actualmente hay (sacándola de la dB claro).
+-> Crees que la plantilla pudiese ser un xlsx con dropdowns con las listas de ubicaciones, y que todo fuese una tabla bien estructurada para filtrar y demás? O se complica mucho?
 
 ### 5.2 Llenado e importación
-- [ ] Pon cantidad a 3-4 productos, deja el resto en 0. Sube el archivo.
-- [ ] El preview muestra: filas leídas, válidas, con error, **ignoradas** (las de cantidad 0).
-- [ ] Importar → toast verde, las transacciones aparecen con badge **CSV**.
+- [x] Pon cantidad a 3-4 productos, deja el resto en 0. Sube el archivo.
+- [x] El preview muestra: filas leídas, válidas, con error, **ignoradas** (las de cantidad 0).
+- [x] Importar → toast verde, las transacciones aparecen con badge **CSV**.
+-> Todo se guarda bien, lo único que me gustaría es que la hora de estas transacciones quedase como las 00:01 am para que aparezcan primero que las demaás transacciones que se guarden para ese día.
 
 ### 5.3 Validaciones e importación parcial
-- [ ] Una fila con código de producto inexistente → aparece en rojo con mensaje claro.
-- [ ] Una fila con ubicación que no existe → roja.
-- [ ] Una venta que supera el stock → roja "Stock insuficiente: hay X, intentas mover Y".
-- [ ] **Importante:** aunque haya filas rojas, el botón "Importar" se mantiene activo y al confirmar **se importan solo las válidas**; las inválidas se reportan en el resumen.
-- [ ] Recepción subiendo una fila de compra → cae en rojo "Tu rol no permite registrar compras".
+- [x] Una fila con código de producto inexistente → aparece en rojo con mensaje claro.
+- [x] Una fila con ubicación que no existe → roja.
+- [x] Una venta que supera el stock → roja "Stock insuficiente: hay X, intentas mover Y".
+- [x] **Importante:** aunque haya filas rojas, el botón "Importar" se mantiene activo y al confirmar **se importan solo las válidas**; las inválidas se reportan en el resumen.
+- [x] Recepción subiendo una fila de compra → cae en rojo "Tu rol no permite registrar compras".
 
 ### 5.4 Agrupación por ticket
-- [ ] 2 filas con el mismo `ticket` (mismo tipo y fecha) → se crea **1 transacción** con 2 ítems.
+- [x] 2 filas con el mismo `ticket` (mismo tipo y fecha) → se crea **1 transacción** con 2 ítems.
 
 **Notas:**
 >
@@ -253,12 +261,14 @@ Para probar bien necesitas algo de stock. Hazlo en este orden:
 ## 6. Costo / precio y edición de transacciones (casos clave)
 
 - [ ] Registrar una venta → en BD/ CSV "Resumen por ítem" el `costo_unitario` queda con el costo del producto al momento (snapshot), aunque no se pidió en la UI.
-- [ ] Editar una **venta** cambiando solo el **precio** (sin tocar cantidad) → guarda sin problema.
-- [ ] Editar una **compra antigua** cambiando solo el **costo** (sin tocar cantidad), incluso si ya se vendió parte de ese stock → **debe guardar sin error** (edición ligera, no toca stock).
-- [ ] Editar una venta cambiando la **cantidad** de 2 → 5 → el stock baja 3 unidades adicionales.
-- [ ] Editar fallida: cambiar una venta a un producto sin stock suficiente → error claro y la transacción original queda intacta.
-- [ ] Eliminar una compra cuyo stock **todavía está disponible** → el stock baja correctamente.
-- [ ] Intentar eliminar una compra cuyo stock **ya se vendió/movió** (dejaría negativo) → error **descriptivo** (no jerga técnica) explicando por qué.
+-> Cuál sería el costo actual del producto? EL costo promedio? Cuál es la necesidad de que las transacciones de tipo venta guarden en costo unitario del producto? Esto lo ves necesario o podríamos quitar esto?
+-> Veo muchas transacciones con costo_unitario en 0, si lo vamos a guardar entonces hay que tomar el costo unitario promedio del producto en el momento de la transacción.
+- [x] Editar una **venta** cambiando solo el **precio** (sin tocar cantidad) → guarda sin problema.
+- [x] Editar una **compra antigua** cambiando solo el **costo** (sin tocar cantidad), incluso si ya se vendió parte de ese stock → **debe guardar sin error** (edición ligera, no toca stock).
+- [x] Editar una venta cambiando la **cantidad** de 2 → 5 → el stock baja 3 unidades adicionales.
+- [x] Editar fallida: cambiar una venta a un producto sin stock suficiente → error claro y la transacción original queda intacta.
+- [x] Eliminar una compra cuyo stock **todavía está disponible** → el stock baja correctamente.
+- [x] Intentar eliminar una compra cuyo stock **ya se vendió/movió** (dejaría negativo) → error **descriptivo** (no jerga técnica) explicando por qué.
 
 **Notas:**
 >
@@ -267,11 +277,13 @@ Para probar bien necesitas algo de stock. Hazlo en este orden:
 
 ## 7. Descargar CSV de transacciones (admin/maestro)
 
-- [ ] En `/transacciones`, botón "⬇ Descargar CSV" (recepción NO lo ve).
-- [ ] Modo **Resumen por ítem**: máx 2 filas por producto (venta/compra), con columnas de costo, margen y margen %. Sin traslados.
-- [ ] Modo **Historial por transacción**: una fila por transacción, incluyendo traslados.
-- [ ] Fecha fin anterior a inicio → error. Rango > 2 años → error.
-- [ ] El archivo abre bien en Excel con acentos y ñ correctos.
+- [x] En `/transacciones`, botón "⬇ Descargar CSV" (recepción NO lo ve).
+- [x] Modo **Resumen por ítem**: máx 2 filas por producto (venta/compra), con columnas de costo, margen y margen %. Sin traslados.
+-> En el resumen por item, para las transacciones tipo venta, el costo_total me imagino que toma el costo_unitario y lo cmultiplica por la cantidad vendida, la cosa es que muchos se han estado guardando en 0 como te comentaba más arriba, por lo que necesito que guardemos bien el costo_unitario en las ventas, utilizando el costo promedio de producto al momento de venderlo.
+- [x] Modo **Historial por transacción**: una fila por transacción, incluyendo traslados.
+- [x] Fecha fin anterior a inicio → error. Rango > 2 años → error.
+- Reduzcamos el rango a máximo 1 año y 1 día.
+- [x] El archivo abre bien en Excel con acentos y ñ correctos.
 
 **Notas:**
 >
@@ -280,11 +292,11 @@ Para probar bien necesitas algo de stock. Hazlo en este orden:
 
 ## 8. UX general
 
-- [ ] Logo nítido y nav sticky.
-- [ ] Responsive: probar Transacciones y Nueva transacción en pantalla de celular.
-- [ ] Toasts de éxito/error aparecen y desaparecen solos.
-- [ ] Sin errores en la consola del navegador (F12 → Console).
-- [ ] Los mensajes de error que aparezcan son entendibles (sin nombres técnicos de columnas).
+- [x] Logo nítido y nav sticky.
+- [x] Responsive: probar Transacciones y Nueva transacción en pantalla de celular.
+- [x] Toasts de éxito/error aparecen y desaparecen solos.
+- [x] Sin errores en la consola del navegador (F12 → Console).
+- [x] Los mensajes de error que aparezcan son entendibles (sin nombres técnicos de columnas).
 
 **Notas:**
 >

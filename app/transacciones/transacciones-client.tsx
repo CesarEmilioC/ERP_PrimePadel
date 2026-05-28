@@ -478,7 +478,7 @@ export function TransaccionesClient({
 
           <p className="text-xs text-muted-foreground">
             Se incluyen todas las transacciones cuya fecha esté entre el inicio y el
-            fin del rango (zona horaria Bogotá). Rango máximo: 2 años.
+            fin del rango (zona horaria Bogotá). Rango máximo: 1 año.
           </p>
         </div>
       </Dialog>

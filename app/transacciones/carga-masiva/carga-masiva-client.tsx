@@ -164,11 +164,19 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                   </tr>
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-muted-foreground">ubicacion</td>
-                    <td className="px-2 py-1.5 text-muted-foreground">De dónde sale (venta/traslado) o a dónde llega (compra). Viene con una sugerencia; cámbiala si aplica.</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">
+                      De dónde sale (venta/traslado) o a dónde llega (compra). Debe ser el nombre <strong className="text-white">exacto</strong> de una de las ubicaciones activas:{" "}
+                      {catalogo.ubicaciones.filter((u) => u.activa).map((u, idx, arr) => (
+                        <span key={u.id}>
+                          <code className="text-brand-orange">{u.nombre}</code>
+                          {idx < arr.length - 1 ? ", " : "."}
+                        </span>
+                      ))}
+                    </td>
                   </tr>
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-muted-foreground">ubicacion_destino</td>
-                    <td className="px-2 py-1.5 text-muted-foreground">Solo en filas de <strong className="text-white">traslado</strong>: a dónde llega el stock.</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">Solo en filas de <strong className="text-white">traslado</strong>: a dónde llega el stock. Acepta los mismos valores que la columna <code className="text-brand-orange">ubicacion</code>.</td>
                   </tr>
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-muted-foreground">notas / ticket</td>

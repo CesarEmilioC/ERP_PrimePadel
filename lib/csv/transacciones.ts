@@ -177,9 +177,11 @@ function parseFechaISO(raw: string): string | null {
   if (!raw) return null;
   const s = raw.trim();
 
-  // Separar fecha y hora (si hay).
+  // Separar fecha y hora (si hay). Si no se especifica hora, las transacciones
+  // importadas por CSV quedan a las 00:01 del día — así aparecen al inicio del
+  // día y se distinguen de las que se registran manualmente durante el día.
   const [fechaStr, horaStr] = s.split(/[ T]/, 2);
-  const hora = horaStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(horaStr) ? horaStr : "12:00";
+  const hora = horaStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(horaStr) ? horaStr : "00:01";
 
   let yyyy: string | null = null;
   let mm: string | null = null;

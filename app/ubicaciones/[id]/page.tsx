@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { sbAdmin } from "@/lib/supabase/admin-server";
 import { requireAdmin } from "@/lib/auth";
+import { getCostoPromedioPorProducto } from "@/lib/queries";
 import { Badge } from "@/components/ui/badge";
 import { Card, Table, THead, TBody, TR, TH, TD, EmptyState } from "@/components/ui/table";
 import { formatCOP, formatInt } from "@/lib/utils";
@@ -21,17 +22,20 @@ export default async function UbicacionDetallePage({ params }: { params: Promise
 
   if (!ubicacion) notFound();
 
-  const { data: stockRows } = await sb
-    .from("stock_por_ubicacion")
-    .select("cantidad, productos(id, codigo, nombre, activo, categoria_id, costo_unitario, categorias(nombre))")
-    .eq("ubicacion_id", id);
+  const [{ data: stockRows }, costoPromedio] = await Promise.all([
+    sb.from("stock_por_ubicacion")
+      .select("cantidad, productos(id, codigo, nombre, activo, categoria_id, categorias(nombre))")
+      .eq("ubicacion_id", id),
+    getCostoPromedioPorProducto(),
+  ]);
 
   const items = ((stockRows ?? []) as any[])
     .filter((r) => r.productos != null && Number(r.cantidad ?? 0) > 0) // solo productos presentes
     .map((r) => {
       const p = r.productos;
       const cantidad = Number(r.cantidad ?? 0);
-      const costo = Number(p?.costo_unitario ?? 0);
+      // Costo promedio de compra del producto (no el costo "catálogo" que suele estar en 0).
+      const costo = costoPromedio.get(p.id) ?? 0;
       return {
         producto_id: p.id as string,
         codigo: p.codigo as string | null,
@@ -76,9 +80,9 @@ export default async function UbicacionDetallePage({ params }: { params: Promise
           <p className="mt-1 text-2xl font-bold text-white">{formatInt(totalUnidades)}</p>
         </Card>
         <Card>
-          <p className="text-xs uppercase text-muted-foreground">Valor estimado (costo)</p>
-          <p className="mt-1 text-2xl font-bold text-brand-orange">{formatCOP(valorTotal)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">cantidad × costo unitario actual</p>
+          <p className="text-xs uppercase text-muted-foreground">Valor en inventario estimado</p>
+          <p className="mt-1 truncate text-2xl font-bold tabular-nums text-brand-orange">{formatCOP(valorTotal)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">cantidad × costo promedio de compra</p>
         </Card>
       </div>
 
