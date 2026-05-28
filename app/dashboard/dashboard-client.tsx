@@ -49,10 +49,22 @@ type UtilidadProducto = {
   nombre: string;
   tipo: "producto" | "servicio";
   cantidad_vendida: number;
+  ingresos_brutos: number;
+  impuestos: number;
   ingresos: number;
   costos: number;
   utilidad: number;
   margen_pct: number;
+};
+type VentaPorTarifaRow = {
+  anio: number;
+  mes: number;
+  producto_nombre: string;
+  categoria_nombre: string;
+  lista_precio_id: string | null;
+  lista_precio_nombre: string | null;
+  cantidad: number;
+  monto: number;
 };
 
 const COLORS = ["#FF8C42", "#F5C518", "#FFB366", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#eab308", "#06b6d4", "#f97316"];
@@ -135,7 +147,7 @@ function Pager({ page, total, pageSize, onChange }: { page: number; total: numbe
 type Tab = "inventario" | "ventas" | "alertas";
 
 export function DashboardClient({
-  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, ventasUltimaSemana, utilidadPorProducto, stockTotalPorProducto,
+  stats, historico, categorias, stockPorUbicacion, skusPorCategoria, alertasDetalladas, topPorDiaSemana, ventasPorDiaSemana, ventasUltimaSemana, utilidadPorProducto, stockTotalPorProducto, ventasPorTarifa,
 }: {
   stats: {
     nProductosActivos: number;
@@ -155,6 +167,7 @@ export function DashboardClient({
   ventasUltimaSemana: VentaDia[];
   utilidadPorProducto: UtilidadProducto[];
   stockTotalPorProducto: StockTotalPorProducto[];
+  ventasPorTarifa: VentaPorTarifaRow[];
 }) {
   const [tab, setTab] = React.useState<Tab>("ventas");
   const [fCats, setFCats] = React.useState<string[]>([]);
@@ -277,6 +290,30 @@ export function DashboardClient({
     categoriaMap.set(c, row);
   }
   const porCategoria = [...categoriaMap.values()].sort((a, b) => vistaCat === "monto" ? b.monto - a.monto : b.cantidad - a.cantidad);
+
+  // Ventas por tarifa (a nivel item): aplicamos los mismos filtros de la
+  // pestaña Ventas (categoría, producto por nombre, mes, rango de fechas) y
+  // luego agregamos por tarifa. Las ventas con `lista_precio_id` null se
+  // muestran como "Otro / Personalizado".
+  const ventasTarifaAgg = React.useMemo(() => {
+    const acc = new Map<string, { key: string; nombre: string; monto: number; cantidad: number }>();
+    for (const v of ventasPorTarifa) {
+      if (catNameSet.size > 0 && !catNameSet.has(v.categoria_nombre)) continue;
+      if (prodSet.size > 0 && !prodSet.has(v.producto_nombre)) continue;
+      if (!inRangoFecha(v.anio, v.mes)) continue;
+      const key = v.lista_precio_id ?? "__otro__";
+      const nombre = v.lista_precio_nombre ?? "Otro / Personalizado";
+      const cur = acc.get(key) ?? { key, nombre, monto: 0, cantidad: 0 };
+      cur.monto += v.monto;
+      cur.cantidad += v.cantidad;
+      acc.set(key, cur);
+    }
+    return [...acc.values()].sort((a, b) => b.monto - a.monto);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ventasPorTarifa, fCats, fProds, fMes, fFechaDesde, fFechaHasta]);
+
+  const totalVentasTarifaMonto = ventasTarifaAgg.reduce((s, r) => s + r.monto, 0);
+  const totalVentasTarifaCantidad = ventasTarifaAgg.reduce((s, r) => s + r.cantidad, 0);
 
   const ultimo = serieMensualTotal[serieMensualTotal.length - 1];
   const penultimo = serieMensualTotal[serieMensualTotal.length - 2];
@@ -577,6 +614,69 @@ export function DashboardClient({
             </Card>
           </div>
 
+          {/* Ventas por tarifa (monto y cantidad) — responde a los filtros del tab */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <h2 className="text-lg font-semibold text-white">Monto vendido por tarifa</h2>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Suma de subtotales agrupados por la tarifa con la que se registró cada venta. Solo cuenta transacciones registradas en este sistema (no el histórico de Alegra). Las ventas con precio personalizado aparecen como <strong>"Otro / Personalizado"</strong>.
+              </p>
+              {ventasTarifaAgg.length === 0 ? (
+                <EmptyState
+                  title="Sin ventas en el rango"
+                  description="Cuando haya ventas registradas en el sistema con los filtros activos, esta gráfica se actualiza."
+                />
+              ) : (
+                <>
+                  <div className="h-72">
+                    <ResponsiveContainer>
+                      <BarChart data={ventasTarifaAgg} layout="vertical" margin={{ left: 130 }}>
+                        <CartesianGrid stroke="#1f1f1f" horizontal={false} />
+                        <XAxis type="number" stroke="#A3A3A3" tick={{ fontSize: 11 }} tickFormatter={(v) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${Math.round(v / 1000)}K` : String(v)} />
+                        <YAxis type="category" dataKey="nombre" stroke="#A3A3A3" tick={{ fontSize: 11 }} width={120} />
+                        <Tooltip content={<DarkTooltip formatter={(v: number) => formatCOP(v)} />} cursor={{ fill: "#ffffff10" }} />
+                        <Bar dataKey="monto" name="Monto" fill="#FF8C42" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Total: <span className="font-semibold text-white">{formatCOP(totalVentasTarifaMonto)}</span>
+                  </p>
+                </>
+              )}
+            </Card>
+
+            <Card>
+              <h2 className="text-lg font-semibold text-white">Unidades vendidas por tarifa</h2>
+              <p className="mb-3 text-xs text-muted-foreground">
+                Cantidad de unidades vendidas agrupadas por la tarifa con la que se registró cada venta. Útil para ver el peso real de cada canal/tipo de cliente. Solo cuenta transacciones registradas en este sistema.
+              </p>
+              {ventasTarifaAgg.length === 0 ? (
+                <EmptyState
+                  title="Sin ventas en el rango"
+                  description="Cuando haya ventas registradas en el sistema con los filtros activos, esta gráfica se actualiza."
+                />
+              ) : (
+                <>
+                  <div className="h-72">
+                    <ResponsiveContainer>
+                      <BarChart data={ventasTarifaAgg} layout="vertical" margin={{ left: 130 }}>
+                        <CartesianGrid stroke="#1f1f1f" horizontal={false} />
+                        <XAxis type="number" stroke="#A3A3A3" tick={{ fontSize: 11 }} tickFormatter={(v) => formatInt(v)} />
+                        <YAxis type="category" dataKey="nombre" stroke="#A3A3A3" tick={{ fontSize: 11 }} width={120} />
+                        <Tooltip content={<DarkTooltip formatter={(v: number) => `${formatInt(v)} uds`} />} cursor={{ fill: "#ffffff10" }} />
+                        <Bar dataKey="cantidad" name="Cantidad" fill="#F5C518" radius={[0, 6, 6, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    Total: <span className="font-semibold text-white">{formatInt(totalVentasTarifaCantidad)}</span> unidades
+                  </p>
+                </>
+              )}
+            </Card>
+          </div>
+
           {/* Análisis por día de la semana */}
           <Card>
             <h2 className="text-lg font-semibold text-white">Ventas por día de la semana</h2>
@@ -667,11 +767,12 @@ export function DashboardClient({
           {(() => {
             const filtrada = utilidadPorProducto.filter((u) => filtroUtil === "todos" ? true : u.tipo === filtroUtil);
             const totalIngresos = filtrada.reduce((s, u) => s + u.ingresos, 0);
+            const totalImpuestos = filtrada.reduce((s, u) => s + u.impuestos, 0);
             const totalCostos = filtrada.reduce((s, u) => s + u.costos, 0);
             const totalUtilidad = totalIngresos - totalCostos;
             const margenGlobal = totalIngresos > 0 ? Math.round((totalUtilidad / totalIngresos) * 10000) / 100 : 0;
             const page = filtrada.slice(pageUtil * PAGE_TOP, (pageUtil + 1) * PAGE_TOP);
-            // Datos para gráfica: top 10 con costos vs ingresos.
+            // Datos para gráfica: top 10 con costos vs ingresos (ya netos de impuestos).
             const chartData = filtrada.slice(0, 10).map((u) => ({
               nombre: u.nombre.length > 22 ? u.nombre.slice(0, 22) + "…" : u.nombre,
               Ingresos: Math.round(u.ingresos),
@@ -686,6 +787,9 @@ export function DashboardClient({
                       <p className="mt-1 text-xs text-muted-foreground">
                         Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) de cada producto/servicio en las ventas registradas en el sistema. El costo usa el <strong>costo promedio de compra</strong> del producto × unidades vendidas; la utilidad bruta es la diferencia. No incluye el histórico de Alegra.
                       </p>
+                      <p className="mt-1 text-xs text-yellow-300/80">
+                        ⓘ A los <strong>ingresos</strong> ya se les descontó el impuesto asignado al producto (IVA / Impoconsumo). El precio que paga el cliente lo incluye, así que aquí se separa con la fórmula <code>impuesto = bruto × pct / (100 + pct)</code>. Productos sin impuesto se muestran tal cual.
+                      </p>
                       {notaFiltrosNoAplican}
                     </div>
                     <Select value={filtroUtil} onChange={(e) => { setFiltroUtil(e.target.value as any); setPageUtil(0); }} className="max-w-[160px]">
@@ -694,10 +798,16 @@ export function DashboardClient({
                       <option value="servicio">Solo servicios</option>
                     </Select>
                   </div>
-                  <div className="mb-3 grid gap-3 md:grid-cols-3">
+                  <div className="mb-3 grid gap-3 md:grid-cols-4">
                     <div className="rounded border border-border bg-muted/20 p-3">
-                      <p className="text-xs uppercase text-muted-foreground">Ingresos totales</p>
+                      <p className="text-xs uppercase text-muted-foreground">Ingresos netos</p>
                       <p title={formatCOP(totalIngresos)} className="mt-1 truncate text-xl font-bold tabular-nums text-green-300">{formatCOP(totalIngresos)}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">sin impuestos</p>
+                    </div>
+                    <div className="rounded border border-border bg-muted/20 p-3">
+                      <p className="text-xs uppercase text-muted-foreground">Impuestos descontados</p>
+                      <p title={formatCOP(totalImpuestos)} className="mt-1 truncate text-xl font-bold tabular-nums text-yellow-300">{formatCOP(totalImpuestos)}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground">IVA / Impoconsumo</p>
                     </div>
                     <div className="rounded border border-border bg-muted/20 p-3">
                       <p className="text-xs uppercase text-muted-foreground">Costos totales</p>
@@ -740,8 +850,11 @@ export function DashboardClient({
                         ({pageUtil * PAGE_TOP + 1}–{Math.min((pageUtil + 1) * PAGE_TOP, filtrada.length)} de {filtrada.length})
                       </span>
                     </h2>
-                    <p className="mb-3 text-xs text-muted-foreground">
+                    <p className="mb-1 text-xs text-muted-foreground">
                       Ordenado por utilidad descendente. El margen % es <code>utilidad / ingresos × 100</code>.
+                    </p>
+                    <p className="mb-3 text-xs text-yellow-300/80">
+                      ⓘ La columna <strong>Ingresos</strong> está NETA del impuesto asignado al producto (IVA / Impoconsumo). El monto separado se muestra en la columna <strong>Impuestos</strong>.
                     </p>
                     <Table>
                       <THead>
@@ -750,7 +863,9 @@ export function DashboardClient({
                           <TH>Producto / Servicio</TH>
                           <TH>Tipo</TH>
                           <TH className="text-right">Vendidas</TH>
-                          <TH className="text-right">Ingresos</TH>
+                          <TH className="text-right">Ingresos brutos</TH>
+                          <TH className="text-right">Impuestos</TH>
+                          <TH className="text-right">Ingresos netos</TH>
                           <TH className="text-right">Costos</TH>
                           <TH className="text-right">Utilidad</TH>
                           <TH className="text-right">Margen %</TH>
@@ -768,6 +883,8 @@ export function DashboardClient({
                               {u.tipo === "servicio" ? <Badge tone="blue">Servicio</Badge> : <Badge tone="gray">Producto</Badge>}
                             </TD>
                             <TD className="text-right font-mono">{formatInt(u.cantidad_vendida)}</TD>
+                            <TD className="text-right font-mono text-muted-foreground">{formatCOP(u.ingresos_brutos)}</TD>
+                            <TD className="text-right font-mono text-yellow-300/80">{u.impuestos > 0 ? formatCOP(u.impuestos) : "—"}</TD>
                             <TD className="text-right font-mono text-green-300">{formatCOP(u.ingresos)}</TD>
                             <TD className="text-right font-mono text-red-300">{formatCOP(u.costos)}</TD>
                             <TD className={`text-right font-mono ${u.utilidad >= 0 ? "text-brand-orange" : "text-red-400"}`}>

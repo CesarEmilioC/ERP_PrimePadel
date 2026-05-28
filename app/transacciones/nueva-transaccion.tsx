@@ -203,7 +203,9 @@ export function NuevaTransaccion({
           tipo === "traslado" ? 0
           : tipo === "venta" ? Number(i.costo_unitario)
           : Number(i.precio_unitario),
-        lista_precio_id: i.lista_precio_id,
+        // En ventas guardamos la tarifa elegida (null si fue "Otro" personalizado).
+        // En compra y traslado la tarifa no aplica.
+        lista_precio_id: tipo === "venta" ? (i.lista_precio_id ?? null) : null,
       })),
     };
 
@@ -405,7 +407,10 @@ export function NuevaTransaccion({
                           const tarifaSel = tarifas.find(
                             (t) => t.lista_precio_id === it.lista_precio_id && t.precio === it.precio_unitario,
                           );
-                          const selValue = tarifaSel ? tarifaSel.lista_precio_id : "__otro__";
+                          // "Otro" (precio personalizado) solo disponible para admin/maestro.
+                          // Recepción debe usar siempre una tarifa de la lista.
+                          const puedeOtro = !esRecepcion;
+                          const selValue = tarifaSel ? tarifaSel.lista_precio_id : (puedeOtro ? "__otro__" : (tarifas[0]?.lista_precio_id ?? ""));
                           return (
                             <>
                               <Select
@@ -425,9 +430,9 @@ export function NuevaTransaccion({
                                     {t.nombre} — {formatCOP(t.precio)}
                                   </option>
                                 ))}
-                                <option value="__otro__">Otro (personalizado)…</option>
+                                {puedeOtro ? <option value="__otro__">Otro (personalizado)…</option> : null}
                               </Select>
-                              {selValue === "__otro__" ? (
+                              {puedeOtro && selValue === "__otro__" ? (
                                 <div className="mt-1">
                                   <NumericInput
                                     value={it.precio_unitario}

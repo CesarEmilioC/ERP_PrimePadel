@@ -25,6 +25,8 @@ export type HistoricoTx = {
   subtotal: number;
   ubicacion_origen_nombre: string | null;
   ubicacion_destino_nombre: string | null;
+  lista_precio_id: string | null;
+  tarifa_nombre: string | null;
   notas: string | null;
   origen: string;
 };
@@ -326,7 +328,7 @@ export function DetalleClient(props: DetalleProps) {
             </span>
           </h2>
           <p className="mb-3 text-xs text-muted-foreground">
-            Cada vez que se vende, compra o traslada este producto queda una fila aquí. Útil para auditar cómo se calculan el costo promedio y el valor invertido (en compras), y para ver patrones de venta.
+            Cada vez que se vende, compra o traslada este producto queda una fila aquí. La columna <strong>Valor unit.</strong> muestra el costo en compras y el precio de venta en ventas. Para ventas, también verás la <strong>tarifa</strong> con la que se registró (o "Otro / Personalizado" si se usó un precio libre).
           </p>
           <Table>
             <THead>
@@ -335,14 +337,18 @@ export function DetalleClient(props: DetalleProps) {
                 <TH>Tipo</TH>
                 <TH>Ubicación</TH>
                 <TH className="text-right">Cantidad</TH>
-                <TH className="text-right">Precio unit.</TH>
-                <TH className="text-right">Costo unit.</TH>
+                <TH className="text-right">Valor unit.</TH>
+                <TH>Tarifa</TH>
                 <TH className="text-right">Subtotal</TH>
                 <TH>Notas</TH>
               </TR>
             </THead>
             <TBody>
-              {historialTransacciones.slice(pageTx * PAGE_SIZE, (pageTx + 1) * PAGE_SIZE).map((t) => (
+              {historialTransacciones.slice(pageTx * PAGE_SIZE, (pageTx + 1) * PAGE_SIZE).map((t) => {
+                // En compras y traslados el "valor unit." es el costo registrado;
+                // en ventas es el precio cobrado al cliente.
+                const valorUnit = t.tipo === "venta" ? t.precio_unitario : t.costo_unitario;
+                return (
                 <TR key={t.id}>
                   <TD className="whitespace-nowrap text-xs text-muted-foreground">{formatFechaHora(t.fecha)}</TD>
                   <TD>
@@ -360,17 +366,24 @@ export function DetalleClient(props: DetalleProps) {
                   </TD>
                   <TD className="text-right font-mono">{formatInt(t.cantidad)}</TD>
                   <TD className="text-right font-mono">
-                    {t.tipo === "venta" ? formatCOP(t.precio_unitario) : <span className="text-muted-foreground">—</span>}
+                    {t.tipo === "traslado" || valorUnit <= 0
+                      ? <span className="text-muted-foreground">—</span>
+                      : formatCOP(valorUnit)}
                   </TD>
-                  <TD className="text-right font-mono">
-                    {t.costo_unitario > 0 ? formatCOP(t.costo_unitario) : <span className="text-muted-foreground">—</span>}
+                  <TD className="text-xs">
+                    {t.tipo === "venta"
+                      ? (t.tarifa_nombre
+                          ? <Badge tone="gray">{t.tarifa_nombre}</Badge>
+                          : <span className="text-muted-foreground italic">Otro / Personalizado</span>)
+                      : <span className="text-muted-foreground">—</span>}
                   </TD>
                   <TD className="text-right font-mono">
                     {t.tipo === "traslado" ? <span className="text-muted-foreground">—</span> : formatCOP(t.subtotal)}
                   </TD>
                   <TD className="max-w-xs truncate text-xs text-muted-foreground">{t.notas ?? "—"}</TD>
                 </TR>
-              ))}
+                );
+              })}
             </TBody>
           </Table>
           <Pagination

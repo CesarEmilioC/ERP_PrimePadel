@@ -68,6 +68,10 @@ export function TransaccionesClient({
   const [fHasta, setFHasta] = React.useState<string>("");
   const [fCategorias, setFCategorias] = React.useState<string[]>([]);
   const [fProductos, setFProductos] = React.useState<string[]>([]);
+  // Filtro por tarifa: aplica solo a ventas (compras/traslados no tienen tarifa).
+  // Si está vacío, no filtra. Incluye una opción sentinela "__otro__" para
+  // ventas registradas con precio personalizado (lista_precio_id null).
+  const [fTarifas, setFTarifas] = React.useState<string[]>([]);
   const [borrar, setBorrar] = React.useState<TransaccionLista | null>(null);
   const [page, setPage] = React.useState(0);
 
@@ -87,7 +91,7 @@ export function TransaccionesClient({
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => { setMounted(true); }, []);
 
-  React.useEffect(() => { setPage(0); }, [fTipo, fDesde, fHasta, fCategorias, fProductos]);
+  React.useEffect(() => { setPage(0); }, [fTipo, fDesde, fHasta, fCategorias, fProductos, fTarifas]);
 
   const esRecepcion = perfilActual.rol === "recepcion";
   const esMaestro = perfilActual.rol === "maestro";
@@ -104,6 +108,16 @@ export function TransaccionesClient({
       const hit = t.items.some((it) => fProductos.includes(it.producto_id));
       if (!hit) return false;
     }
+    if (fTarifas.length > 0) {
+      // Solo las ventas guardan tarifa; compras/traslados quedan fuera salvo
+      // que el usuario también seleccione un tipo distinto a "venta".
+      if (t.tipo !== "venta") return false;
+      const hit = t.items.some((it) => {
+        const key = it.lista_precio_id ?? "__otro__";
+        return fTarifas.includes(key);
+      });
+      if (!hit) return false;
+    }
     return true;
   });
 
@@ -113,14 +127,10 @@ export function TransaccionesClient({
     if (perfilActual.rol === "admin") {
       return t.usuario_rol !== "maestro";
     }
-    // Recepción: sus propias ventas o traslados del día (no compras).
-    if (t.usuario_id !== perfilActual.user_id) return false;
-    if (esRecepcion && t.tipo === "compra") return false;
-    const fecha = new Date(t.fecha);
-    const hoy = new Date();
-    return fecha.getFullYear() === hoy.getFullYear()
-      && fecha.getMonth() === hoy.getMonth()
-      && fecha.getDate() === hoy.getDate();
+    // Recepción: NO puede editar ni eliminar nada. Cualquier cambio lo solicita
+    // a un admin o al maestro.
+    void t;
+    return false;
   }
 
   function abrirEdicion(t: TransaccionLista) {
@@ -218,6 +228,14 @@ export function TransaccionesClient({
               : "Registro manual de ventas, compras y traslados. Cada transacción ajusta el inventario automáticamente."}
             {esMaestro ? <> El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
           </p>
+          {esRecepcion ? (
+            <div className="mt-3 rounded-md border border-yellow-700/50 bg-yellow-950/30 px-3 py-2 text-xs text-yellow-200">
+              <p>
+                ⚠ <strong>Importante:</strong> no puedes editar ni eliminar transacciones, ni siquiera las tuyas.
+                Si te equivocaste al registrar una venta o necesitas eliminarla, <strong>comunícate con un administrador o el Maestro</strong> para que la corrijan por ti.
+              </p>
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-nowrap items-center gap-2 overflow-x-auto sm:overflow-visible">
           <Link href="/transacciones/carga-masiva">
@@ -266,10 +284,21 @@ export function TransaccionesClient({
               placeholder="Todos los productos"
             />
           </Field>
+          <Field label="Tarifa (solo ventas)">
+            <MultiSelect
+              options={[
+                ...listasPrecios.map((l) => ({ value: l.id, label: l.nombre })),
+                { value: "__otro__", label: "Otro / Personalizado" },
+              ]}
+              value={fTarifas}
+              onChange={setFTarifas}
+              placeholder="Todas las tarifas"
+            />
+          </Field>
           <div className="flex items-end">
             <Button
               variant="outline"
-              onClick={() => { setFTipo("todas"); setFDesde(""); setFHasta(""); setFCategorias([]); setFProductos([]); }}
+              onClick={() => { setFTipo("todas"); setFDesde(""); setFHasta(""); setFCategorias([]); setFProductos([]); setFTarifas([]); }}
               className="w-full"
             >
               Limpiar filtros

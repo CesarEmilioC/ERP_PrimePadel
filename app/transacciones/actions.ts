@@ -524,13 +524,12 @@ function checarPermisoEdicion(
     return { ok: true };
   }
 
-  // Recepción: solo sus propias transacciones del día actual.
-  const esSuya = tx.usuario_id === perfil.user_id;
-  const esHoy = mismaFechaLocal(tx.fecha, new Date());
-  if (esSuya && esHoy) return { ok: true };
+  // Recepción: NO puede editar ni eliminar ninguna transacción (ni siquiera las
+  // suyas). Cualquier corrección la pide a un admin o maestro.
+  void tx;
   return {
     ok: false,
-    error: "Solo puedes modificar tus propias transacciones del día actual.",
+    error: "Tu rol no permite editar ni eliminar transacciones. Comunícate con un administrador o el Maestro para hacer cambios.",
   };
 }
 

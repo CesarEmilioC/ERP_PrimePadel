@@ -443,7 +443,8 @@
 <li><strong>Ventas última semana</strong>: monto y número de transacciones por día (últimos 7 días). Cifras reales del sistema, no histórico de Alegra.</li>
 <li><strong>Consumo por mes</strong>, <strong>Top productos</strong>, <strong>Por categoría</strong> y <strong>Cantidades vendidas por producto</strong>: <strong>combinan el histórico de Alegra (sep 2025 – abr 2026) con las ventas registradas en este sistema</strong>, mes a mes hasta hoy. Así la tendencia no &quot;corta&quot; al terminar Alegra.</li>
 <li><strong>Días de la semana</strong>: identifica los días de mayor venta. Sirve para programar personal y compras. Solo cuenta transacciones del sistema (no Alegra, porque Alegra es mensual sin granularidad diaria).</li>
-<li><strong>Utilidades brutas (costos vs ingresos)</strong>: gráfica top 10 con barras verde (ingresos) y rojo (costos) por producto/servicio. KPIs arriba con totales y margen %. Filtro Todos / Solo productos / Solo servicios. Útil para responder &quot;¿cuáles son mis productos más rentables?&quot; — el margen % te dice cuánto ganas por cada peso de venta. Solo cuenta ventas reales del sistema (no el histórico de Alegra, porque ahí no hay costo por venta).</li>
+<li><strong>Monto vendido por tarifa</strong> y <strong>Unidades vendidas por tarifa</strong>: dos gráficas que rompen las ventas por la tarifa con la que se registró cada una (Detal, Staff Prime, Kevin García, Bryan Perafán, Alternos...). Las ventas con precio libre aparecen como <strong>&quot;Otro / Personalizado&quot;</strong>. Sirven para ver el peso real de cada canal/tipo de cliente. <strong>Responden a los filtros</strong> de categoría, producto, mes y rango de fechas del tab.</li>
+<li><strong>Utilidades brutas (costos vs ingresos)</strong>: gráfica top 10 con barras verde (ingresos) y rojo (costos) por producto/servicio. KPIs arriba con totales y margen %. Filtro Todos / Solo productos / Solo servicios. Útil para responder &quot;¿cuáles son mis productos más rentables?&quot; — el margen % te dice cuánto ganas por cada peso de venta. Solo cuenta ventas reales del sistema (no el histórico de Alegra, porque ahí no hay costo por venta). <strong>Ojo</strong>: los <strong>ingresos están NETOS del impuesto</strong> asignado al producto (IVA / Impoconsumo). El precio que paga el cliente incluye el impuesto, así que el sistema lo separa con la fórmula <code>impuesto = bruto × pct / (100 + pct)</code> y muestra la columna &quot;Impuestos&quot; aparte. La utilidad calculada es entonces más realista que la basada en ingresos brutos.</li>
 </ul>
 <h3>Pestaña &quot;Inventario&quot;</h3>
 <ul>
@@ -460,8 +461,9 @@
 <h2>8. Manejo de errores y correcciones</h2>
 <h3>Una transacción se registró mal</h3>
 <ul>
-<li>Si fue <strong>hoy y por ti o un admin</strong>: ese mismo usuario puede editarla o eliminarla.</li>
-<li>Si fue <strong>otro día o por otro Maestro</strong>: solo el Maestro puede modificarla. Ten cuidado: editar transacciones viejas afecta la historia.</li>
+<li>Si fue por <strong>recepción</strong>: ellos NO pueden tocar nada. Te avisarán por chat/voz. <strong>Tú o un Admin la corrigen</strong> editándola o eliminándola desde la pantalla de Transacciones.</li>
+<li>Si fue por <strong>un Admin</strong>: el mismo Admin (o un Maestro) puede editarla/eliminarla.</li>
+<li>Si fue por <strong>otro Maestro</strong>: solo el Maestro puede modificarla. Ten cuidado: editar transacciones viejas afecta la historia.</li>
 </ul>
 <h3>Inventario no cuadra con la realidad</h3>
 <p>Hacer un <strong>conteo físico</strong> y luego un <strong>ajuste de inventario</strong> con motivo &quot;Conteo físico&quot;. Esto NO altera transacciones pasadas, solo deja registro de la diferencia.</p>
@@ -501,7 +503,7 @@
 <li><strong>Un ajuste de inventario no puede dejar la cantidad en negativo</strong> (mínimo 0).</li>
 </ol>
 <p><strong>En el catálogo (borrado seguro):</strong><br>6. <strong>Eliminar un producto con histórico</strong> de ventas o transacciones lo <strong>desactiva</strong> (no lo borra), para no perder la historia. Lo mismo aplica a <strong>categorías, ubicaciones y tarifas</strong> con datos asociados: se desactivan en vez de borrarse.<br>7. <strong>No se puede eliminar la tarifa Detal</strong> (es la base de cálculo de las demás).<br>8. <strong>Solo el Maestro puede editar costos y precios.</strong> El Admin gestiona inventario y operación pero no toca finanzas.</p>
-<p><strong>En permisos por rol:</strong><br>9. <strong>Recepción</strong> solo edita/elimina <strong>sus propias</strong> ventas y traslados <strong>del día actual</strong>, y no registra compras.<br>10. <strong>Admin</strong> edita/elimina cualquier transacción <strong>excepto</strong> las creadas por un Maestro.</p>
+<p><strong>En permisos por rol:</strong><br>9. <strong>Recepción NO puede editar ni eliminar NINGUNA transacción</strong>, ni siquiera las suyas. Esto es a propósito: las correcciones quedan auditadas y la responsabilidad cae en Admin/Maestro. Si Recepción se equivoca al registrar una venta, debe avisar a un Admin o al Maestro para que la corrijan. La pantalla de Transacciones muestra un aviso recordándoles esto.<br>10. <strong>Admin</strong> edita/elimina cualquier transacción <strong>excepto</strong> las creadas por un Maestro.</p>
 <p><strong>En carga masiva CSV:</strong><br>11. Las filas con un <strong>código de producto inexistente</strong> (o datos inválidos) se marcan en rojo y <strong>se omiten</strong>; las filas válidas sí se importan (importación parcial).<br>12. <strong>Recepción</strong> no puede importar filas de compra por CSV.</p>
 <hr>
 <h2>9. Mantenimiento y rutinas mensuales</h2>

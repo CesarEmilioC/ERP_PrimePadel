@@ -22,7 +22,7 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       sb.from("transaccion_items")
         .select(
           "id, cantidad, costo_unitario, precio_unitario, subtotal, transaccion_id, " +
-          "ubicacion_origen_id, ubicacion_destino_id, " +
+          "ubicacion_origen_id, ubicacion_destino_id, lista_precio_id, " +
           "transacciones!inner(id, tipo, fecha, notas, origen)"
         )
         .eq("producto_id", id),
@@ -36,6 +36,8 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
 
   // Lookup de nombres de ubicaciones (usadas en cualquier transacción del producto).
   const ubiNombrePorId = new Map((ubicaciones ?? []).map((u) => [u.id, u.nombre as string]));
+  // Lookup de nombres de tarifas (lista_precio_id → nombre).
+  const tarifaNombrePorId = new Map((listasPrecios ?? []).map((l) => [l.id, l.nombre as string]));
 
   // Histórico completo de transacciones (ventas + compras + traslados).
   const historialTx = ((transaccionItems ?? []) as any[])
@@ -50,6 +52,8 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
       subtotal: Number(it.subtotal ?? 0),
       ubicacion_origen_nombre: it.ubicacion_origen_id ? ubiNombrePorId.get(it.ubicacion_origen_id) ?? null : null,
       ubicacion_destino_nombre: it.ubicacion_destino_id ? ubiNombrePorId.get(it.ubicacion_destino_id) ?? null : null,
+      lista_precio_id: (it.lista_precio_id as string | null) ?? null,
+      tarifa_nombre: it.lista_precio_id ? (tarifaNombrePorId.get(it.lista_precio_id) ?? null) : null,
       notas: (it.transacciones?.notas as string | null) ?? null,
       origen: (it.transacciones?.origen as string | null) ?? "manual",
     }))

@@ -230,7 +230,7 @@
 <td>Editar / eliminar sus propias transacciones del día</td>
 <td align="center">✅</td>
 <td align="center">✅</td>
-<td align="center">✅</td>
+<td align="center">❌ (debe pedirlo a un Admin/Maestro)</td>
 </tr>
 <tr>
 <td>Editar / eliminar transacciones de otros usuarios</td>
@@ -243,6 +243,12 @@
 <td align="center">✅</td>
 <td align="center">✅ (excepto del Maestro)</td>
 <td align="center">❌</td>
+</tr>
+<tr>
+<td>Usar precio &quot;Otro (personalizado)&quot; al registrar venta</td>
+<td align="center">✅</td>
+<td align="center">✅</td>
+<td align="center">❌ (solo tarifas configuradas)</td>
 </tr>
 <tr>
 <td>Ver inventario</td>
@@ -390,6 +396,7 @@
 </li>
 <li><strong>Stock por ubicación</strong>: tabla con cada lugar físico y su cantidad.</li>
 <li><strong>Precios por tarifa</strong>: todos los precios efectivos del producto en cada tarifa, con indicador del origen (Manual, Auto o Precio base).</li>
+<li><strong>Histórico de transacciones</strong> (ventas + compras + traslados): cada movimiento del producto con fecha y hora, tipo, ubicación, cantidad, <strong>Valor unitario</strong> (en compras es el costo registrado, en ventas el precio cobrado), <strong>Tarifa</strong> (solo en ventas: muestra la tarifa usada o &quot;Otro / Personalizado&quot;), subtotal y notas.</li>
 <li><strong>Histórico de ventas mensuales</strong>: cantidad y monto vendido cada mes (datos de Alegra). Los totales con asterisco (*) son estimados con el precio actual cuando el reporte original no traía monto.</li>
 <li><strong>Historial de ajustes</strong>: cada conteo físico, merma o corrección registrada.</li>
 </ul>
@@ -431,6 +438,7 @@
 <li><strong>Fecha desde / hasta</strong>.</li>
 <li><strong>Categoría</strong> (multi).</li>
 <li><strong>Producto</strong> (multi).</li>
+<li><strong>Tarifa (solo ventas)</strong> (multi): filtra por la tarifa con la que se registró cada venta (Detal, Staff Prime, Kevin García, Bryan Perafán, Alternos...). Incluye la opción <em>&quot;Otro / Personalizado&quot;</em> para ventas registradas con precio libre. Si seleccionas tarifas y el tipo NO es &quot;venta&quot;, no aparecen resultados (las compras y traslados no tienen tarifa).</li>
 <li>Botón <strong>Limpiar filtros</strong>.</li>
 </ul>
 <p>Cada fila: fecha y hora exactas, tipo, <strong>quién registró</strong>, ítems, total, notas, botones de acciones (visibles según permisos). 10 transacciones por página.</p>
@@ -443,7 +451,12 @@
 <li>Por cada línea ajusta:<ul>
 <li><strong>Ubicación de origen</strong> (al lado del nombre se ve cuánto hay disponible).</li>
 <li><strong>Cantidad</strong>.</li>
-<li><strong>Precio venta</strong>: se autocompleta con el precio Detal, puedes modificarlo si aplica un descuento o un precio especial (ej. Equipo Prime).</li>
+<li><strong>Tarifa</strong>: el dropdown muestra las tarifas activas configuradas en la base (Detal, Staff Prime, Kevin García, Bryan Perafán, Alternos...). Al elegir una se autocompleta el precio efectivo de esa tarifa para el producto.<ul>
+<li><strong>Recepción</strong> solo puede elegir entre las tarifas disponibles. No tiene la opción &quot;Otro&quot;.</li>
+<li><strong>Admin / Maestro</strong> también ven una opción adicional <strong>&quot;Otro (personalizado)…&quot;</strong> que permite escribir un precio libre cuando el caso no encaja en ninguna tarifa (cortesía, descuento puntual, evento, etc.).</li>
+</ul>
+</li>
+<li>La tarifa elegida queda guardada en la transacción para los reportes del dashboard. Si se eligió &quot;Otro&quot;, aparece como <em>Otro / Personalizado</em>.</li>
 </ul>
 </li>
 <li>Repite para más productos. <strong>Puedes agregar el mismo producto dos veces si vendes desde ubicaciones distintas</strong> (ej. 3 cervezas de Nevera + 2 de Vitrina).</li>
@@ -481,7 +494,7 @@
 </li>
 <li><strong>En un ajuste de inventario, la cantidad nueva no puede ser negativa</strong> (el stock mínimo posible es 0).</li>
 <li><strong>Permisos por rol</strong> (ver tabla en la sección 2):<ul>
-<li><strong>Recepción</strong> solo puede editar o eliminar <strong>sus propias</strong> ventas/traslados <strong>del día actual</strong>.</li>
+<li><strong>Recepción NO puede editar ni eliminar NADA</strong>, ni siquiera sus propias ventas. Si se equivoca, debe comunicarse con un Admin o el Maestro para que lo corrijan. La pantalla de Transacciones le muestra un aviso recordándole esta regla.</li>
 <li><strong>Admin</strong> puede editar/eliminar cualquier transacción <strong>excepto</strong> las creadas por un Maestro.</li>
 <li><strong>Maestro</strong> puede editar/eliminar todo.</li>
 </ul>

@@ -297,6 +297,55 @@ export async function getVentasSistemaPorMes() {
   return [...acc.values()];
 }
 
+// Ventas por tarifa: filas a nivel item con (producto, categoría, año, mes,
+// tarifa) que el cliente agrega según los filtros activos.
+//
+// `lista_precio_id` puede ser null para ventas registradas con "Otro
+// (personalizado)" o para ventas anteriores a este cambio. El cliente las
+// agrupa como "Otro / Personalizado".
+export type VentaPorTarifaRow = {
+  anio: number;
+  mes: number;
+  producto_nombre: string;
+  categoria_nombre: string;
+  lista_precio_id: string | null;
+  lista_precio_nombre: string | null;
+  cantidad: number;
+  monto: number;
+};
+
+export async function getVentasPorTarifa(): Promise<VentaPorTarifaRow[]> {
+  const sb = sbAdmin();
+  const { data } = await sb
+    .from("transaccion_items")
+    .select(
+      "cantidad, subtotal, lista_precio_id, " +
+      "transacciones!inner(fecha, tipo), " +
+      "productos!inner(nombre, categorias(nombre)), " +
+      "listas_precios(nombre)",
+    )
+    .eq("transacciones.tipo", "venta");
+
+  const out: VentaPorTarifaRow[] = [];
+  for (const it of (data ?? []) as any[]) {
+    const fecha = it.transacciones?.fecha;
+    if (!fecha) continue;
+    // Bogotá = UTC-5 sin DST.
+    const fBogota = new Date(new Date(fecha).getTime() - 5 * 60 * 60 * 1000);
+    out.push({
+      anio: fBogota.getUTCFullYear(),
+      mes: fBogota.getUTCMonth() + 1,
+      producto_nombre: it.productos?.nombre ?? "—",
+      categoria_nombre: it.productos?.categorias?.nombre ?? "Sin categoría",
+      lista_precio_id: it.lista_precio_id ?? null,
+      lista_precio_nombre: it.listas_precios?.nombre ?? null,
+      cantidad: Number(it.cantidad ?? 0),
+      monto: Number(it.subtotal ?? 0),
+    });
+  }
+  return out;
+}
+
 // Top productos por día de la semana (basado en transacciones tipo venta).
 export async function getTopPorDiaSemana() {
   const sb = sbAdmin();
@@ -402,13 +451,24 @@ export async function getVentasUltimaSemana(): Promise<VentaDia[]> {
 // Utilidades brutas por producto/servicio: suma de (precio - costo) * cantidad
 // sobre todas las ventas registradas en el sistema. Solo cuenta ventas reales,
 // no el histórico mensual de Alegra (porque ahí no tenemos costo por venta).
+//
+// Importante: `ingresos` ya viene NETO del impuesto asignado al producto en
+// el catálogo (IVA, Impoconsumo). El precio que el cliente paga incluye el
+// impuesto, así que para calcular la utilidad real lo separamos:
+//   ingresos_brutos = cantidad × precio_unitario
+//   impuestos       = ingresos_brutos × (pct / (100 + pct))
+//   ingresos        = ingresos_brutos − impuestos
+//   utilidad        = ingresos − costos
+// Si el producto no tiene impuesto asignado, ingresos == ingresos_brutos.
 export type UtilidadProducto = {
   producto_id: string;
   codigo: string | null;
   nombre: string;
   tipo: "producto" | "servicio";
   cantidad_vendida: number;
-  ingresos: number;
+  ingresos_brutos: number;   // suma cantidad × precio (lo que pagó el cliente)
+  impuestos: number;         // monto del impuesto incluido en los ingresos brutos
+  ingresos: number;          // ingresos NETOS de impuestos
   costos: number;
   utilidad: number;
   margen_pct: number;
@@ -418,38 +478,53 @@ export async function getUtilidadPorProducto(): Promise<UtilidadProducto[]> {
   const sb = sbAdmin();
   const [{ data }, costoPromedio] = await Promise.all([
     sb.from("transaccion_items")
-      .select("cantidad, precio_unitario, producto_id, transacciones!inner(tipo), productos(codigo, nombre, tipo)")
+      .select(
+        "cantidad, precio_unitario, producto_id, " +
+        "transacciones!inner(tipo), " +
+        "productos(codigo, nombre, tipo, impuestos(porcentaje))",
+      )
       .eq("transacciones.tipo", "venta"),
     getCostoPromedioPorProducto(),
   ]);
 
-  const acc = new Map<string, UtilidadProducto>();
+  const acc = new Map<string, UtilidadProducto & { pct_impuesto: number }>();
   for (const it of (data ?? []) as any[]) {
     const pid = it.producto_id as string;
     const cant = Number(it.cantidad);
     const precio = Number(it.precio_unitario ?? 0);
+    const pct = Number(it.productos?.impuestos?.porcentaje ?? 0);
     const cur = acc.get(pid) ?? {
       producto_id: pid,
       codigo: it.productos?.codigo ?? null,
       nombre: it.productos?.nombre ?? "—",
       tipo: (it.productos?.tipo as "producto" | "servicio") ?? "producto",
       cantidad_vendida: 0,
+      ingresos_brutos: 0,
+      impuestos: 0,
       ingresos: 0,
       costos: 0,
       utilidad: 0,
       margen_pct: 0,
+      pct_impuesto: pct,
     };
     cur.cantidad_vendida += cant;
-    cur.ingresos += cant * precio;
+    cur.ingresos_brutos += cant * precio;
     acc.set(pid, cur);
   }
-  // Costo = unidades vendidas × costo promedio de compra del producto.
   for (const cur of acc.values()) {
+    // El impuesto vive DENTRO del precio (precio = neto × (1 + pct/100)),
+    // así que para sacarlo: impuesto = bruto × pct / (100 + pct).
+    cur.impuestos = cur.pct_impuesto > 0
+      ? cur.ingresos_brutos * cur.pct_impuesto / (100 + cur.pct_impuesto)
+      : 0;
+    cur.ingresos = cur.ingresos_brutos - cur.impuestos;
     cur.costos = cur.cantidad_vendida * (costoPromedio.get(cur.producto_id) ?? 0);
     cur.utilidad = cur.ingresos - cur.costos;
     cur.margen_pct = cur.ingresos > 0 ? Math.round((cur.utilidad / cur.ingresos) * 10000) / 100 : 0;
   }
-  return [...acc.values()].sort((a, b) => b.utilidad - a.utilidad);
+  return [...acc.values()]
+    .map(({ pct_impuesto: _pct, ...rest }) => rest)
+    .sort((a, b) => b.utilidad - a.utilidad);
 }
 
 export async function getDashboardStats() {
