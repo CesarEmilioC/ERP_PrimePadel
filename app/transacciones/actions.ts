@@ -22,6 +22,15 @@ export async function registrarTransaccion(input: unknown): Promise<ActionResult
   if (perfil.rol === "recepcion" && parsed.tipo === "compra") {
     return { error: "Tu rol no permite registrar compras. Pídele a un admin que la registre." };
   }
+  // Recepción no puede usar "Otro / Personalizado" (precio libre) — toda venta
+  // suya debe llevar una tarifa válida. Es la misma regla que esconde la UI;
+  // la replicamos en servidor por si alguien arma la request a mano.
+  if (perfil.rol === "recepcion" && parsed.tipo === "venta") {
+    const sinTarifa = parsed.items.some((it) => !it.lista_precio_id);
+    if (sinTarifa) {
+      return { error: "Tu rol requiere elegir una tarifa para cada producto vendido. La opción 'Otro / Personalizado' solo está disponible para admin o maestro." };
+    }
+  }
   // En ventas, sobrescribir costo_unitario con el COSTO PROMEDIO DE COMPRA del
   // producto al momento de la venta (snapshot real). Si el producto aún no
   // tiene compras registradas, queda en 0.

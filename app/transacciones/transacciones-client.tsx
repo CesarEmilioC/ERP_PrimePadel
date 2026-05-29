@@ -192,24 +192,39 @@ export function TransaccionesClient({
     return <Badge tone="yellow">Traslado</Badge>;
   }
 
+  // Lookup id de tarifa → nombre, para mostrar en el resumen de items.
+  const nombreTarifaPorId = React.useMemo(
+    () => new Map(listasPrecios.map((l) => [l.id, l.nombre])),
+    [listasPrecios],
+  );
+
   function renderItems(t: TransaccionLista) {
     return (
       <div className="space-y-0.5 text-sm">
-        {t.items.slice(0, 3).map((it, i) => (
-          <div key={i} className="text-muted-foreground">
-            <span className="font-mono text-xs">{formatInt(it.cantidad)}×</span>{" "}
-            <span className="text-white">{it.productos.nombre}</span>
-            {t.tipo === "traslado" ? (
-              <span className="text-xs text-muted-foreground">
-                {" "}— {it.ubicacion_origen_nombre} → {it.ubicacion_destino_nombre}
-              </span>
-            ) : t.tipo === "venta" && it.ubicacion_origen_nombre ? (
-              <span className="text-xs text-muted-foreground">{" "}— desde {it.ubicacion_origen_nombre}</span>
-            ) : t.tipo === "compra" && it.ubicacion_destino_nombre ? (
-              <span className="text-xs text-muted-foreground">{" "}— a {it.ubicacion_destino_nombre}</span>
-            ) : null}
-          </div>
-        ))}
+        {t.items.slice(0, 3).map((it, i) => {
+          const nombreTarifa = it.lista_precio_id ? (nombreTarifaPorId.get(it.lista_precio_id) ?? null) : null;
+          return (
+            <div key={i} className="text-muted-foreground">
+              <span className="font-mono text-xs">{formatInt(it.cantidad)}×</span>{" "}
+              <span className="text-white">{it.productos.nombre}</span>
+              {t.tipo === "traslado" ? (
+                <span className="text-xs text-muted-foreground">
+                  {" "}— {it.ubicacion_origen_nombre} → {it.ubicacion_destino_nombre}
+                </span>
+              ) : t.tipo === "venta" && it.ubicacion_origen_nombre ? (
+                <span className="text-xs text-muted-foreground">{" "}— desde {it.ubicacion_origen_nombre}</span>
+              ) : t.tipo === "compra" && it.ubicacion_destino_nombre ? (
+                <span className="text-xs text-muted-foreground">{" "}— a {it.ubicacion_destino_nombre}</span>
+              ) : null}
+              {/* Tarifa: solo en ventas. Si tarifa = null se asume "Otro / Personalizado". */}
+              {t.tipo === "venta" ? (
+                <span className="text-xs text-muted-foreground">
+                  {" "}— tarifa: <span className="text-white/80">{nombreTarifa ?? "Otro / Personalizado"}</span>
+                </span>
+              ) : null}
+            </div>
+          );
+        })}
         {t.items.length > 3 ? (
           <div className="text-xs text-muted-foreground">+ {t.items.length - 3} más</div>
         ) : null}

@@ -19,6 +19,10 @@ export type ValidRow = {
   ubicacion_destino_nombre?: string;
   cantidad: number;
   precio_unitario: number;
+  // Solo en venta: tarifa con la que se realizó. null = "Otro / Personalizado"
+  // (precio libre). En compra/traslado siempre null.
+  lista_precio_id: string | null;
+  tarifa_nombre: string | null;     // nombre legible (o "Otro / Personalizado")
   notas: string | null;
   ticket: string | null;
   es_inventariable: boolean;
@@ -47,8 +51,15 @@ export type Catalogo = {
     precio_detal?: number | null;
     costo_unitario?: number;
     stock_por_ubicacion: Record<string, number>;
+    // Precio efectivo por tarifa (id de listas_precios → precio en pesos).
+    // Lo computa el server combinando precios manuales (precios_producto) con
+    // el descuento de la tarifa. Si la tarifa no tiene precio resoluble para
+    // este producto, no aparece en el objeto.
+    precios_por_tarifa?: Record<string, number>;
   }[];
   ubicaciones: { id: string; nombre: string; tipo: string; activa: boolean }[];
+  // Tarifas activas (listas_precios). La default va primero.
+  tarifas?: { id: string; codigo: string; nombre: string; es_default: boolean; descuento_porcentaje: number; activa: boolean }[];
 };
 
 export const CSV_HEADERS = [
@@ -59,10 +70,15 @@ export const CSV_HEADERS = [
   "ubicacion",
   "ubicacion_destino",
   "cantidad",
-  "valor_unitario",    // venta → precio al cliente; compra/traslado → costo unitario
+  "tarifa",            // SOLO ventas. Nombre exacto de una tarifa activa o "Otro".
+  "valor_unitario",    // venta con "Otro" → precio al cliente; compra/traslado → costo unitario. Ignorado en venta si tarifa es válida.
   "notas",
   "ticket",
 ] as const;
+
+// Sentinela aceptado en la columna `tarifa` para indicar "precio personalizado".
+// Solo lo pueden usar admin/maestro; recepción debe usar una tarifa de la BD.
+export const TARIFA_OTRO = "Otro";
 
 // ----------------------------------------------------------------------------
 // Plantilla dinámica: una fila por (producto, tipo) con cantidades en 0.
@@ -72,6 +88,11 @@ export const CSV_HEADERS = [
 export type OpcionesPlantilla = {
   incluyeCompras: boolean;  // false para recepción (solo venta + traslado)
   incluyeTraslados: boolean;
+};
+
+export type OpcionesParser = {
+  // false → recepción: rechaza "Otro" en la columna tarifa.
+  permiteTarifaOtro: boolean;
 };
 
 function fechaHoyDDMMAAAA(): string {
@@ -106,6 +127,12 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
   const productos = catalogo.productos.filter((p) => p.activo);
   const { venta, bodega, trasladoOrigen, trasladoDestino } = ubicacionesSugeridas(catalogo.ubicaciones);
   const fecha = fechaHoyDDMMAAAA();
+  // La tarifa default (es_default = true) se sugiere para las filas de venta —
+  // si el catálogo no trae tarifas, queda en blanco y el usuario tendrá que
+  // llenarla (el parser dará error pidiéndolo).
+  const tarifaDefault = (catalogo.tarifas ?? []).find((t) => t.es_default && t.activa)
+    ?? (catalogo.tarifas ?? []).find((t) => t.activa);
+  const tarifaDefaultNombre = tarifaDefault?.nombre ?? "";
 
   // Solo encabezados + filas de productos (las instrucciones viven en la webapp).
   const lineas: string[] = [];
@@ -117,6 +144,9 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
     const nombre = p.nombre ?? "";
 
     // Venta: todos los productos activos (servicios incluidos).
+    // valor_unitario se deja en blanco — si la tarifa es válida el sistema lo
+    // resuelve a partir del catálogo; si el usuario pone "Otro" en tarifa,
+    // ahí sí tendrá que escribir el precio.
     if (venta) {
       lineas.push(fila([
         fecha,
@@ -126,7 +156,8 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
         venta.nombre,
         "",
         0,
-        p.precio_detal ?? 0,
+        tarifaDefaultNombre,
+        "",
         "",
         "",
       ]));
@@ -144,6 +175,7 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
         trasladoOrigen.nombre,
         trasladoDestino.nombre,
         0,
+        "",                            // tarifa no aplica
         p.costo_unitario ?? 0,
         "",
         "",
@@ -159,6 +191,7 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
         bodega.nombre,
         "",
         0,
+        "",                            // tarifa no aplica
         p.costo_unitario ?? 0,
         "",
         "",
@@ -214,7 +247,7 @@ function normalize(s: string | undefined) {
   return (s ?? "").trim();
 }
 
-export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
+export function parseCSV(text: string, catalogo: Catalogo, opciones: OpcionesParser = { permiteTarifaOtro: true }): ParseResult {
   // Quitar líneas-comentario (#) antes de parsear.
   const withoutComments = text
     .split(/\r?\n/)
@@ -234,6 +267,9 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
   );
   const ubiByNombre = new Map(
     catalogo.ubicaciones.map((u) => [u.nombre.toLowerCase(), u]),
+  );
+  const tarifaByNombre = new Map(
+    (catalogo.tarifas ?? []).filter((t) => t.activa).map((t) => [t.nombre.toLowerCase(), t]),
   );
 
   // Pre-calcular stock esperado por (producto, ubicación) después de aplicar cada fila,
@@ -265,10 +301,11 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
     // valor_unitario es el nombre nuevo; precio_unitario se acepta por compatibilidad
     // con plantillas viejas. La columna nombre_producto es solo visual y se ignora.
     const precioStr = normalize(raw.valor_unitario ?? raw.precio_unitario);
+    const tarifaStr = normalize(raw.tarifa);
     const notasStr = normalize(raw.notas);
     const ticketStr = normalize(raw.ticket);
 
-    if (!fechaStr && !tipoStr && !codigoStr && !ubiStr && !cantStr && !precioStr) {
+    if (!fechaStr && !tipoStr && !codigoStr && !ubiStr && !cantStr && !precioStr && !tarifaStr) {
       return; // fila completamente vacía — ignorar silenciosamente
     }
 
@@ -315,9 +352,59 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
       errors.push(`Cantidad inválida ("${cantStr}") — debe ser entero positivo`);
     }
 
-    const precio = Number((precioStr || "0").replace(/[,$ ]/g, ""));
-    if (!Number.isFinite(precio) || precio < 0) {
+    const precioCsv = Number((precioStr || "0").replace(/[,$ ]/g, ""));
+    if (!Number.isFinite(precioCsv) || precioCsv < 0) {
       errors.push(`Valor unitario inválido ("${precioStr}")`);
+    }
+
+    // ---- Resolución de tarifa y precio efectivo ----
+    // En ventas: la columna "tarifa" manda. Si es un nombre válido de la BD,
+    // ignoramos valor_unitario y resolvemos el precio desde el catálogo
+    // (precio_detal × (1 − descuento%) o precio manual de precios_producto).
+    // Si la columna dice "Otro" → precio libre, debe venir en valor_unitario.
+    // En compras/traslados: tarifa NO aplica y valor_unitario = costo.
+    let precio = precioCsv;
+    let listaPrecioId: string | null = null;
+    let tarifaNombre: string | null = null;
+
+    if (tipoStr === "venta") {
+      if (!tarifaStr) {
+        errors.push(
+          opciones.permiteTarifaOtro
+            ? `Venta requiere "tarifa" (nombre exacto de una tarifa activa, o "Otro" si vas a digitar el precio en valor_unitario)`
+            : `Venta requiere "tarifa" (nombre exacto de una tarifa activa)`,
+        );
+      } else if (tarifaStr.toLowerCase() === TARIFA_OTRO.toLowerCase()) {
+        if (!opciones.permiteTarifaOtro) {
+          errors.push(`Tu rol no permite tarifa "Otro" (precio personalizado). Usa una tarifa de la lista.`);
+        } else if (precioCsv <= 0) {
+          errors.push(`Tarifa "Otro" requiere "valor_unitario" mayor a 0`);
+        }
+        // precio = precioCsv ya está bien; listaPrecioId queda en null.
+        tarifaNombre = "Otro / Personalizado";
+      } else {
+        const t = tarifaByNombre.get(tarifaStr.toLowerCase());
+        if (!t) {
+          errors.push(`Tarifa "${tarifaStr}" no encontrada o inactiva`);
+        } else if (prod) {
+          const precioTarifa = prod.precios_por_tarifa?.[t.id];
+          if (precioTarifa == null || precioTarifa <= 0) {
+            errors.push(`El producto "${prod.nombre}" no tiene precio resoluble en la tarifa "${t.nombre}"`);
+          } else {
+            // Tarifa válida → IGNORAR valor_unitario, usar precio del catálogo.
+            precio = precioTarifa;
+            listaPrecioId = t.id;
+            tarifaNombre = t.nombre;
+          }
+        }
+      }
+    } else {
+      // Compra / traslado: si el usuario llenó tarifa por error, lo avisamos
+      // suave pero no bloqueamos (mejor importar lo que pidió).
+      if (tarifaStr) {
+        // No es error — solo se ignora. Sin warning para no saturar.
+      }
+      precio = precioCsv;
     }
 
     // Validación de stock para ventas y traslados — acumula las filas previas.
@@ -364,6 +451,8 @@ export function parseCSV(text: string, catalogo: Catalogo): ParseResult {
       ubicacion_destino_nombre: ubiDest?.nombre,
       cantidad: cantidadParsed,
       precio_unitario: precio,
+      lista_precio_id: listaPrecioId,
+      tarifa_nombre: tarifaNombre,
       notas: notasStr || null,
       ticket: ticketStr || null,
       es_inventariable: prod!.es_inventariable,
@@ -394,6 +483,7 @@ export type TransaccionAgrupada = {
     ubicacion_destino_id?: string;
     cantidad: number;
     precio_unitario: number;
+    lista_precio_id: string | null;
     es_inventariable: boolean;
   }[];
 };
@@ -411,6 +501,7 @@ export function agruparPorTicket(rows: ValidRow[]): TransaccionAgrupada[] {
       ubicacion_destino_id: r.ubicacion_destino_id,
       cantidad: r.cantidad,
       precio_unitario: r.precio_unitario,
+      lista_precio_id: r.lista_precio_id,
       es_inventariable: r.es_inventariable,
     };
     if (r.ticket) {

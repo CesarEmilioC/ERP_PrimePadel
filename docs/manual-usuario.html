@@ -531,11 +531,15 @@
 </thead>
 <tbody><tr>
 <td><code>cantidad</code></td>
-<td><strong>Lo único que debes llenar.</strong> Entero positivo. <strong>0 o vacío = fila ignorada</strong>.</td>
+<td><strong>Lo único que debes llenar siempre.</strong> Entero positivo. <strong>0 o vacío = fila ignorada</strong>.</td>
+</tr>
+<tr>
+<td><code>tarifa</code></td>
+<td><strong>Solo en filas de venta.</strong> Viene pre-llenada con la tarifa default (Detal). Puedes cambiarla por otra tarifa activa escribiendo su <strong>nombre exacto</strong>. La pantalla de carga masiva muestra la lista de tarifas activas disponibles (se actualiza automáticamente con la BD).<br><br><strong>Recepción</strong>: solo puede usar las tarifas de la lista.<br><strong>Admin / Maestro</strong>: además pueden escribir <code>Otro</code> en esta columna para usar un precio personalizado (en ese caso deben llenar <code>valor_unitario</code> con el precio cobrado).<br><br>En compra/traslado esta columna se ignora.</td>
 </tr>
 <tr>
 <td><code>valor_unitario</code></td>
-<td>Ya viene pre-llenado. En venta = precio al cliente; en compra/traslado = costo unitario. Edítalo solo si fue distinto.</td>
+<td>En <strong>venta</strong>: <strong>se ignora</strong> si la tarifa es válida (el sistema toma el precio del catálogo automáticamente). <strong>Solo se usa cuando la tarifa es <code>Otro</code></strong>.<br>En <strong>compra/traslado</strong>: es el costo unitario, pre-llenado con el del catálogo; edítalo si fue distinto.</td>
 </tr>
 <tr>
 <td><code>nombre_producto</code></td>

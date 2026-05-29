@@ -29,6 +29,12 @@ export async function importarTransacciones(grupos: TransaccionAgrupada[]): Prom
       fallidas.push({ ticket: g.ticket, razon: "Tu rol no permite registrar compras." });
       continue;
     }
+    // Recepción no puede importar ventas con tarifa "Otro" (lista_precio_id null).
+    // Misma regla que en registrarTransaccion, replicada acá para CSV.
+    if (perfil.rol === "recepcion" && g.tipo === "venta" && g.items.some((it) => !it.lista_precio_id)) {
+      fallidas.push({ ticket: g.ticket, razon: "Tu rol requiere tarifa válida en cada venta (la opción 'Otro' es solo para admin o maestro)." });
+      continue;
+    }
     const items = g.items.map((it) => ({
       producto_id: it.producto_id,
       // venta: origen. compra: destino. traslado: ambos.
@@ -41,7 +47,8 @@ export async function importarTransacciones(grupos: TransaccionAgrupada[]): Prom
       costo_unitario: g.tipo === "compra" || g.tipo === "traslado"
         ? it.precio_unitario
         : (costoPorProd.get(it.producto_id) ?? 0),
-      lista_precio_id: null,
+      // Tarifa solo se guarda en ventas; null = "Otro" o tipo ≠ venta.
+      lista_precio_id: g.tipo === "venta" ? it.lista_precio_id : null,
     }));
 
     const { error } = await sb.rpc("registrar_transaccion", {
@@ -70,27 +77,63 @@ export async function importarTransacciones(grupos: TransaccionAgrupada[]): Prom
 // ---------------------------------------------------------------------------
 // Descargar plantilla CSV dinámica con una fila por (producto × tipo).
 // Recepción solo recibe venta y traslado; admin/maestro reciben los 3 tipos.
+// La columna `tarifa` viene pre-llenada con la tarifa default (Detal) en las
+// filas de venta. El usuario puede cambiarla por otra tarifa activa o, si es
+// admin/maestro, escribir "Otro" y llenar valor_unitario manualmente.
 // ---------------------------------------------------------------------------
 export async function descargarPlantillaCSV(): Promise<{ ok: true; csv: string; filename: string } | { error: string }> {
   const perfil = await requireProfile();
   const sb = sbAdmin();
 
-  const [{ data: productos }, { data: ubicaciones }, { data: precios }, { data: stock }] = await Promise.all([
+  const [{ data: productos }, { data: ubicaciones }, { data: precios }, { data: stock }, { data: tarifas }] = await Promise.all([
     sb.from("productos").select("id, codigo, nombre, activo, es_inventariable, costo_unitario").eq("activo", true).order("nombre"),
     sb.from("ubicaciones").select("id, nombre, tipo, activa").eq("activa", true).order("orden"),
-    sb.from("precios_producto").select("producto_id, precio, listas_precios!inner(es_default)").eq("listas_precios.es_default", true),
+    // Todos los precios manuales por (producto, tarifa) — los usamos para
+    // pre-resolver precios_por_tarifa antes de pasarlos al builder.
+    sb.from("precios_producto").select("producto_id, lista_precio_id, precio, listas_precios(es_default)"),
     sb.from("stock_por_ubicacion").select("producto_id, ubicacion_id, cantidad"),
+    sb.from("listas_precios").select("id, codigo, nombre, es_default, descuento_porcentaje, activa, orden").eq("activa", true).order("orden"),
   ]);
 
+  // Precio default (Detal) y overrides manuales por (producto, tarifa).
   const precioDetalPorProd = new Map<string, number>();
+  const overridePorProdTarifa = new Map<string, number>(); // `${prod}|${tarifa}`
   for (const p of (precios ?? []) as any[]) {
-    precioDetalPorProd.set(p.producto_id, Number(p.precio ?? 0));
+    overridePorProdTarifa.set(`${p.producto_id}|${p.lista_precio_id}`, Number(p.precio));
+    if (p.listas_precios?.es_default === true) {
+      precioDetalPorProd.set(p.producto_id, Number(p.precio ?? 0));
+    }
   }
 
   const stockPorProd = new Map<string, Record<string, number>>();
   for (const s of (stock ?? []) as any[]) {
     if (!stockPorProd.has(s.producto_id)) stockPorProd.set(s.producto_id, {});
     stockPorProd.get(s.producto_id)![s.ubicacion_id] = Number(s.cantidad);
+  }
+
+  const tarifasActivas = ((tarifas ?? []) as any[]).map((t) => ({
+    id: t.id as string,
+    codigo: t.codigo as string,
+    nombre: t.nombre as string,
+    es_default: !!t.es_default,
+    descuento_porcentaje: Number(t.descuento_porcentaje ?? 0),
+    activa: !!t.activa,
+  }));
+
+  // Resuelve el precio efectivo para cada tarifa de un producto. Si hay un
+  // precio manual (override) usa ese; si no, aplica el descuento al Detal.
+  function precioPorTarifa(productoId: string): Record<string, number> {
+    const detal = precioDetalPorProd.get(productoId) ?? 0;
+    const out: Record<string, number> = {};
+    for (const t of tarifasActivas) {
+      const override = overridePorProdTarifa.get(`${productoId}|${t.id}`);
+      let p: number | null = null;
+      if (override != null && override > 0) p = override;
+      else if (t.es_default) p = detal > 0 ? detal : null;
+      else p = detal > 0 ? Math.round(detal * (1 - t.descuento_porcentaje / 100)) : null;
+      if (p != null && p > 0) out[t.id] = p;
+    }
+    return out;
   }
 
   const catalogo: Catalogo = {
@@ -103,8 +146,10 @@ export async function descargarPlantillaCSV(): Promise<{ ok: true; csv: string; 
       precio_detal: precioDetalPorProd.get(p.id) ?? 0,
       costo_unitario: Number(p.costo_unitario ?? 0),
       stock_por_ubicacion: stockPorProd.get(p.id) ?? {},
+      precios_por_tarifa: precioPorTarifa(p.id),
     })),
     ubicaciones: (ubicaciones ?? []).map((u: any) => ({ id: u.id, nombre: u.nombre, tipo: u.tipo, activa: u.activa })),
+    tarifas: tarifasActivas,
   };
 
   const esRecepcion = perfil.rol === "recepcion";

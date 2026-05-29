@@ -45,7 +45,9 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
     setFileName(file.name);
     setResumen(null);
     const text = await file.text();
-    const parsed = parseCSV(text, catalogo);
+    // Recepción no puede usar "Otro" en la columna tarifa (precio personalizado);
+    // admin/maestro sí. Esto solo cambia mensajes de error del parser.
+    const parsed = parseCSV(text, catalogo, { permiteTarifaOtro: !soloVentas });
     // Si el usuario es recepción, marcamos las filas de compra como inválidas.
     if (soloVentas) {
       const movidos: typeof parsed.invalid = [];
@@ -140,11 +142,36 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                 <tbody className="divide-y divide-border">
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-brand-orange">cantidad</td>
-                    <td className="px-2 py-1.5 text-muted-foreground"><strong className="text-white">Lo único que debes llenar.</strong> Entero positivo. Si la dejas en 0 (o vacía), esa fila se ignora.</td>
+                    <td className="px-2 py-1.5 text-muted-foreground"><strong className="text-white">Lo único que debes llenar siempre.</strong> Entero positivo. Si la dejas en 0 (o vacía), esa fila se ignora.</td>
+                  </tr>
+                  <tr>
+                    <td className="px-2 py-1.5 font-mono text-brand-orange">tarifa</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">
+                      <strong className="text-white">Solo en filas de venta.</strong> Viene pre-llenada con la tarifa default (Detal). Puedes cambiarla por otra. Debe ser el <strong className="text-white">nombre exacto</strong> de una de las tarifas activas:{" "}
+                      {(catalogo.tarifas ?? []).filter((t) => t.activa).map((t, idx, arr) => (
+                        <span key={t.id}>
+                          <code className="text-brand-orange">{t.nombre}</code>
+                          {idx < arr.length - 1 ? ", " : "."}
+                        </span>
+                      ))}
+                      {!soloVentas ? (
+                        <>
+                          {" "}También aceptamos <code className="text-brand-orange">Otro</code> (precio personalizado) — en ese caso debes llenar <code className="text-brand-orange">valor_unitario</code> con el precio cobrado.
+                        </>
+                      ) : (
+                        <>
+                          {" "}<strong className="text-yellow-300">Tu rol no permite</strong> usar "Otro" — solo tarifas de la lista.
+                        </>
+                      )}
+                      {" "}En filas de compra/traslado esta columna se ignora.
+                    </td>
                   </tr>
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-brand-orange">valor_unitario</td>
-                    <td className="px-2 py-1.5 text-muted-foreground">Ya viene pre-llenado. En <strong className="text-white">venta</strong> = precio al cliente; en <strong className="text-white">compra/traslado</strong> = costo unitario. Edítalo solo si fue distinto.</td>
+                    <td className="px-2 py-1.5 text-muted-foreground">
+                      En <strong className="text-white">venta</strong>: <strong className="text-yellow-300">se ignora</strong> si la tarifa es válida (el sistema toma el precio del catálogo). <strong>Solo se usa cuando la tarifa es <code className="text-brand-orange">Otro</code></strong> — ahí escribís el precio que cobraste.<br />
+                      En <strong className="text-white">compra/traslado</strong>: es el costo unitario. Viene pre-llenado con el del catálogo; edítalo si fue distinto.
+                    </td>
                   </tr>
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-muted-foreground">nombre_producto</td>
@@ -342,6 +369,7 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                       <TH className="text-right" title="Para ventas: precio al cliente. Para compras: costo unitario.">
                         Precio / Costo
                       </TH>
+                      <TH>Tarifa</TH>
                       <TH>Ticket</TH>
                     </TR>
                   </THead>
@@ -368,6 +396,13 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                         </TD>
                         <TD className="text-right font-mono">{r.cantidad}</TD>
                         <TD className="text-right font-mono">{formatCOP(r.precio_unitario)}</TD>
+                        <TD className="text-xs">
+                          {r.tipo === "venta"
+                            ? (r.lista_precio_id
+                                ? <Badge tone="gray">{r.tarifa_nombre}</Badge>
+                                : <span className="italic text-muted-foreground">Otro / Personalizado</span>)
+                            : <span className="text-muted-foreground">—</span>}
+                        </TD>
                         <TD className="text-xs text-muted-foreground">{r.ticket ?? "—"}</TD>
                       </TR>
                     ))}
