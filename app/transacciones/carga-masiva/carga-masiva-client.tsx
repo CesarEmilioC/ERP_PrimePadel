@@ -156,11 +156,11 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                       ))}
                       {!soloVentas ? (
                         <>
-                          {" "}También aceptamos <code className="text-brand-orange">Otro</code> (precio personalizado) — en ese caso debes llenar <code className="text-brand-orange">valor_unitario</code> con el precio cobrado.
+                          {" "}También se acepta <code className="text-brand-orange">Otro</code> (precio personalizado); en ese caso debes llenar <code className="text-brand-orange">valor_unitario</code> con el precio cobrado al cliente.
                         </>
                       ) : (
                         <>
-                          {" "}<strong className="text-yellow-300">Tu rol no permite</strong> usar "Otro" — solo tarifas de la lista.
+                          {" "}<strong className="text-yellow-300">Tu rol no permite</strong> usar "Otro": solo las tarifas de la lista.
                         </>
                       )}
                       {" "}En filas de compra/traslado esta columna se ignora.
@@ -169,8 +169,8 @@ export function CargaMasivaClient({ catalogo, soloVentas }: { catalogo: Catalogo
                   <tr>
                     <td className="px-2 py-1.5 font-mono text-brand-orange">valor_unitario</td>
                     <td className="px-2 py-1.5 text-muted-foreground">
-                      En <strong className="text-white">venta</strong>: <strong className="text-yellow-300">se ignora</strong> si la tarifa es válida (el sistema toma el precio del catálogo). <strong>Solo se usa cuando la tarifa es <code className="text-brand-orange">Otro</code></strong> — ahí escribís el precio que cobraste.<br />
-                      En <strong className="text-white">compra/traslado</strong>: es el costo unitario. Viene pre-llenado con el del catálogo; edítalo si fue distinto.
+                      En <strong className="text-white">venta</strong>: <strong className="text-yellow-300">se ignora</strong> si la tarifa es válida (el sistema toma el precio del catálogo). <strong>Solo se utiliza cuando la tarifa es <code className="text-brand-orange">Otro</code></strong>; en ese caso debes indicar el precio cobrado al cliente.<br />
+                      En <strong className="text-white">compra/traslado</strong>: corresponde al costo unitario. Viene pre-llenado con el del catálogo; edítalo solo si fue distinto.
                     </td>
                   </tr>
                   <tr>
