@@ -398,7 +398,7 @@
 <li><strong>Stock por ubicación</strong>: tabla con cada lugar físico y su cantidad.</li>
 <li><strong>Precios por tarifa</strong>: todos los precios efectivos del producto en cada tarifa, con indicador del origen (Manual, Auto o Precio base).</li>
 <li><strong>Histórico de transacciones</strong> (ventas + compras + traslados): cada movimiento del producto con fecha y hora, tipo, ubicación, cantidad, <strong>Valor unitario</strong> (en compras es el costo registrado, en ventas el precio cobrado), <strong>Tarifa</strong> (solo en ventas: muestra la tarifa usada o &quot;Otro / Personalizado&quot;), subtotal y notas.</li>
-<li><strong>Histórico de ventas mensuales</strong>: cantidad y monto vendido cada mes (datos de Alegra). Los totales con asterisco (*) son estimados con el precio actual cuando el reporte original no traía monto.</li>
+<li><strong>Histórico de ventas mensuales</strong>: cantidad y monto vendido cada mes (datos de Siigo). Los totales con asterisco (*) son estimados con el precio actual cuando el reporte original no traía monto.</li>
 <li><strong>Historial de ajustes</strong>: cada conteo físico, merma o corrección registrada.</li>
 </ul>
 <h3>Ajuste de inventario</h3>
@@ -610,7 +610,7 @@
 <p>👤 <strong>Acceso:</strong> Maestro.</p>
 </blockquote>
 <p>Grupos de productos/servicios.</p>
-<p><strong>16 categorías precargadas</strong> desde el catálogo de Alegra (Bebidas con alcohol, Cafetería, Implementos para pádel, Clases y paquetes Prime Padel, etc.).</p>
+<p><strong>16 categorías precargadas</strong> desde el catálogo de Siigo (Bebidas con alcohol, Cafetería, Implementos para pádel, Clases y paquetes Prime Padel, etc.).</p>
 <p>CRUD igual a ubicaciones. Soft-delete si la categoría tiene productos asociados.</p>
 <hr>
 <h2>11. Tarifas</h2>
@@ -680,17 +680,17 @@
 <ul>
 <li><strong>Filtros</strong>: categoría (multi), Mes (atajo a un mes específico), Fecha desde, Fecha hasta. El filtro Mes y el rango de fechas son excluyentes — al usar uno se limpia el otro.</li>
 <li><strong>Ventas última semana</strong> (monto + número de transacciones por día, últimos 7 días — solo transacciones reales del sistema).</li>
-<li><strong>Consumo por mes</strong>, <strong>Top productos</strong>, <strong>Consumo por categoría</strong> (torta, con leyenda colapsable) y <strong>Cantidades vendidas por producto</strong>: <strong>combinan</strong> el histórico de Alegra con las ventas registradas en este sistema. La tendencia sigue creciendo después de que termina Alegra.</li>
-<li><strong>Ventas por día de la semana</strong> (cuando hay transacciones reales — solo cuenta sistema, no Alegra).</li>
-<li><strong>Top 5 productos por día</strong> (gráfica apilada — solo cuenta sistema, no Alegra).</li>
-<li><strong>Utilidades brutas: costos vs ingresos</strong> (gráfica top 10 con KPIs de margen + tabla completa). Para responder &quot;¿qué tan rentable es cada producto?&quot;. Solo cuenta ventas reales del sistema (no el histórico de Alegra).</li>
+<li><strong>Consumo por mes</strong>, <strong>Top productos</strong>, <strong>Consumo por categoría</strong> (torta, con leyenda colapsable) y <strong>Cantidades vendidas por producto</strong>: <strong>combinan</strong> el histórico de Siigo con las ventas registradas en este sistema. La tendencia sigue creciendo después de que termina Siigo.</li>
+<li><strong>Ventas por día de la semana</strong> (cuando hay transacciones reales — solo cuenta sistema, no Siigo).</li>
+<li><strong>Top 5 productos por día</strong> (gráfica apilada — solo cuenta sistema, no Siigo).</li>
+<li><strong>Utilidades brutas: costos vs ingresos</strong> (gráfica top 10 con KPIs de margen + tabla completa). Para responder &quot;¿qué tan rentable es cada producto?&quot;. Solo cuenta ventas reales del sistema (no el histórico de Siigo).</li>
 </ul>
 <p>Cada gráfica trae una descripción corta debajo del título para que sepas qué te está mostrando.</p>
 <h3>Pestaña &quot;Inventario&quot;</h3>
 <ul>
 <li><strong>Stock por ubicación</strong>: gráfica + tarjetas con cantidad y valor en costo de cada ubicación.</li>
 <li><strong>Productos por categoría</strong>: cuántos SKUs tiene cada categoría.</li>
-<li><strong>Días estimados de stock</strong> (predictivo): cuántos días faltan para que se acabe cada producto según la velocidad de venta. Combina el histórico de Alegra con las ventas registradas en este sistema para tener un promedio estable. Sugerencias 🔴 comprar ya, 🟡 programar compra, 🟢 OK.</li>
+<li><strong>Días estimados de stock</strong> (predictivo): cuántos días faltan para que se acabe cada producto según la velocidad de venta. Combina el histórico de Siigo con las ventas registradas en este sistema para tener un promedio estable. Sugerencias 🔴 comprar ya, 🟡 programar compra, 🟢 OK.</li>
 </ul>
 <h3>Pestaña &quot;Alertas&quot;</h3>
 <ul>
@@ -728,7 +728,12 @@
 <h2>14. Preguntas frecuentes</h2>
 <p><strong>¿Qué pasa con los servicios (clases, alquileres, torneos)?</strong><br>No tienen stock. Se venden con su precio y suman al total, pero no afectan el inventario.</p>
 <p><strong>¿Y los productos &quot;no inventariables&quot;?</strong><br>Productos físicos que decides no trackear (ej. promos genéricas). Se comportan como servicios.</p>
-<p><strong>¿Por qué algunos productos aparecen como inactivos?</strong><br>Corresponden a ítems del histórico (clases con profesores que ya no están, paquetes descontinuados). Se preservan para que las estadísticas sigan siendo coherentes.</p>
+<p><strong>¿Por qué algunos productos aparecen como inactivos?</strong><br>Hay tres motivos:</p>
+<ul>
+<li>Ítems del histórico viejo (clases con profesores que ya no están, paquetes descontinuados). Se preservan para que las estadísticas sigan siendo coherentes.</li>
+<li>Productos detectados en el histórico de Siigo (abr 24 – may 28 2026) que <strong>no estaban</strong> aún en el catálogo cuando se entregó el sistema. Quedaron creados como inactivos para no perder las cantidades del reporte. <strong>Revisa la lista y activa los que sí vas a seguir vendiendo</strong> (Inventario → ficha del producto → Editar → marcar como activo y completar precios/costos).</li>
+<li>Cualquier producto que tú mismo hayas marcado como inactivo desde la ficha.</li>
+</ul>
 <p><strong>Si me equivoco al registrar una venta, ¿se puede corregir?</strong><br>Depende del rol:</p>
 <ul>
 <li><strong>Admin y Maestro</strong>: click en <strong>Editar</strong> o <strong>Eliminar</strong> desde la lista de Transacciones. El sistema revierte el stock automáticamente al eliminar.</li>

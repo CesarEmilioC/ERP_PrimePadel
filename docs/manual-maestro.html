@@ -256,7 +256,7 @@
 <h2>4. Configuración del catálogo</h2>
 <h3>Categorías</h3>
 <blockquote>
-<p>16 categorías precargadas desde el catálogo de Alegra.</p>
+<p>16 categorías precargadas desde el catálogo de Siigo.</p>
 </blockquote>
 <p><strong>Cuándo crear una categoría nueva</strong>: si tienes una nueva línea de productos que no encaja en las existentes (ej. &quot;Suplementos deportivos&quot;).</p>
 <p><strong>Cuándo desactivar</strong>: si dejas de manejar un tipo de producto. Los productos asociados se quedan con la categoría inactiva — no afecta su funcionamiento, solo no aparece como opción para nuevos productos.</p>
@@ -446,17 +446,17 @@
 <h3>Pestaña &quot;Ventas y consumo&quot;</h3>
 <p><strong>Filtra siempre por el rango de meses que te interese.</strong> Por defecto muestra todo el histórico.</p>
 <ul>
-<li><strong>Ventas última semana</strong>: monto y número de transacciones por día (últimos 7 días). Cifras reales del sistema, no histórico de Alegra.</li>
-<li><strong>Consumo por mes</strong>, <strong>Top productos</strong>, <strong>Por categoría</strong> y <strong>Cantidades vendidas por producto</strong>: <strong>combinan el histórico de Alegra (sep 2025 – abr 2026) con las ventas registradas en este sistema</strong>, mes a mes hasta hoy. Así la tendencia no &quot;corta&quot; al terminar Alegra.</li>
-<li><strong>Días de la semana</strong>: identifica los días de mayor venta. Sirve para programar personal y compras. Solo cuenta transacciones del sistema (no Alegra, porque Alegra es mensual sin granularidad diaria).</li>
+<li><strong>Ventas última semana</strong>: monto y número de transacciones por día (últimos 7 días). Cifras reales del sistema, no histórico de Siigo.</li>
+<li><strong>Consumo por mes</strong>, <strong>Top productos</strong>, <strong>Por categoría</strong> y <strong>Cantidades vendidas por producto</strong>: <strong>combinan el histórico de Siigo (sep 2025 – 28 may 2026) con las ventas registradas en este sistema</strong>, mes a mes hasta hoy. Así la tendencia no &quot;corta&quot; al terminar Siigo.</li>
+<li><strong>Días de la semana</strong>: identifica los días de mayor venta. Sirve para programar personal y compras. Solo cuenta transacciones del sistema (no Siigo, porque Siigo es mensual sin granularidad diaria).</li>
 <li><strong>Monto vendido por tarifa</strong> y <strong>Unidades vendidas por tarifa</strong>: dos gráficas que rompen las ventas por la tarifa con la que se registró cada una (Detal, Staff Prime, Kevin García, Bryan Perafán, Alternos...). Las ventas con precio libre aparecen como <strong>&quot;Otro / Personalizado&quot;</strong>. Sirven para ver el peso real de cada canal/tipo de cliente. <strong>Responden a los filtros</strong> de categoría, producto, mes y rango de fechas del tab.</li>
-<li><strong>Utilidades brutas (costos vs ingresos)</strong>: gráfica top 10 con barras verde (ingresos) y rojo (costos) por producto/servicio. KPIs arriba con totales y margen %. Filtro Todos / Solo productos / Solo servicios. Útil para responder &quot;¿cuáles son mis productos más rentables?&quot; — el margen % te dice cuánto ganas por cada peso de venta. Solo cuenta ventas reales del sistema (no el histórico de Alegra, porque ahí no hay costo por venta). <strong>Ojo</strong>: los <strong>ingresos están NETOS del impuesto</strong> asignado al producto (IVA / Impoconsumo). El precio que paga el cliente incluye el impuesto, así que el sistema lo separa con la fórmula <code>impuesto = bruto × pct / (100 + pct)</code> y muestra la columna &quot;Impuestos&quot; aparte. La utilidad calculada es entonces más realista que la basada en ingresos brutos.</li>
+<li><strong>Utilidades brutas (costos vs ingresos)</strong>: gráfica top 10 con barras verde (ingresos) y rojo (costos) por producto/servicio. KPIs arriba con totales y margen %. Filtro Todos / Solo productos / Solo servicios. Útil para responder &quot;¿cuáles son mis productos más rentables?&quot; — el margen % te dice cuánto ganas por cada peso de venta. Solo cuenta ventas reales del sistema (no el histórico de Siigo, porque ahí no hay costo por venta). <strong>Ojo</strong>: los <strong>ingresos están NETOS del impuesto</strong> asignado al producto (IVA / Impoconsumo). El precio que paga el cliente incluye el impuesto, así que el sistema lo separa con la fórmula <code>impuesto = bruto × pct / (100 + pct)</code> y muestra la columna &quot;Impuestos&quot; aparte. La utilidad calculada es entonces más realista que la basada en ingresos brutos.</li>
 </ul>
 <h3>Pestaña &quot;Inventario&quot;</h3>
 <ul>
 <li><strong>Stock por ubicación</strong>: detecta si hay desbalance (ej. mucho stock en Bodega y poco en Vitrina → mover).</li>
 <li><strong>SKUs por categoría</strong>: salud del catálogo.</li>
-<li><strong>Días estimados de stock</strong>: 🔴 productos a punto de agotarse. Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria. Combina el histórico de Alegra con las ventas registradas en este sistema para tener un promedio estable. <strong>Revisa esta sección semanalmente</strong> para evitar quiebres de stock.</li>
+<li><strong>Días estimados de stock</strong>: 🔴 productos a punto de agotarse. Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria. Combina el histórico de Siigo con las ventas registradas en este sistema para tener un promedio estable. <strong>Revisa esta sección semanalmente</strong> para evitar quiebres de stock.</li>
 </ul>
 <blockquote>
 <p>Cada gráfica del dashboard ahora trae una descripción corta debajo del título para que sepas qué te está mostrando.</p>
@@ -476,7 +476,7 @@
 <h3>Producto se venció o rompió</h3>
 <p>Ajuste de inventario con motivo <strong>&quot;Merma&quot;</strong> o <strong>&quot;Rotura&quot;</strong> y notas explicativas. Queda en el historial del producto para auditoría.</p>
 <h3>Cambié el precio y los reportes viejos cambiaron</h3>
-<p>Es normal: los <strong>totales estimados</strong> del histórico de Alegra (los marcados con asterisco *) se calculan con el precio actual. Las transacciones reales registradas en el sistema mantienen su precio original.</p>
+<p>Es normal: los <strong>totales estimados</strong> del histórico de Siigo (los marcados con asterisco *) se calculan con el precio actual. Las transacciones reales registradas en el sistema mantienen su precio original.</p>
 <h3>Costo guardado en cada venta (margen automático)</h3>
 <p>Al registrar una <strong>venta</strong> solo se te pide el <strong>precio</strong> (lo que paga el cliente, normalmente vía la tarifa elegida). El sistema <strong>guarda automáticamente</strong> el costo del producto al momento de la venta — calculado como el promedio de todas las compras del producto registradas hasta ese instante, ponderado por cantidad. No tienes que pensarlo. Esto sirve para:</p>
 <ul>

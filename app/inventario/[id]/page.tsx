@@ -100,8 +100,8 @@ export default async function ProductoDetallePage({ params }: { params: Promise<
     }))
     .sort((a, b) => a.orden - b.orden);
 
-  // Histórico mensual = Alegra (importado) + ventas reales registradas en el ERP.
-  // Si el histórico de Alegra no trae total (solo cantidad), se estima con precio detal.
+  // Histórico mensual = Siigo (importado) + ventas reales registradas en el ERP.
+  // Si el histórico de Siigo no trae total (solo cantidad), se estima con precio detal.
   const precioDetal = preciosOrdenados.find((p) => p.codigo === "DETAL")?.precio ?? 0;
   const mensualMap = new Map<string, { anio: number; mes: number; cantidad_vendida: number; total: number; total_estimado: boolean }>();
 

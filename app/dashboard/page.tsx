@@ -73,7 +73,7 @@ export default async function DashboardPage() {
         nAlertas: nAlertas ?? 0,
       }}
       historico={[
-        // Histórico migrado de Alegra (sep 2025 – abr 2026 aprox).
+        // Histórico migrado de Siigo (sep 2025 – 28 may 2026).
         ...(historico as any[]).map((h) => ({
           anio: h.anio,
           mes: h.mes,

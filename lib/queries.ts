@@ -250,7 +250,7 @@ export async function getAlertasDetalladas() {
 // Ventas registradas EN ESTE SISTEMA agregadas por (producto, año, mes) en
 // zona Bogotá. Devuelve filas con la MISMA forma que getVentasHistoricasPorMes
 // para poder concatenar las dos fuentes y que las gráficas del dashboard
-// reflejen tanto el histórico migrado de Alegra como las ventas actuales.
+// reflejen tanto el histórico migrado de Siigo como las ventas actuales.
 export async function getVentasSistemaPorMes() {
   const sb = sbAdmin();
   const { data } = await sb
@@ -450,7 +450,7 @@ export async function getVentasUltimaSemana(): Promise<VentaDia[]> {
 
 // Utilidades brutas por producto/servicio: suma de (precio - costo) * cantidad
 // sobre todas las ventas registradas en el sistema. Solo cuenta ventas reales,
-// no el histórico mensual de Alegra (porque ahí no tenemos costo por venta).
+// no el histórico mensual de Siigo (porque ahí no tenemos costo por venta).
 //
 // Importante: `ingresos` ya viene NETO del impuesto asignado al producto en
 // el catálogo (IVA, Impoconsumo). El precio que el cliente paga incluye el

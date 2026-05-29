@@ -387,7 +387,7 @@ export function DashboardClient({
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          KPIs, consumo histórico y alertas. El histórico de ventas (SEP 2025 – ABR 2026) viene de los reportes mensuales de Alegra; el detalle diario aparece a partir de las transacciones registradas en este sistema.
+          KPIs, consumo histórico y alertas. El histórico de ventas (<strong>SEP 2025 – 28 MAY 2026</strong>) viene de los reportes mensuales de <strong>Siigo</strong>; el detalle diario aparece a partir de las transacciones registradas en este sistema. <span className="text-yellow-300/80">ⓘ Los meses ABR y MAY 2026 son parciales — abril cubre todo el mes y mayo va del 1 al 28.</span>
         </p>
       </div>
 
@@ -529,14 +529,14 @@ export function DashboardClient({
               </ResponsiveContainer>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Calculado en zona horaria Bogotá (UTC-5). Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Alegra).
+              Calculado en zona horaria Bogotá (UTC-5). Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Siigo).
             </p>
           </Card>
 
           <Card>
             <h2 className="text-lg font-semibold text-white">Consumo por mes (monto)</h2>
             <p className="mb-3 text-xs text-muted-foreground">
-              Ventas totales por mes. Incluye el histórico de Alegra (sep 2025 – abr 2026) y todas las ventas registradas desde entonces.
+              Ventas totales por mes. Incluye el histórico de Siigo (sep 2025 – 28 may 2026) y todas las ventas registradas en este sistema desde el 29 de mayo en adelante.
             </p>
             <div className="h-72">
               <ResponsiveContainer>
@@ -567,7 +567,7 @@ export function DashboardClient({
                 </Select>
               </div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Ranking de productos más vendidos en el rango filtrado. Combina el histórico de Alegra con las ventas registradas en este sistema. Cambia el selector para ordenar por monto facturado o por cantidad de unidades.
+                Ranking de productos más vendidos en el rango filtrado. Combina el histórico de Siigo con las ventas registradas en este sistema. Cambia el selector para ordenar por monto facturado o por cantidad de unidades.
               </p>
               <div className="h-72">
                 <ResponsiveContainer>
@@ -599,7 +599,7 @@ export function DashboardClient({
                 </div>
               </div>
               <p className="mb-3 text-xs text-muted-foreground">
-                Distribución del consumo entre las categorías del catálogo. Combina el histórico de Alegra con las ventas registradas en este sistema. Útil para ver qué tipo de productos genera más ingresos.
+                Distribución del consumo entre las categorías del catálogo. Combina el histórico de Siigo con las ventas registradas en este sistema. Útil para ver qué tipo de productos genera más ingresos.
               </p>
               <div className="h-72">
                 <ResponsiveContainer>
@@ -619,7 +619,7 @@ export function DashboardClient({
             <Card>
               <h2 className="text-lg font-semibold text-white">Monto vendido por tarifa</h2>
               <p className="mb-3 text-xs text-muted-foreground">
-                Suma de subtotales agrupados por la tarifa con la que se registró cada venta. Solo cuenta transacciones registradas en este sistema (no el histórico de Alegra). Las ventas con precio personalizado aparecen como <strong>"Otro / Personalizado"</strong>.
+                Suma de subtotales agrupados por la tarifa con la que se registró cada venta. Solo cuenta transacciones registradas en este sistema (no el histórico de Siigo). Las ventas con precio personalizado aparecen como <strong>"Otro / Personalizado"</strong>.
               </p>
               {ventasTarifaAgg.length === 0 ? (
                 <EmptyState
@@ -707,7 +707,7 @@ export function DashboardClient({
             <Card>
               <h2 className="mb-1 text-lg font-semibold text-white">Top 5 productos por día de la semana (apilado)</h2>
               <p className="mb-1 text-xs text-muted-foreground">
-                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos. Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Alegra).
+                Cada barra representa el total de unidades vendidas en ese día, dividido por los 5 productos más vendidos. Solo cuenta transacciones registradas en este sistema (no incluye el histórico de Siigo).
               </p>
               {notaFiltrosNoAplican}
               <div className="h-80">
@@ -736,7 +736,7 @@ export function DashboardClient({
               </span>
             </h2>
             <p className="mb-3 text-xs text-muted-foreground">
-              Tabla completa con todos los productos vendidos en el rango filtrado. Combina el histórico de Alegra con las ventas registradas en este sistema. Útil para exportar a Excel o revisar productos puntuales.
+              Tabla completa con todos los productos vendidos en el rango filtrado. Combina el histórico de Siigo con las ventas registradas en este sistema. Útil para exportar a Excel o revisar productos puntuales.
             </p>
             <Table>
               <THead>
@@ -785,7 +785,7 @@ export function DashboardClient({
                     <div>
                       <h2 className="text-lg font-semibold text-white">Utilidades brutas: costos vs ingresos</h2>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) de cada producto/servicio en las ventas registradas en el sistema. El costo usa el <strong>costo promedio de compra</strong> del producto × unidades vendidas; la utilidad bruta es la diferencia. No incluye el histórico de Alegra.
+                        Top 10 por utilidad. Cada barra muestra ingresos (verde) y costos (rojo) de cada producto/servicio en las ventas registradas en el sistema. El costo usa el <strong>costo promedio de compra</strong> del producto × unidades vendidas; la utilidad bruta es la diferencia. No incluye el histórico de Siigo.
                       </p>
                       <p className="mt-1 text-xs text-yellow-300/80">
                         ⓘ A los <strong>ingresos</strong> ya se les descontó el impuesto asignado al producto (IVA / Impoconsumo). El precio que paga el cliente lo incluye, así que aquí se separa con la fórmula <code>impuesto = bruto × pct / (100 + pct)</code>. Productos sin impuesto se muestran tal cual.
@@ -823,7 +823,7 @@ export function DashboardClient({
                   {chartData.length === 0 ? (
                     <EmptyState
                       title="Aún no hay ventas registradas en el sistema"
-                      description="Esta gráfica se llena con las ventas reales registradas (no incluye el histórico de Alegra que es solo mensual y sin costo por venta)."
+                      description="Esta gráfica se llena con las ventas reales registradas (no incluye el histórico de Siigo que es solo mensual y sin costo por venta)."
                     />
                   ) : (
                     <div className="h-80">
@@ -989,7 +989,7 @@ export function DashboardClient({
             <Card>
               <h2 className="mb-3 text-lg font-semibold text-white">Días estimados de stock</h2>
               <p className="mb-2 text-xs text-muted-foreground">
-                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria. Combina el histórico de Alegra con las ventas registradas en este sistema. Útil para anticipar compras.
+                Calculado dividiendo el stock actual entre la velocidad promedio de venta diaria. Combina el histórico de Siigo con las ventas registradas en este sistema. Útil para anticipar compras.
               </p>
               <Table>
                 <THead>

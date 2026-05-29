@@ -241,7 +241,7 @@ export function TransaccionesClient({
             {esRecepcion
               ? "Registra las ventas del turno. Cada transacción queda guardada con tu usuario, fecha y hora."
               : "Registro manual de ventas, compras y traslados. Cada transacción ajusta el inventario automáticamente."}
-            {esMaestro ? <> El historial de Alegra (SEP 2025 – ABR 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
+            {esMaestro ? <> El historial de Siigo (SEP 2025 – 28 MAY 2026) está en el <a href="/dashboard" className="text-brand-orange hover:underline">Dashboard</a>.</> : null}
           </p>
           {esRecepcion ? (
             <div className="mt-3 rounded-md border border-yellow-700/50 bg-yellow-950/30 px-3 py-2 text-xs text-yellow-200">

@@ -403,9 +403,9 @@ export function DetalleClient(props: DetalleProps) {
             <span className="ml-2 text-sm font-normal text-muted-foreground">({historialMensual.length})</span>
           </h2>
           <p className="mb-2 text-xs text-muted-foreground">
-            Combina el histórico importado de Alegra con las ventas registradas en este sistema, mes a mes hasta el mes actual.
+            Combina el histórico importado de Siigo con las ventas registradas en este sistema, mes a mes hasta el mes actual.
             {historialMensual.some((h) => h.total_estimado) ? (
-              <> Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte de Alegra solo traía cantidad.</>
+              <> Los totales marcados con <span className="text-brand-orange">*</span> son estimados (cantidad × precio detal actual) porque el reporte de Siigo solo traía cantidad.</>
             ) : null}
           </p>
           <Table>
