@@ -123,15 +123,16 @@ export async function descargarPlantillaCSV(): Promise<{ ok: true; csv: string; 
   // Resuelve el precio efectivo para cada tarifa de un producto. Si hay un
   // precio manual (override) usa ese; si no, aplica el descuento al Detal.
   function precioPorTarifa(productoId: string): Record<string, number> {
-    const detal = precioDetalPorProd.get(productoId) ?? 0;
+    // Permite precio 0 — útil para tarifas de regalo/cortesía con 100% desc.
+    const detal = precioDetalPorProd.get(productoId);
     const out: Record<string, number> = {};
     for (const t of tarifasActivas) {
       const override = overridePorProdTarifa.get(`${productoId}|${t.id}`);
       let p: number | null = null;
-      if (override != null && override > 0) p = override;
-      else if (t.es_default) p = detal > 0 ? detal : null;
-      else p = detal > 0 ? Math.round(detal * (1 - t.descuento_porcentaje / 100)) : null;
-      if (p != null && p > 0) out[t.id] = p;
+      if (override != null && override >= 0) p = override;
+      else if (t.es_default) p = detal != null && detal >= 0 ? detal : null;
+      else if (detal != null && detal >= 0) p = Math.round(detal * (1 - t.descuento_porcentaje / 100));
+      if (p != null && p >= 0) out[t.id] = p;
     }
     return out;
   }

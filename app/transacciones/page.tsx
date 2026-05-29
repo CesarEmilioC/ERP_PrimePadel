@@ -57,16 +57,20 @@ export default async function TransaccionesPage() {
     .filter((l) => l.activa)
     .sort((a, b) => (b.es_default ? 1 : 0) - (a.es_default ? 1 : 0) || a.orden - b.orden);
 
+  // Resuelve los precios efectivos para cada tarifa de un producto.
+  // Permite precio 0 (tarifas con 100% de descuento como "Regalo" / cortesías).
+  // Solo descarta la tarifa si no hay forma de resolver un precio
+  // (sin override y sin precio Detal base).
   function preciosTarifaDeProducto(prodId: string): { lista_precio_id: string; nombre: string; precio: number }[] {
-    const detal = precioPorProd.get(prodId) ?? 0;
+    const detal = precioPorProd.get(prodId) ?? null;
     const out: { lista_precio_id: string; nombre: string; precio: number }[] = [];
     for (const t of tarifasActivas) {
       const override = overridePorProdTarifa.get(`${prodId}|${t.id}`);
       let precio: number | null = null;
       if (override != null) precio = override;
-      else if (t.es_default) precio = detal > 0 ? detal : null;
-      else precio = detal > 0 ? Math.round(detal * (1 - Number(t.descuento_porcentaje ?? 0) / 100)) : null;
-      if (precio != null && precio > 0) {
+      else if (t.es_default) precio = detal != null && detal >= 0 ? detal : null;
+      else if (detal != null && detal >= 0) precio = Math.round(detal * (1 - Number(t.descuento_porcentaje ?? 0) / 100));
+      if (precio != null && precio >= 0) {
         out.push({ lista_precio_id: t.id, nombre: t.nombre, precio });
       }
     }

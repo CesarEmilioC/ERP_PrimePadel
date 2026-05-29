@@ -95,9 +95,22 @@ export type OpcionesParser = {
   permiteTarifaOtro: boolean;
 };
 
+// Fecha de hoy en zona Bogotá (UTC-5, sin DST). Esto evita que la plantilla
+// generada desde Vercel (servidor en UTC) muestre la fecha del día siguiente
+// cuando son, por ejemplo, las 20:00 en Cali (01:00 UTC al día siguiente).
 function fechaHoyDDMMAAAA(): string {
-  const d = new Date();
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+  const ahora = new Date();
+  const bogota = new Date(ahora.getTime() - 5 * 60 * 60 * 1000);
+  return `${String(bogota.getUTCDate()).padStart(2, "0")}/${String(bogota.getUTCMonth() + 1).padStart(2, "0")}/${bogota.getUTCFullYear()}`;
+}
+
+// Hora actual en zona Bogotá como "HH:MM:SS". Se usa como hora por defecto al
+// importar un CSV cuando la fila no especifica hora — antes era constante
+// "00:01"; ahora refleja el momento de importación en hora local del club.
+function horaAhoraBogotaHHMMSS(): string {
+  const ahora = new Date();
+  const bogota = new Date(ahora.getTime() - 5 * 60 * 60 * 1000);
+  return `${String(bogota.getUTCHours()).padStart(2, "0")}:${String(bogota.getUTCMinutes()).padStart(2, "0")}:${String(bogota.getUTCSeconds()).padStart(2, "0")}`;
 }
 
 // Heurística simple para sugerir ubicaciones por tipo.
@@ -206,15 +219,16 @@ export function buildPlantillaCSV(catalogo: Catalogo, opciones: OpcionesPlantill
 // Parseo
 // ----------------------------------------------------------------------------
 
-function parseFechaISO(raw: string): string | null {
+// Convierte la columna `fecha` del CSV a un timestamp ISO en UTC.
+// Si la fila trae hora explícita la respetamos (interpretándola como hora
+// Bogotá); si no, usamos `defaultHora` — que el llamador captura en el
+// momento de importar como la hora local actual de Cali.
+function parseFechaISO(raw: string, defaultHora: string): string | null {
   if (!raw) return null;
   const s = raw.trim();
 
-  // Separar fecha y hora (si hay). Si no se especifica hora, las transacciones
-  // importadas por CSV quedan a las 00:01 del día — así aparecen al inicio del
-  // día y se distinguen de las que se registran manualmente durante el día.
   const [fechaStr, horaStr] = s.split(/[ T]/, 2);
-  const hora = horaStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(horaStr) ? horaStr : "00:01";
+  const hora = horaStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(horaStr) ? horaStr : defaultHora;
 
   let yyyy: string | null = null;
   let mm: string | null = null;
@@ -232,10 +246,8 @@ function parseFechaISO(raw: string): string | null {
 
   if (!yyyy || !mm || !dd) return null;
 
-  // La hora del CSV se interpreta SIEMPRE como zona Bogotá (UTC-5, sin DST),
-  // sin importar desde dónde se sube el archivo. Así un CSV con "01/05/2026"
-  // queda exactamente a las 00:01 del 1 de mayo en Cali, incluso si el
-  // navegador del usuario está en otro huso horario.
+  // La hora se interpreta SIEMPRE como zona Bogotá (UTC-5, sin DST), sin
+  // importar desde dónde se sube el archivo.
   const horaCompleta = hora.length === 5 ? hora + ":00" : hora;
   const iso = `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T${horaCompleta}-05:00`;
   const d = new Date(iso);
@@ -271,6 +283,12 @@ export function parseCSV(text: string, catalogo: Catalogo, opciones: OpcionesPar
   const tarifaByNombre = new Map(
     (catalogo.tarifas ?? []).filter((t) => t.activa).map((t) => [t.nombre.toLowerCase(), t]),
   );
+
+  // Capturamos UNA sola vez la hora actual de Bogotá al iniciar la importación,
+  // y la usamos como hora por defecto para todas las filas del CSV que no
+  // traigan hora explícita. Así las transacciones de un mismo archivo quedan
+  // agrupadas con la hora de importación (y no a las 00:01).
+  const horaImportacionBogota = horaAhoraBogotaHHMMSS();
 
   // Pre-calcular stock esperado por (producto, ubicación) después de aplicar cada fila,
   // para validar que las ventas/traslados no sobregiren el stock disponible acumuladamente.
@@ -316,7 +334,7 @@ export function parseCSV(text: string, catalogo: Catalogo, opciones: OpcionesPar
       return;
     }
 
-    const fechaIso = parseFechaISO(fechaStr);
+    const fechaIso = parseFechaISO(fechaStr, horaImportacionBogota);
     if (!fechaIso) errors.push(`Fecha inválida ("${fechaStr}") — usa DD/MM/AAAA o AAAA-MM-DD`);
 
     if (tipoStr !== "venta" && tipoStr !== "compra" && tipoStr !== "traslado") {
@@ -377,9 +395,9 @@ export function parseCSV(text: string, catalogo: Catalogo, opciones: OpcionesPar
       } else if (tarifaStr.toLowerCase() === TARIFA_OTRO.toLowerCase()) {
         if (!opciones.permiteTarifaOtro) {
           errors.push(`Tu rol no permite tarifa "Otro" (precio personalizado). Usa una tarifa de la lista.`);
-        } else if (precioCsv <= 0) {
-          errors.push(`Tarifa "Otro" requiere "valor_unitario" mayor a 0`);
         }
+        // Aceptamos precio 0 — útil para regalos/cortesías. La única regla es
+        // que precioCsv esté presente (cubierto por la validación de arriba).
         // precio = precioCsv ya está bien; listaPrecioId queda en null.
         tarifaNombre = "Otro / Personalizado";
       } else {
@@ -388,10 +406,11 @@ export function parseCSV(text: string, catalogo: Catalogo, opciones: OpcionesPar
           errors.push(`Tarifa "${tarifaStr}" no encontrada o inactiva`);
         } else if (prod) {
           const precioTarifa = prod.precios_por_tarifa?.[t.id];
-          if (precioTarifa == null || precioTarifa <= 0) {
+          if (precioTarifa == null) {
             errors.push(`El producto "${prod.nombre}" no tiene precio resoluble en la tarifa "${t.nombre}"`);
           } else {
-            // Tarifa válida → IGNORAR valor_unitario, usar precio del catálogo.
+            // Tarifa válida → IGNORAR valor_unitario, usar precio del catálogo
+            // (puede ser 0, por ejemplo tarifa "Regalo" con 100% de descuento).
             precio = precioTarifa;
             listaPrecioId = t.id;
             tarifaNombre = t.nombre;

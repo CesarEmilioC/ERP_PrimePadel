@@ -149,12 +149,12 @@
       Cesar Emilio Castaño Marin<br>
       cesarxemiliox@gmail.com · +52 812 346 6691<br>
       Cali, Colombia<br>
-      27 de mayo de 2026
+      28 de mayo de 2026
     </div>
   </div>
 
   <h1>Manual del Maestro — ERP Prime Padel</h1>
-<p><strong>Extensión del manual de usuario</strong> para el rol <strong>Maestro</strong>, que tiene acceso total al sistema y es responsable de la configuración inicial, gestión del personal, mantenimiento del catálogo y administración general.</p>
+<p><strong>Versión final — mayo 2026.</strong> Extensión del Manual de usuario para el rol <strong>Maestro</strong>, que tiene acceso total al sistema y es responsable de la configuración inicial, gestión del personal, mantenimiento del catálogo y administración general.</p>
 <blockquote>
 <p>Este documento asume que ya leíste el <a href="./manual-usuario.html">Manual de usuario</a> general. Aquí solo cubrimos lo que es <strong>exclusivo del rol Maestro</strong> o requiere más contexto.</p>
 </blockquote>
@@ -393,6 +393,12 @@
 <li>Vas a <code>/tarifas</code> → &quot;Editar&quot; en su tarifa → cambias estado a <strong>Inactiva</strong>.</li>
 <li>O click &quot;Eliminar&quot;: si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico de ventas).</li>
 </ul>
+<p><strong>Crear una tarifa de cortesía o regalo (100% de descuento)</strong></p>
+<ul>
+<li>Vas a <code>/tarifas</code> → &quot;+ Nueva tarifa&quot; → nombre: <code>Regalo</code> (o &quot;Cortesía&quot;), código: <code>REGALO</code>, descuento predeterminado: <code>100</code>, estado: Activa.</li>
+<li>A partir de ese momento, cualquier producto se puede vender con esta tarifa por $0. El sistema acepta la venta, descuenta el stock normalmente, y queda registrada con monto $0 en los reportes.</li>
+<li>Útil para: atenciones al cliente, premios de torneo, bebidas para staff visitante, regalos puntuales del Maestro. Quedan auditadas (quién las registró, cuándo, con qué tarifa) para revisión posterior.</li>
+</ul>
 <h3>¿Cuándo NO usar tarifas distintas?</h3>
 <p>Si todos tus productos se venden a un solo precio público, ignora esta función. Solo usa Detal con descuento 0% y olvídate de las demás. Es opcional para casos especiales.</p>
 <hr>
@@ -418,7 +424,7 @@
 <h3>Atajo: muchos productos a la vez</h3>
 <p>Si tienes 100+ productos, hacer un ajuste por cada uno es lento. <strong>Alternativa</strong>:</p>
 <ul>
-<li>Pídele al proveedor del software que haga la carga vía CSV directo en BD (más rápido).</li>
+<li>Pídele al proveedor del software que haga la carga vía CSV directamente en la base de datos (es más rápido para volúmenes grandes).</li>
 <li>O usa la carga masiva CSV de transacciones para registrar una &quot;compra&quot; inicial por cada ubicación. Esto carga el stock y queda como histórico.</li>
 </ul>
 <h3>Después de la carga</h3>
@@ -472,14 +478,14 @@
 <h3>Cambié el precio y los reportes viejos cambiaron</h3>
 <p>Es normal: los <strong>totales estimados</strong> del histórico de Alegra (los marcados con asterisco *) se calculan con el precio actual. Las transacciones reales registradas en el sistema mantienen su precio original.</p>
 <h3>Costo guardado en cada venta (margen automático)</h3>
-<p>Al registrar una <strong>venta</strong> solo se te pide el <strong>Precio venta</strong> (lo que paga el cliente). El sistema <strong>guarda automáticamente</strong> el costo del producto al momento de la venta, calculado como el <strong>costo promedio ponderado de todas las compras del producto</strong> registradas hasta ese instante. No tienes que pensarlo. Esto sirve para:</p>
+<p>Al registrar una <strong>venta</strong> solo se te pide el <strong>precio</strong> (lo que paga el cliente, normalmente vía la tarifa elegida). El sistema <strong>guarda automáticamente</strong> el costo del producto al momento de la venta — calculado como el promedio de todas las compras del producto registradas hasta ese instante, ponderado por cantidad. No tienes que pensarlo. Esto sirve para:</p>
 <ul>
 <li>Calcular <strong>margen real</strong> en el reporte CSV &quot;Resumen por ítem&quot;.</li>
 <li>Preservar el <strong>costo histórico</strong> de cada venta aunque después cambies el costo del producto en el catálogo.</li>
 </ul>
 <p>En <strong>compra</strong> y <strong>traslado</strong> solo se pide un campo (Costo unitario), igual que antes.</p>
 <blockquote>
-<p>Si necesitas corregir el costo guardado en una venta pasada (por ejemplo, porque sabes que en esa venta puntual el costo fue distinto), pídeselo al proveedor del software — se puede ajustar directamente en la BD.</p>
+<p>Si necesitas corregir el costo guardado en una venta pasada (por ejemplo, porque sabes que en esa venta puntual el costo fue distinto), pídeselo al proveedor del software — se puede ajustar directamente en la base de datos.</p>
 </blockquote>
 <h3>Un usuario está bloqueado / no puede entrar</h3>
 <p>Pasos:</p>
@@ -575,7 +581,7 @@
 
   <div class="doc-footer">
     <span>Prime Padel — ERP de Inventario</span>
-    <span>Documento generado el 27 de mayo de 2026</span>
+    <span>Documento generado el 28 de mayo de 2026</span>
   </div>
 </body>
 </html>

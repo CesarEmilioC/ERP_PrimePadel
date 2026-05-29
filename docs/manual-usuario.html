@@ -149,12 +149,13 @@
       Cesar Emilio Castaño Marin<br>
       cesarxemiliox@gmail.com · +52 812 346 6691<br>
       Cali, Colombia<br>
-      27 de mayo de 2026
+      28 de mayo de 2026
     </div>
   </div>
 
   <h1>Manual de usuario — ERP Prime Padel</h1>
-<p><strong>Versión completa — abril 2026</strong><br><em>Sistema web para gestión de inventario, ventas, compras, traslados y análisis del club Prime Padel.</em></p>
+<p><strong>Versión final — mayo 2026</strong><br><em>Sistema web para gestión de inventario, ventas, compras, traslados y análisis del club Prime Padel.</em></p>
+<p>Este manual está pensado para el equipo del club (recepción y administración). El <strong>Manual del Maestro</strong> cubre la configuración del sistema, los reportes financieros y la gestión de usuarios. Si solo vas a usar el día a día, este manual es suficiente.</p>
 <hr>
 <h2>Índice</h2>
 <ol>
@@ -465,7 +466,7 @@
 </ol>
 <p><strong>Validación automática:</strong> si no hay suficiente stock en la ubicación elegida, el sistema avisa en rojo y no deja registrar.</p>
 <blockquote>
-<p>El costo del producto al momento de la venta se guarda automáticamente en la transacción (no te lo pide la UI). Se calcula como el <strong>costo promedio ponderado</strong> de todas las compras del producto registradas hasta ese instante. Esto permite que los reportes de margen sean exactos aunque después cambie el costo en el catálogo.</p>
+<p>Al registrar una venta, el sistema <strong>guarda automáticamente el costo del producto</strong> en ese momento (no te lo pide). El costo se calcula como el promedio de todas las compras del producto registradas hasta ese instante, ponderado por cantidad. Esto permite que los reportes de utilidad sean precisos aunque después cambie el costo en el catálogo.</p>
 </blockquote>
 <h3>Registrar una compra</h3>
 <p>Igual flujo, eligiendo el botón <strong>&quot;Compra / Ingreso&quot;</strong>. Aparece un solo campo <strong>&quot;Costo unitario&quot;</strong> (lo que pagaste al proveedor) y la ubicación es de <strong>destino</strong>.</p>
@@ -473,7 +474,7 @@
 <p>Eliges <strong>&quot;Traslado&quot;</strong>, agregas el producto, y para cada línea seleccionas <strong>dos ubicaciones</strong>: origen y destino. El campo <strong>&quot;Costo unitario&quot;</strong> se prellena con el costo actual del producto y es editable (sirve solo de referencia para conocer el valor del stock que se mueve). Validaciones: origen ≠ destino, stock suficiente en origen.</p>
 <h3>Editar precios de una transacción ya guardada</h3>
 <p>Al editar una transacción, el <strong>Precio venta</strong> (o <strong>Costo unitario</strong> en compras y traslados) aparece <strong>con el valor que tenía cuando se guardó la transacción</strong> (no con el valor actual del catálogo). Si lo modificas, se reemplaza; si no lo tocas, queda igual.</p>
-<p>En ventas, el costo de adquisición no se muestra en la UI pero queda guardado como snapshot histórico del momento de la venta.</p>
+<p>En ventas, el costo de adquisición no se muestra en pantalla pero queda guardado en la base, congelado con el valor que tenía al momento de la venta. Así, si después cambian los costos del catálogo, los reportes de utilidad de esa venta siguen siendo correctos.</p>
 <h3>Editar y eliminar</h3>
 <ul>
 <li>Click <strong>Editar</strong> → abre el diálogo con los datos cargados.</li>
@@ -535,7 +536,7 @@
 </tr>
 <tr>
 <td><code>tarifa</code></td>
-<td><strong>Solo en filas de venta.</strong> Viene pre-llenada con la tarifa default (Detal). Puedes cambiarla por otra tarifa activa escribiendo su <strong>nombre exacto</strong>. La pantalla de carga masiva muestra la lista de tarifas activas disponibles (se actualiza automáticamente con la BD).<br><br><strong>Recepción</strong>: solo puede usar las tarifas de la lista.<br><strong>Admin / Maestro</strong>: además pueden escribir <code>Otro</code> en esta columna para usar un precio personalizado (en ese caso deben llenar <code>valor_unitario</code> con el precio cobrado).<br><br>En compra/traslado esta columna se ignora.</td>
+<td><strong>Solo en filas de venta.</strong> Viene pre-llenada con la tarifa por defecto (Detal). Puedes cambiarla por otra tarifa activa escribiendo su <strong>nombre exacto</strong>. La pantalla de carga masiva muestra la lista de tarifas disponibles, que siempre refleja las que están activas en el sistema en este momento.<br><br><strong>Recepción</strong>: solo puede usar las tarifas de la lista.<br><strong>Admin / Maestro</strong>: además pueden escribir <code>Otro</code> en esta columna para usar un precio personalizado (en ese caso deben llenar <code>valor_unitario</code> con el precio cobrado al cliente).<br><br>En compra/traslado esta columna se ignora.</td>
 </tr>
 <tr>
 <td><code>valor_unitario</code></td>
@@ -555,7 +556,7 @@
 </tr>
 <tr>
 <td><code>fecha</code></td>
-<td>Viene con la fecha de hoy. Acepta <code>DD/MM/AAAA</code>, <code>DD-MM-AAAA</code> o <code>AAAA-MM-DD</code>. Opcional con hora: <code>DD/MM/AAAA HH:MM</code>.</td>
+<td>Viene con la fecha de hoy (en hora de Cali). Acepta <code>DD/MM/AAAA</code>, <code>DD-MM-AAAA</code> o <code>AAAA-MM-DD</code>. <strong>Si no escribes hora</strong>, el sistema usa la hora del momento en que importes el archivo (hora de Cali); por ejemplo, si subes el CSV a las 6:42 PM, todas las filas sin hora explícita quedan registradas a las 6:42 PM. Si quieres una hora específica, agrégala así: <code>DD/MM/AAAA HH:MM</code>.</td>
 </tr>
 <tr>
 <td><code>ubicacion</code></td>
@@ -598,7 +599,7 @@
 <p><strong>Tip:</strong> el campo &quot;Orden&quot; se usa para acomodar el dropdown de ubicaciones cuando registras una venta. Las que más se usan deberían tener orden bajo (1, 2, 3...).</p>
 </blockquote>
 <h3>Ver el contenido de una ubicación</h3>
-<p>Click en el nombre de cualquier ubicación (o en su botón <strong>&quot;Ver&quot;</strong>) para abrir su ficha. Ahí encontrás:</p>
+<p>Click en el nombre de cualquier ubicación (o en su botón <strong>&quot;Ver&quot;</strong>) para abrir su ficha. Ahí encontrarás:</p>
 <ul>
 <li>3 KPIs: productos distintos con stock, unidades totales y valor estimado al costo actual.</li>
 <li>Tabla con los productos que el sistema cree que hay en esa ubicación en este momento, ordenados por cantidad descendente. Click en el nombre del producto te lleva a su ficha (donde puedes hacer un ajuste si el conteo físico no cuadra).</li>
@@ -655,11 +656,15 @@
 <li><strong>Editar</strong>: cambiar nombre, código, descuento %, orden o desactivar. Si cambias el descuento %, todos los productos sin precio manual se ajustan automáticamente.</li>
 <li><strong>Eliminar</strong>: si tiene precios asignados se desactiva en lugar de borrarse (preserva el histórico). <strong>Detal no se puede borrar</strong>.</li>
 </ul>
-<h3>Cómo se usa</h3>
+<h3>Cómo se usa al registrar una venta</h3>
 <ol>
-<li><strong>Maestro</strong>: en la ficha del producto → sección &quot;Precios por tarifa&quot; → ves el precio efectivo (manual o automático) por cada tarifa. Si quieres anular el cálculo automático, escribes un valor en el campo.</li>
-<li><strong>Cajero</strong>: cuando registra una venta, el precio se autocompleta con Detal. Si está vendiendo a un Staff, modifica manualmente el precio según corresponda.</li>
+<li>Cuando agregas un producto a la venta, aparece un <strong>desplegable de tarifas</strong> con el precio efectivo de cada una para ese producto. Solo aparecen las tarifas activas configuradas en el sistema.</li>
+<li>Eliges la tarifa que corresponde (Detal para público general, Staff Prime para empleados, etc.) y el precio se autocompleta.</li>
+<li>Admin y Maestro tienen además la opción <strong>&quot;Otro (personalizado)&quot;</strong> al final, que les deja escribir un precio libre cuando el caso no encaja en ninguna tarifa (cortesía puntual, evento, etc.). Recepción no ve esa opción — debe usar siempre una de las tarifas configuradas.</li>
+<li>La tarifa elegida queda guardada en la transacción para los reportes (Dashboard → &quot;Monto vendido por tarifa&quot; y &quot;Unidades vendidas por tarifa&quot;).</li>
 </ol>
+<h3>Caso especial: tarifas de cortesía o regalo</h3>
+<p>Si tienes una tarifa con <strong>100% de descuento</strong> (por ejemplo, una tarifa llamada &quot;Regalo&quot; o &quot;Cortesía&quot;), el sistema acepta vender productos con esa tarifa aunque el precio final sea $0. Útil para regalos al cliente, premios, atenciones, etc. Estas ventas quedan registradas en el inventario (descuentan stock) pero suman $0 a los ingresos.</p>
 <blockquote>
 <p>Si no manejas precios diferenciados, ignora esta función — todo se vende a precio Detal por defecto.</p>
 </blockquote>
@@ -724,7 +729,13 @@
 <p><strong>¿Qué pasa con los servicios (clases, alquileres, torneos)?</strong><br>No tienen stock. Se venden con su precio y suman al total, pero no afectan el inventario.</p>
 <p><strong>¿Y los productos &quot;no inventariables&quot;?</strong><br>Productos físicos que decides no trackear (ej. promos genéricas). Se comportan como servicios.</p>
 <p><strong>¿Por qué algunos productos aparecen como inactivos?</strong><br>Corresponden a ítems del histórico (clases con profesores que ya no están, paquetes descontinuados). Se preservan para que las estadísticas sigan siendo coherentes.</p>
-<p><strong>Si me equivoco al registrar una venta, ¿se puede corregir?</strong><br>Sí. Click en <strong>Editar</strong> o <strong>Eliminar</strong> desde la lista de Transacciones (con permisos). El sistema revierte automáticamente el stock al eliminar.</p>
+<p><strong>Si me equivoco al registrar una venta, ¿se puede corregir?</strong><br>Depende del rol:</p>
+<ul>
+<li><strong>Admin y Maestro</strong>: click en <strong>Editar</strong> o <strong>Eliminar</strong> desde la lista de Transacciones. El sistema revierte el stock automáticamente al eliminar.</li>
+<li><strong>Recepción</strong>: no puede editar ni eliminar nada (ni siquiera sus propias ventas). Debe avisar a un Admin o al Maestro para que lo corrijan. Esto es por seguridad y para que quede auditado quién hizo el cambio.</li>
+</ul>
+<p><strong>¿Puedo regalar un producto sin cobrar nada?</strong><br>Sí. Si el Maestro creó una tarifa con 100% de descuento (por ejemplo, &quot;Regalo&quot;), al registrar la venta seleccionas esa tarifa y el precio queda en $0. El stock se descuenta normalmente, pero la venta no suma ingresos. Útil para cortesías, premios o atenciones.</p>
+<p><strong>Cuando subo un CSV, ¿qué hora le pone el sistema a las transacciones?</strong><br>Si en la columna <code>fecha</code> escribes solo la fecha (sin hora), el sistema usa <strong>la hora del momento en que importas el archivo</strong> (hora de Cali). Si subes el CSV a las 6:42 PM, las filas sin hora quedan registradas a las 6:42 PM. Si quieres una hora específica para una fila, escríbela en el formato <code>DD/MM/AAAA HH:MM</code> y el sistema la respeta.</p>
 <p><strong>¿Cómo hago el conteo físico del fin de mes?</strong><br>Producto por producto: ficha → &quot;Ajuste de inventario&quot; → ubicación → cantidad real → motivo &quot;Conteo físico&quot; → guarda.</p>
 <p><strong>¿Cómo cambio el precio de un producto?</strong><br>Maestro: ficha del producto → Editar → sección &quot;Precios por lista&quot;.</p>
 <p><strong>¿Qué pasa si cambio el precio de un producto?</strong><br>Las transacciones ya registradas guardan su precio original (no se afectan). El histórico mensual estimado sí se recalcula. Las nuevas ventas usan el precio actualizado por defecto.</p>
@@ -733,12 +744,12 @@
 <p><strong>¿Cómo veo qué hizo cada empleado?</strong><br>La lista de Transacciones muestra el usuario que registró cada operación con fecha y hora exacta. Filtra por fechas para ver lo de un día puntual.</p>
 <p><strong>¿Puedo ver el sistema en el celular?</strong><br>Sí. El nav se compacta a un menú hamburguesa (☰) y las tablas tienen scroll horizontal.</p>
 <hr>
-<p><em>Última actualización: 25 de abril de 2026.</em></p>
+<p><em>Última actualización: 28 de mayo de 2026 (versión final pre-entrega).</em></p>
 
 
   <div class="doc-footer">
     <span>Prime Padel — ERP de Inventario</span>
-    <span>Documento generado el 27 de mayo de 2026</span>
+    <span>Documento generado el 28 de mayo de 2026</span>
   </div>
 </body>
 </html>
